@@ -178,6 +178,17 @@
     .area-section-pct{font-size:20px;font-weight:900;margin-left:auto;}
     .area-section-body{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:16px;}
 
+    /* ── GOAL GROUPS ── */
+    .goal-group{margin-bottom:6px}
+    .goal-group-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:8px;cursor:pointer;border:1.5px solid var(--border);margin-bottom:4px;transition:background .15s}
+    .goal-group-hd:hover{background:var(--bg2)}
+    .goal-type-chip{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.06em;padding:2px 6px;border-radius:3px;flex-shrink:0}
+    .goal-name{font-size:13px;font-weight:800;color:var(--dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .goal-stats{font-size:10px;color:var(--dim);flex-shrink:0;white-space:nowrap}
+    .goal-bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0;overflow:hidden}
+    .goal-group-body{display:none;padding-left:12px;border-left:2px solid var(--border);margin-bottom:4px}
+    .goal-group-body.open{display:block}
+
     /* ── GANTT ── */
     .gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
     .gantt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap;}
@@ -507,11 +518,32 @@
         <div class="mh" id="kpi-mttl">KPI 追加</div>
         <div class="mb">
         <div class="fg"><label class="fl2">KPI 名</label><input class="fi" id="kn" placeholder="KPI名を入力..."></div>
-        <div class="fg"><label class="fl2">エリア</label><select class="fs" id="ka"></select></div>
+        <div class="fg"><label class="fl2">エリア</label><select class="fs" id="ka" onchange="updKpiGoals()"></select></div>
+        <div class="fg">
+            <label class="fl2" style="display:flex;align-items:center;justify-content:space-between">
+            <span>紐づけ目標（KGI / GI）</span>
+            <button class="ib" style="font-size:10px;padding:3px 8px" onclick="showAddGoalInline()">＋ 新規追加</button>
+            </label>
+            <select class="fs" id="kg" style="margin-bottom:0"></select>
+            <div id="add-goal-inline" style="display:none;margin-top:8px;padding:10px;background:var(--bg);border-radius:6px;border:1.5px solid var(--border)">
+            <div class="fl2" style="margin-bottom:6px">新しい目標を追加</div>
+            <div class="fr2" style="margin-bottom:6px">
+                <div class="fg" style="flex:2"><label class="fl2">目標名</label><input class="fi" id="new-goal-name" placeholder="例：GV派遣20名達成"></div>
+                <div class="fg" style="flex:1"><label class="fl2">種別</label>
+                <select class="fs" id="new-goal-type"><option value="KGI">KGI</option><option value="GI">GI</option><option value="その他">その他</option></select>
+                </div>
+            </div>
+            <div style="display:flex;gap:6px">
+                <button class="btn btn-fill" style="flex:1;font-size:11px" onclick="commitAddGoal()">追加</button>
+                <button class="btn" style="font-size:11px" onclick="hideAddGoalInline()">キャンセル</button>
+            </div>
+            </div>
+        </div>
         <div class="fr2">
             <div class="fg"><label class="fl2">Target（目標値）</label><input class="fi" type="number" id="kt" placeholder="例: 100"></div>
             <div class="fg"><label class="fl2">Actual（実績値）</label><input class="fi" type="number" id="kac" placeholder="例: 0"></div>
         </div>
+        <div class="fg"><label class="fl2">メモ（履行率・実施数など自由記述）</label><textarea class="fi" id="kmemo" rows="2" placeholder="例：履行率 80%、実施数 16件..." style="resize:vertical;font-size:12px;line-height:1.5"></textarea></div>
         </div>
         <div class="mf">
         <button class="btn" id="kpi-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="delKpi()">削除</button>
@@ -558,7 +590,6 @@
 
     const LC_META = [
     {id:'HD',  name:'北海道委員会',              region:'East'},
-    {id:'SD',  name:'仙台委員会',                region:'East'},
     {id:'AG',  name:'青山学院委員会',             region:'East'},
     {id:'CH',  name:'中央大学委員会',             region:'East'},
     {id:'HI',  name:'一橋大学委員会',             region:'East'},
@@ -582,6 +613,7 @@
     {id:'SG',  name:'滋賀大学委員会',             region:'West'},
     {id:'HU',  name:'広島委員会',                region:'West'},
     {id:'APU', name:'立命館APU委員会',            region:'West'},
+    {id:'FK',  name:'福岡委員会',                region:'West'},
     ];
 
     const DEFAULT_AREA_TYPES = [
@@ -610,13 +642,698 @@
     let editing=null, editingKpi=null, expandedSubs=new Set(), editingParent=null;
 
     /* ── DATA UTILS ── */
+
     function load(){
-    try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();return;}}catch(e){}
+    try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();seedHIIfEmpty();return;}}catch(e){}
     D=makeSeed();
+    seedHIIfEmpty();
     }
+
+    function seedHIIfEmpty(){
+    const hi=D.lcs.find(x=>x.id==='HI');
+    if(!hi)return;
+    const HI_SEED_VER=3;
+    const _hasRealKPIs=(area)=>{
+        if(!hi.areas[area]||!hi.areas[area].kpis||hi.areas[area].kpis.length===0)return false;
+        if(hi._seedVer&&hi._seedVer>=HI_SEED_VER)return true;
+        if(area==='OGX'||area==='TM')return hi.areas[area].kpis.length>0;
+        return false;
+    };
+    const needOGX=!_hasRealKPIs('OGX');
+    const needTM=!_hasRealKPIs('TM');
+    const needICX=!_hasRealKPIs('ICX');
+    const needMkt=!_hasRealKPIs('Mkt');
+    const needBD=!_hasRealKPIs('BD');
+    const needF=!_hasRealKPIs('F');
+    if(!needOGX&&!needTM&&!needICX&&!needMkt&&!needBD&&!needF){hi._seedVer=HI_SEED_VER;return;}
+    let _i=0;
+    function sid(){return'hi'+(++_i);}
+    function t(name,res,start,dead,status,children){
+        return{id:sid(),name,res:res||'',start:start||'',deadline:dead||'',status:status||'Not Started',children:children||[]};
+    }
+    function d(m,day,yr){
+        const y=yr||2026;
+        return y+'-'+(m<10?'0'+m:m)+'-'+(day<10?'0'+day:day);
+    }
+    // Add Archive extraArea
+    if(!hi.extraAreas)hi.extraAreas=[];
+    if(!hi.extraAreas.find(x=>x.id==='Archive')){
+        hi.extraAreas.push({id:'Archive',name:'Archive',color:'#52565E'});
+    }
+    if(!hi.areas.Archive)hi.areas.Archive={kpis:[]};
+
+    // ── OGX ──
+    if(needOGX){
+    const og1={id:sid(),name:'Re#27',type:'KGI'};
+    hi.areas.OGX.goals=[og1];
+    hi.areas.OGX.kpis=[
+        {id:sid(),name:'KPI1',goalId:og1.id,memo:'目標1 / 実際値1',tasks:[
+        t('戦術apple','','','','Not Started',[
+            t('がんばろ','','','','Not Started',[]),
+            t('いける','','','','Not Started',[]),
+        ]),
+        t('戦術bunny','','','','Not Started',[
+            t('戦術bunny task1','','','','Not Started',[]),
+            t('戦術bunny task2','','','','Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI2',goalId:og1.id,memo:'DONE率0.33',tasks:[
+        t('がんばろう 1','','','','DONE',[]),
+        t('がんばろう 2','','','','Not Started',[]),
+        t('がんばろう 3','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI3',goalId:og1.id,memo:'DONE率0.1',tasks:[
+        t('ふぁいと 1','','','','DONE',[]),
+        t('ふぁいと 2','','','','Not Started',[]),t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
+        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),t('ふぁいと 7','','','','Not Started',[]),
+        t('ふぁいと 8','','','','Not Started',[]),t('ふぁいと 9','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI4',goalId:og1.id,memo:'DONE率0.1',tasks:[
+        t('応援してる 1','','','','DONE',[]),
+        t('応援してる 2','','','','Not Started',[]),t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
+        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),t('応援してる 7','','','','Not Started',[]),
+        t('応援してる 8','','','','Not Started',[]),t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI5',goalId:og1.id,memo:'DONE率0.1',tasks:[
+        t('Best of LUCK 1','','','','DONE',[]),
+        t('Best of LUCK 2','','','','Not Started',[]),t('Best of LUCK 3','','','','Not Started',[]),t('Best of LUCK 4','','','','Not Started',[]),
+        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),t('Best of LUCK 7','','','','Not Started',[]),
+        t('Best of LUCK 8','','','','Not Started',[]),t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI6',goalId:og1.id,memo:'DONE率0.1',tasks:[
+        t('GOOD LUCK 1','','','','DONE',[]),
+        t('GOOD LUCK 2','','','','Not Started',[]),t('GOOD LUCK 3','','','','Not Started',[]),t('GOOD LUCK 4','','','','Not Started',[]),
+        t('GOOD LUCK 5','','','','Not Started',[]),t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
+        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),t('GOOD LUCK 10','','','','Not Started',[]),
+        ]},
+    ];
+
+    } // end needOGX
+    // ── ICX ──
+    if(needICX){
+    const ic1={id:sid(),name:'Re#5, Raise#6',type:'KGI'};
+    const ic2={id:sid(),name:'テーマ設定をしたイベントを通したRaise#1 / パートナー獲得#1',type:'GI'};
+    const ic3={id:sid(),name:'研修の質向上を測る独自作成アンケート #5での9~10回答率100%',type:'GI'};
+    hi.areas.ICX.goals=[ic1,ic2,ic3];
+    hi.areas.ICX.kpis=[
+        {id:sid(),name:'アポイントメントセールスによるRaise#5',goalId:ic1.id,memo:'目標5 / 実際値1 / Achieved 0%\n小さなKPI: 渉外獲得数#75 / 4~5月アポ数#290 / 4~5月中の上級生のタスクトラッキング\n※↑のためのアポ数は#750だが、リスクヘッジやジョブレスを防ぐためにメンバーのキャパシティーから逆算したアポ数をおいている\nアポtoヒアCVR10%維持(2526termに検証された仮説の利用) / ヒアto提案CVR20% / 提案toRaiseCVR33%',tasks:[
+        t('ヒアリング','','','','Not Started',[
+            t('渉外獲得数#75 4, 5月のアポ数#290 4, 5月中の上級生のタスクトラッキング','Sales ML',d(4,1),d(5,31),'Not Started',[]),
+            t('8月以降のアポ数#1380 アポ会の開催週#2','WGL',d(8,16),d(10,16),'Not Started',[]),
+            t('アポtoヒアCVR10%維持 2526termに検証された仮説の利用','All',d(2,14),d(10,16),'Not Started',[]),
+        ]),
+        t('6月のアルムナイ模擬渉外','','','','Not Started',[
+            t('アルムナイ日調','Taiki(XD)',d(2,14),d(4,30),'Not Started',[]),
+        ]),
+        t('セールス合宿の開催','','','','Not Started',[
+            t('アルムナイ日調','Taiki(XD)',d(5,1),d(7,31),'Not Started',[]),
+        ]),
+        t('実践用ネトワキ探し','Sales ML',d(5,1),d(8,1),'Not Started',[]),
+        t('9月~10月の模擬渉外・ネトワキ参加','','','','Not Started',[
+            t('アルムナイ日調','Taiki(XD)','','','Not Started',[]),
+            t('ネトワキ探し','Sales ML','','','Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'Raise to Realize 100%',goalId:ic1.id,memo:'目標100 / 実際値2\n小さなKPI: Raise to Accepted 100% → 1人でCallを置ける新入生メンバー数#4 / Raise to Open間の広報IR Call#3 / Accepted to Realize 100%',tasks:[
+        t('Raise to Accepted 100%','','','','Not Started',[
+            t('1人でCallを置くことができる新入生メンバー数#4','','','','Not Started',[
+            t('IRCSメンバー組閣#4','Nana(IRCS ML)',d(5,1),d(5,9),'Not Started',[]),
+            t('IRCS新入生メンバーに対するIR input','Nana(IRCS ML)',d(5,10),d(5,16),'Not Started',[]),
+            t('メンバー育成のためのCall#1×4','Nana(IRCS ML)',d(5,10),d(5,16),'Not Started',[]),
+            ]),
+            t('Raise to Open間の広報IR Call#3','','','','Not Started',[
+            t('Callを置く海外LC探し','Nana(IRCS ML)','','','Not Started',[]),
+            t('当該LCとの日調','Nana(IRCS ML)','','','Not Started',[]),
+            t('Callの実施','Nana(IRCS ML)','','','Not Started',[]),
+            ]),
+        ]),
+        t('Accepted to Realize 100%','','','','Not Started',[
+            t('Accepted to Realize間のEPへのサポート','','','','Not Started',[
+            t('EP・送り出しLCとの定期的なコミュニケーション','Nana(IRCS ML)','','','Not Started',[]),
+            t('送り出しLCとの連携による、EP側Realize阻害要因への対処','Nana(IRCS ML)','','','Not Started',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'研修の質向上のための研修設計及び測定 #5',goalId:ic3.id,memo:'実際値3',tasks:[
+        t('ふぁいと 1','','','','Not Started',[]),t('ふぁいと 2','','','','Not Started',[]),
+        t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
+        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),
+        t('ふぁいと 7','','','','Not Started',[]),t('ふぁいと 8','','','','Not Started',[]),
+        t('ふぁいと 9','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'TN研修後アンケート「弊団体のサービス/サポートを評価してください」で9以上100%',goalId:ic3.id,memo:'DONE率0.2',tasks:[
+        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
+        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
+        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
+        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
+        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI5',goalId:ic1.id,memo:'DONE率0.4',tasks:[
+        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
+        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
+        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
+        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
+        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI6',goalId:ic1.id,memo:'DONE率0.3',tasks:[
+        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
+        t('GOOD LUCK 3','','','','DONE',[]),
+        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
+        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
+        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
+        t('GOOD LUCK 10','','','','Not Started',[]),
+        ]},
+    ];
+
+    } // end needICX
+
+    // ── Mkt ──
+    if(needMkt){
+    const mk1={id:sid(),name:'SNS総Reach数 #250,000',type:'KGI'};
+    const mk2={id:sid(),name:'新歓説明会 導入数',type:'GI'};
+    hi.areas.Mkt.goals=[mk1,mk2];
+    hi.areas.Mkt.kpis=[
+        {id:sid(),name:'申込書提出数',goalId:mk2.id,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
+        t('新歓期の丁寧なコミュ online','','','','Not Started',[
+            t('to新入生','','','','Not Started',[
+            t('コミュレス振り','koto, aoi, harukazu',d(3,21),d(3,25),'Not Started',[]),
+            t('進捗共有','all eb',d(3,28),d(4,30),'Not Started',[]),
+            ]),
+            t('to上級生','','','','Not Started',[
+            t('コミュレス振り','aoi, koto',d(3,21),d(3,25),'Not Started',[]),
+            t('進捗共有','all eb',d(3,28),d(4,30),'Not Started',[]),
+            ]),
+        ]),
+        t('新歓期の丁寧なコミュ @説明会','','','','Not Started',[
+            t('to新入生','','','','Not Started',[
+            t('必要な役割洗い出し','koto, aoi',d(3,4),d(3,11),'Not Started',[]),
+            t('EBで共有','all eb',d(3,11),d(3,17),'Not Started',[]),
+            t('エリアで共有','all eb',d(3,17),d(3,24),'Not Started',[]),
+            ]),
+            t('to上級 ふるまい方の確認','','','','Not Started',[
+            t('to全体','all eb',d(3,20),d(3,27),'Not Started',[]),
+            ]),
+        ]),
+        t('SNS投稿','','','','Not Started',[
+            t('投稿物','','','','Not Started',[
+            t('contents list作成','koto, sarah, analysis mem','','','DONE',[]),
+            t('投稿物作成者決定','koto, brand mem','','','DONE',[]),
+            t('投稿TL決定','koto, brand mem','','','DONE',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'EXP問い合わせ数',goalId:mk1.id,memo:'実際値2',tasks:[
+        t('市場分析','','','','Not Started',[
+            t('ターゲット像を明確にする','','','','Not Started',[
+            t('OGX VPDに共有してもらう','keisuke, koto, sarah',d(8,1),d(8,8),'Not Started',[]),
+            t('市場となるゼミと授業を絞る','koto, sarah, keisuke, analysis mem',d(8,1),d(8,8),'Not Started',[]),
+            t('アプローチの仕方（適切な文言など）の決定','koto, sarah, analysis mem',d(8,8),d(8,15),'Not Started',[]),
+            ]),
+            t('過去分析','','','','Not Started',[
+            t('事業再開からのEXPの流入経路をまとめる','koto, sarah, analysis mem',d(8,1),d(8,8),'Not Started',[]),
+            t('去年のEXP販促のときのMlogやFRを読みこむ','koto, sarah',d(8,1),d(8,8),'Not Started',[]),
+            ]),
+        ]),
+        t('発信','','','','Not Started',[
+            t('投稿物','','','','Not Started',[
+            t('コンテンツ決定','koto, sarah, brand mem',d(8,8),d(8,15),'Not Started',[]),
+            t('TL決定','koto, sarah, brand mem',d(8,8),d(8,15),'Not Started',[]),
+            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(8,8),d(8,15),'Not Started',[]),
+            t('作成者決定','koto, brand mem',d(8,8),d(8,15),'Not Started',[]),
+            ]),
+            t('ビラ','','','','Not Started',[
+            t('昨年度のデザイン・作り方の確認','koto, brand mem',d(8,15),d(8,22),'Not Started',[]),
+            t('デザイン作成者決定','koto, brand mem',d(8,15),d(8,22),'Not Started',[]),
+            t('TL決定','koto, sarah',d(8,15),d(8,22),'Not Started',[]),
+            t('配りに行く日決定','koto, sarah, brand mem, analysis mem',d(8,22),d(8,29),'Not Started',[]),
+            t('枚数決定','sarah, analysis mem',d(8,22),d(8,29),'Not Started',[]),
+            ]),
+        ]),
+        t('分析','','','','Not Started',[
+            t('インサイトの合計（EXP販促関係投稿期間）','koto, sarah, analysis mem',d(11,30),d(12,15),'Not Started',[]),
+            t('その原因を分析','koto, sarah, analysis mem',d(12,15),d(12,22),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'to新入生 SNSからの流入数',goalId:mk1.id,memo:'DONE率1.0',tasks:[
+        t('市場分析','','','','Not Started',[
+            t('segmentation','koto, sarah, analysis mem','','','DONE',[]),
+            t('targeting','koto, sarah, analysis mem','','','DONE',[]),
+            t('positioning','koto, sarah, analysis mem','','','DONE',[]),
+            t('targeting深掘り','koto, sarah, analysis mem','','','DONE',[]),
+            t('CJ策定','koto, sarah, analysis mem',d(2,25),d(3,4),'WIP',[]),
+        ]),
+        t('SNS投稿','','','','Not Started',[
+            t('投稿物','','','','Not Started',[
+            t('コンテンツ決定','koto, brand mem','','','DONE',[]),
+            t('TL決定','koto, brand mem','','','DONE',[]),
+            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(2,26),d(3,8),'WIP',[]),
+            t('作成者決定','koto, brand mem','','','DONE',[]),
+            ]),
+        ]),
+        t('分析','','','','Not Started',[
+            t('インサイトの合計（新歓関係投稿期間）','koto, sarah, analysis mem',d(5,31),d(6,7),'Not Started',[]),
+            t('その原因を分析','koto, sarah, analysis mem',d(6,7),d(6,14),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'to B SNS(Facebook)の閲覧数',goalId:mk1.id,memo:'実際値4',tasks:[
+        t('HIFacebookアカウントのフォロワーを増やしてからの投稿開始','','','','Not Started',[
+            t('最初の投稿（団体紹介・次年度の方針の共有）','','','','Not Started',[
+            t('LCPに内容・文面作成依頼','koto, harukazu',d(6,1),d(6,15),'Not Started',[]),
+            t('Mkt brandに投稿物作成依頼','koto',d(6,17),d(6,24),'Not Started',[]),
+            t('投稿','brand mem',d(6,24),d(7,1),'Not Started',[]),
+            ]),
+            t('アルムナイのアカウントをフォローする','','','','Not Started',[
+            t('BDにSNS上でのマナーのインプットを協力依頼','koto',d(6,1),d(6,8),'Not Started',[]),
+            t('アルムナイをバイネームで挙げる','koto, arisa',d(6,1),d(6,8),'Not Started',[]),
+            t('アルムナイのアカウントをフォロー','koto, arisa',d(7,1),d(7,8),'Not Started',[]),
+            ]),
+        ]),
+        t('to Bに特化した発信の仕方の研究','','','','Not Started',[
+            t('アルムナイにヒアリング','','','','Not Started',[
+            t('LCP会議のMkt Areaの議題として挙げる','koto',d(2,15),d(2,22),'Not Started',[]),
+            t('意見を回収し投稿内容・頻度・形態の確定','koto',d(2,22),d(3,1),'Not Started',[]),
+            ]),
+            t('to Bに向けて発信している競合から学ぶ','','','','Not Started',[
+            t('Facebookを運用しているボランティア・学生団体の投稿の傾向を分析','sarah, koto, analysis mem',d(6,1),d(6,15),'Not Started',[]),
+            t('AIESECだから変化させる点と、真似して発信したほうが良い点の洗い出し','sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
+            t('Mkt brandへの共有','koto, sarah',d(6,22),d(7,29),'Not Started',[]),
+            t('申し送り事項に入れる','koto, sarah',d(12,1),d(12,8),'Not Started',[]),
+            ]),
+        ]),
+        t('定期的なSNSの運用','','','','Not Started',[
+            t('Facebookの運用計画を明確にする','','','','Not Started',[
+            t('用途を明確化','koto',d(2,21),d(2,28),'Not Started',[]),
+            t('運用計画の仮決定','koto, sarah',d(3,1),d(3,8),'Not Started',[]),
+            t('BD Areaに確認・共有','koto, arisa',d(3,8),d(3,15),'Not Started',[]),
+            t('運用計画の決定','koto, sarah',d(6,1),d(6,8),'Not Started',[]),
+            t('Mktメンバーへの共有','koto, sarah',d(6,15),d(6,22),'Not Started',[]),
+            ]),
+            t('投稿の遅延・停滞のリスクヘッジ','','','','Not Started',[
+            t('MCチェックのあり方の確認（with Mktメンバー）','koto',d(3,1),d(3,8),'WIP',[]),
+            t('各function忙しい時期の把握','koto, sarah',d(3,8),d(3,15),'Not Started',[]),
+            t('1年間概要投稿物TLの作成','koto, sarah',d(3,15),d(3,22),'Not Started',[]),
+            t('1年間のキャパを考えたうえでres振り','koto, sarah',d(6,20),d(6,27),'Not Started',[]),
+            ]),
+            t('投稿しやすい仕組みづくり① Facebookテンプレの作成','','','','Not Started',[
+            t('投稿するものの概要を決める','koto, sarah',d(2,24),d(3,2),'Not Started',[]),
+            t('必要な型をMkt brandが作成（ex.活動報告テンプレ）','koto, brand mem',d(6,10),d(6,24),'Not Started',[]),
+            ]),
+            t('投稿しやすい仕組みづくり② Mkt M(全体)でTLの共有','','','','Not Started',[
+            t('全体でチェックするものだという共通認識を取る','koto',d(3,1),d(3,8),'WIP',[]),
+            t('投稿ごとに作成者とは別でTL管理担当者を決める（AreaD+α）','koto, sarah',d(6,24),d(7,1),'Not Started',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'Mktアンケートでの「他エリアの事業理解度」平均8/10',goalId:null,memo:'目標8 / 実際値5',tasks:[
+        t('アンケート','','','','Not Started',[
+            t('フロー① 上級生向け現状把握','','','','Not Started',[
+            t('項目の案出し','koto, sarah',d(6,1),d(6,8),'Not Started',[]),
+            t('作成者決定','koto, sarah, brand mem, analysis mem',d(6,8),d(6,15),'Not Started',[]),
+            t('フロー日決定','koto, sarah',d(6,8),d(6,15),'Not Started',[]),
+            t('回答促進コミュ','koto, aoi',d(6,15),d(6,22),'Not Started',[]),
+            ]),
+            t('フロー② 夏頃 to全体','','','','Not Started',[
+            t('項目の案出し','koto, sarah',d(8,1),d(8,8),'Not Started',[]),
+            t('作成者決定','koto, sarah, brand mem, analysis mem',d(8,8),d(8,15),'Not Started',[]),
+            t('フロー日決定','koto, sarah',d(8,8),d(8,15),'Not Started',[]),
+            t('回答促進コミュ','koto, sarah',d(8,15),d(8,22),'Not Started',[]),
+            ]),
+            t('フロー③ 冬頃 to全体','','','','Not Started',[
+            t('項目の案出し','koto, sarah',d(12,1),d(12,8),'Not Started',[]),
+            t('作成者決定','koto, sarah, brand mem, analysis mem',d(12,8),d(12,15),'Not Started',[]),
+            t('フロー日決定','koto, sarah',d(12,8),d(12,15),'Not Started',[]),
+            t('回答促進コミュ','koto, sarah',d(12,15),d(12,22),'Not Started',[]),
+            ]),
+            t('フロー④ 年度終わり to全体','','','','Not Started',[
+            t('項目の案出し','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
+            t('作成者決定','koto, sarah, brand mem, analysis mem',d(3,8,2027),d(3,15,2027),'Not Started',[]),
+            t('フロー日決定','koto, sarah',d(3,8,2027),d(3,15,2027),'Not Started',[]),
+            t('回答促進コミュ','koto, sarah',d(3,15,2027),d(3,22,2027),'Not Started',[]),
+            ]),
+            t('アンケートを形骸化させない','','','','Not Started',[
+            t('過去のアンケートフロー・回答コミュの方法の洗い出し','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
+            t('コミュ方法の決定','koto, sarah',d(6,15),d(6,22),'Not Started',[]),
+            t('項目の案出しの際に聞く背景まで決める','sarah, koto',d(6,1),d(6,8),'Not Started',[]),
+            t('アンケートの目的明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
+            t('メンバーの理想状態を明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
+            t('分析する手順を決める','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
+            ]),
+        ]),
+        t('to E SNS投稿','','','','Not Started',[
+            t('投稿物決定','','','','Not Started',[
+            t('各エリア月に投稿したいこと回収（事業報告など）','koto, all eb',d(5,24),d(5,31),'Not Started',[]),
+            t('brandに内部インスタの投稿内容を共有','koto, brand mem',d(6,1),d(6,8),'Not Started',[]),
+            ]),
+            t('定期的に投稿','','','','Not Started',[
+            t('月のTLをエリアで共有','koto, sarah, brand mem, analysis mem',d(6,1),d(6,8),'Not Started',[]),
+            t('製作担当者の決定','koto, brand mem',d(6,8),d(6,15),'Not Started',[]),
+            t('TL管理者の決定','koto, sarah, brand mem, analysis mem',d(6,8),d(6,15),'Not Started',[]),
+            t('テンプレの作成','koto, brand mem',d(6,15),d(6,22),'Not Started',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'高校生事業 参加した高校生の人数60人',goalId:mk2.id,memo:'目標60 / 実際値4',tasks:[
+        t('市場を知る','','','','Not Started',[
+            t('アンケート to高校生','','','','Not Started',[
+            t('アンケート回答協力の依頼 to mem','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
+            t('アンケートを作成する','koto, sarah, brand mem, analysis mem',d(7,1),d(7,8),'Not Started',[]),
+            t('回答を集めて分析','koto, sarah, analysis mem',d(7,15),d(7,22),'Not Started',[]),
+            ]),
+            t('過去分析','','','','Not Started',[
+            t('今年のエバを読みこむ','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
+            t('メンバーと共有','koto, sarah',d(7,8),d(7,15),'Not Started',[]),
+            t('今年の分の残し方を決める','koto, sarah',d(12,15),d(12,22),'Not Started',[]),
+            ]),
+            t('ヒアリング','','','','Not Started',[
+            t('樫原さん','koto',d(7,15),d(7,22),'Not Started',[]),
+            t('去年やったメンバー','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
+            ]),
+        ]),
+        t('年2回開催 夏休み実施','','','','Not Started',[
+            t('実施メンバーの募集','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
+            t('メンバー決定','koto, sarah',d(7,8),d(7,15),'Not Started',[]),
+            t('開催場所決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
+            t('コンテンツ作成','koto, sarah',d(7,15),d(7,29),'Not Started',[]),
+            t('Fと話し合って予算の決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
+            t('good, more, try 申し送りを記録','koto, sarah',d(8,23),d(8,30),'Not Started',[]),
+        ]),
+        t('年2回開催 冬休み開催','','','','Not Started',[
+            t('実施メンバーの募集','koto, sarah',d(11,1),d(11,8),'Not Started',[]),
+            t('メンバー決定','koto, sarah',d(11,8),d(11,15),'Not Started',[]),
+            t('開催場所決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
+            t('コンテンツ作成','koto, sarah',d(11,15),d(11,29),'Not Started',[]),
+            t('Fと話し合って予算の決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
+            t('good, more, try 申し送りを記録','koto, sarah',d(1,24,2027),d(1,31,2027),'Not Started',[]),
+        ]),
+        t('SNS発信','','','','Not Started',[
+            t('投稿（夏）','','','','Not Started',[
+            t('投稿物決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
+            t('TL決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
+            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(7,15),d(7,22),'Not Started',[]),
+            t('作成者決定','koto, brand mem',d(7,15),d(7,22),'Not Started',[]),
+            t('投稿する','koto',d(8,1),d(8,15),'Not Started',[]),
+            ]),
+            t('投稿（冬）','','','','Not Started',[
+            t('投稿物決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
+            t('TL決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
+            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(11,15),d(11,22),'Not Started',[]),
+            t('作成者決定','koto, brand mem',d(11,15),d(11,22),'Not Started',[]),
+            t('投稿する','koto',d(12,1),d(12,15),'Not Started',[]),
+            ]),
+            t('分析（夏）','','','','Not Started',[
+            t('インサイトの合計を出す（事業関係の投稿期間）','koto, sarah, analysis mem',d(9,1),d(9,15),'Not Started',[]),
+            t('その原因を分析する','koto, sarah, analysis mem',d(9,15),d(9,30),'Not Started',[]),
+            ]),
+            t('分析（冬）','','','','Not Started',[
+            t('インサイトの合計を出す（事業関係の投稿期間）','koto, sarah, analysis mem',d(1,15,2027),d(9,22),'Not Started',[]),
+            t('その原因を分析する','koto, sarah, analysis mem',d(1,24,2027),d(1,31,2027),'Not Started',[]),
+            ]),
+        ]),
+        ]},
+    ];
+
+    } // end needMkt
+    // ── TM ──
+    if(needTM){
+    hi.areas.TM.goals=[];
+    hi.areas.TM.kpis=[
+        {id:sid(),name:'KPI1',goalId:null,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
+        t('戦術apple','','','','Not Started',[
+            t('がんばろっ','','','','DONE',[]),
+            t('DONE task','','','','DONE',[]),
+        ]),
+        t('戦術bunny','','','','Not Started',[
+            t('戦術bunny task1','','','','Not Started',[]),
+            t('戦術bunny task2','','','','Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI2',goalId:null,memo:'DONE率0.33',tasks:[
+        t('がんばろう 1','','','','DONE',[]),
+        t('がんばろう 2','','','','Not Started',[]),
+        t('がんばろう 3','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI3',goalId:null,memo:'DONE率0.2',tasks:[
+        t('ふぁいと 1','','','','DONE',[]),t('ふぁいと 2','','','','DONE',[]),
+        t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
+        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),
+        t('ふぁいと 7','','','','Not Started',[]),t('ふぁいと 8','','','','Not Started',[]),
+        t('ふぁいと 9','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI4',goalId:null,memo:'DONE率0.2',tasks:[
+        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
+        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
+        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
+        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
+        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI5',goalId:null,memo:'DONE率0.4',tasks:[
+        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
+        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
+        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
+        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
+        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI6',goalId:null,memo:'DONE率0.3',tasks:[
+        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
+        t('GOOD LUCK 3','','','','DONE',[]),
+        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
+        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
+        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
+        t('GOOD LUCK 10','','','','Not Started',[]),
+        ]},
+    ];
+
+    } // end needTM
+    // ── BD ──
+    if(needBD){
+    const bd1={id:sid(),name:'アルムナイ接点数',type:'KGI'};
+    const bd2={id:sid(),name:'外部関係者数',type:'KGI'};
+    hi.areas.BD.goals=[bd1,bd2];
+    hi.areas.BD.kpis=[
+        {id:sid(),name:'ネームバリュー = 認知拡大 × 信頼醸成 × 行動転換力',goalId:bd2.id,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
+        t('イベント','','','','Not Started',[
+            t('協働SH','','','','Not Started',[
+            t('ペルソナ決め','arisa, haruki','','','Not Started',[]),
+            t('アプローチ方法決定','arisa, haruki','','','Not Started',[]),
+            t('渉外','arisa, haruki','','','Not Started',[]),
+            t('契約','arisa','','','Not Started',[]),
+            ]),
+            t('コンテンツ','','','','Not Started',[
+            t('案出し','arisa, haruki, alliance mem','','','Not Started',[]),
+            t('GSS記入','haruki, alliance mem','','','Not Started',[]),
+            t('企画書作成','haruki, alliance mem','','','Not Started',[]),
+            t('MC check','haruki','','','Not Started',[]),
+            t('協働相手に打診','arisa, haruki','','','Not Started',[]),
+            t('合意','arisa','','','Not Started',[]),
+            ]),
+            t('集客','','','','Not Started',[
+            t('ペルソナ決め','arisa, haruki','','','Not Started',[]),
+            t('他LCヒアリング','haruki, alliance mem','','','Not Started',[]),
+            t('過去事例参照','haruki, alliance mem','','','Not Started',[]),
+            t('アプローチ方法決定','haruki, alliance mem','','','Not Started',[]),
+            t('実施','haruki, alliance mem','','','Not Started',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'外部リソースのHI内部への還元',goalId:bd1.id,memo:'実際値3',tasks:[
+        t('事業成長','','','','Not Started',[
+            t('GV','','','','Not Started',[
+            t('SRB講師','arisa, keisuke','','','Not Started',[]),
+            t('事後研修','arisa, keisuke','','','Not Started',[]),
+            t('過去渡航性ヒアリング','arisa, keisuke','','','Not Started',[]),
+            ]),
+            t('iGTa','','','','Not Started',[
+            t('模擬渉外','arisa, taiki','','','Not Started',[]),
+            t('ビジコン','arisa, taiki','','','Not Started',[]),
+            t('企業セミナー','arisa, taiki','','','Not Started',[]),
+            ]),
+            t('高校生事業','arisa, koto','','','Not Started',[]),
+        ]),
+        t('人材育成','','','','Not Started',[
+            t('アルムナイ接点','','','','Not Started',[
+            t('LCM登壇','arisa, aoi','','','Not Started',[]),
+            t('アルムナイ訪問','arisa, aoi','','','Not Started',[]),
+            t('若手アルムナイ総会','all eb','','','Not Started',[]),
+            t('アルムナイ総会','all eb','','','Not Started',[]),
+            ]),
+        ]),
+        t('集金','','','','Not Started',[
+            t('寄付金','','','','Not Started',[
+            t('若手アルムナイ総会','arisa, kazuto','','','Not Started',[]),
+            t('アルムナイ総会','arisa, kazuto','','','Not Started',[]),
+            ]),
+            t('協賛金','','','','Not Started',[
+            t('LCM登壇','arisa, kazuto','','','Not Started',[]),
+            t('イベント','arisa, kazuto, haruki','','','Not Started',[]),
+            ]),
+        ]),
+        t('期待値調整','','','','Not Started',[
+            t('アルムナイ情報把握','','','','Not Started',[
+            t('アルムナイ訪問','arisa, 会期設計 mem','','','Not Started',[]),
+            t('アルムナイ図鑑の更新','arisa, 会期設計 mem','','','Not Started',[]),
+            t('エリア需要把握 BD Ss','arisa','','','Not Started',[]),
+            t('エリアD 定例o2o','all eb','','','Not Started',[]),
+            ]),
+            t('コミュ管理','','','','Not Started',[
+            t('進捗確認 エリアD 定例o2o','all eb','','','Not Started',[]),
+            ]),
+            t('蓄積','','','','Not Started',[
+            t('コミュ歴記録','arisa','','','Not Started',[]),
+            ]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI3',goalId:bd1.id,memo:'DONE率0.2',tasks:[
+        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
+        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
+        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
+        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
+        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI4',goalId:bd2.id,memo:'DONE率0.4',tasks:[
+        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
+        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
+        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
+        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
+        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI5',goalId:bd2.id,memo:'DONE率0.33',tasks:[
+        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
+        t('GOOD LUCK 3','','','','DONE',[]),
+        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
+        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
+        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
+        ]},
+    ];
+
+    } // end needBD
+
+    // ── Finance ──
+    if(needF){
+    const f1={id:sid(),name:'年間支出200万円(金額仮)',type:'GI'};
+    hi.areas.F.goals=[f1];
+    hi.areas.F.kpis=[
+        {id:sid(),name:'KPI 1：予算履行率〇％',goalId:f1.id,memo:'実際値1 / Achieved 0%',tasks:[
+        t('月次予実管理','','','','Not Started',[
+            t('想定可能支出先/支出額一覧作成','kazuto',d(3,1),d(3,8),'Not Started',[]),
+            t('予算作成','kazuto',d(3,1),d(3,26),'Not Started',[]),
+            t('予実管理フォーマット作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
+            t('4月分予実管理','kazuto, 財務mem',d(5,1),d(5,7),'Not Started',[]),
+            t('5月分予実管理','kazuto, 財務mem',d(6,1),d(6,7),'Not Started',[]),
+            t('6月分予実管理','kazuto, 財務mem',d(7,1),d(7,7),'Not Started',[]),
+            t('7月分予実管理','kazuto, 財務mem',d(8,1),d(8,7),'Not Started',[]),
+            t('8月分予実管理','kazuto, 財務mem',d(9,1),d(9,7),'Not Started',[]),
+        ]),
+        t('EB内財務報告','','','','Not Started',[
+            t('財務マニュアルver.1作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
+            t('報告フォーマット作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
+            t('4月分財務報告','kazuto',d(5,1),d(5,12),'Not Started',[]),
+            t('5月分財務報告','kazuto',d(6,1),d(6,9),'Not Started',[]),
+            t('6月分財務報告','kazuto',d(7,1),d(7,7),'Not Started',[]),
+            t('7月分財務報告','kazuto',d(8,1),d(8,11),'Not Started',[]),
+            t('8月分財務報告','kazuto',d(9,1),d(9,8),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI 2：注力収益額〇円',goalId:f1.id,memo:'実際値2 / Achieved 0%',tasks:[
+        t('アルムナイ寄附金','','','','Not Started',[
+            t('若手アルムナイ総会財務報告','kazuto',d(6,13),d(7,3),'Not Started',[]),
+            t('月次口座残高管理表の作成','kazuto, 財務mem, 会計mem',d(5,1),d(5,30),'Not Started',[]),
+            t('想定支出先/支出額一覧作成','kazuto',d(3,1),d(3,4),'Not Started',[]),
+            t('口座残高安定マニュアル作成','kazuto',d(3,1),d(3,7),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI3：資格審査項目抵触数 #0',goalId:f1.id,memo:'実際値3 / Achieved 0%',tasks:[
+        t('月次仕訳帳提出不備#0','','','','Not Started',[
+            t('仕訳帳提出TL管理シートの作成','kazuto, nonomi','',d(4,10),'WIP',[]),
+            t('4月分仕訳帳提出','kazuto, 会計mem',d(4,24),d(5,3),'Not Started',[]),
+            t('5月分仕訳帳提出','kazuto, 会計mem',d(5,25),d(6,3),'Not Started',[]),
+            t('6月分仕訳帳提出','kazuto, 会計mem',d(6,24),d(7,3),'Not Started',[]),
+            t('7月分仕訳帳提出','kazuto, 会計mem',d(7,25),d(8,3),'Not Started',[]),
+            t('8月分仕訳帳提出','kazuto, 会計mem',d(8,25),d(9,3),'Not Started',[]),
+        ]),
+        t('Q1局内監査','','','','Not Started',[
+            t('仕訳帳check','kazuto, 会計mem',d(7,3),d(7,10),'Not Started',[]),
+            t('書類','kazuto, 会計mem',d(7,3),d(7,10),'Not Started',[]),
+            t('立替金精算','kazuto, 会計mem',d(7,10),d(7,31),'Not Started',[]),
+            t('未払金精算','kazuto',d(7,10),d(7,31),'Not Started',[]),
+        ]),
+        t('中間決算前局内監査','','','','Not Started',[
+            t('仕訳帳check','kazuto, 会計mem',d(9,3),d(9,10),'Not Started',[]),
+            t('書類','kazuto, 会計mem',d(9,3),d(9,10),'Not Started',[]),
+            t('立替金精算','kazuto, 会計mem',d(9,10),d(9,30),'Not Started',[]),
+            t('未払金精算','kazuto',d(9,10),d(9,30),'Not Started',[]),
+        ]),
+        t('中間決算','kazuto','',d(9,15),'Not Started',[]),
+        t('会計/監査マニュアル改訂・動画化','kazuto, 会計mem',d(4,1),d(7,31),'Not Started',[]),
+        t('会計人材育成#5','','','','Not Started',[
+            t('Finance新メンバー組閣#4','kazuto',d(6,15),d(7,30),'Not Started',[]),
+            t('会計テスト合格者#5','kazuto, nonomi',d(8,1),d(10,31),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI4：対外部財務報告数 #3',goalId:f1.id,memo:'実際値4 / Achieved 0%',tasks:[
+        t('若手アルムナイ総会','','','','Not Started',[
+            t('若手アルムナイ総会財務報告','kazuto',d(6,13),d(7,3),'Not Started',[]),
+        ]),
+        t('アルムナイ総会','','','','Not Started',[
+            t('アルムナイ総会財務報告','kazuto','','','Not Started',[]),
+        ]),
+        t('LCP会議','','','','Not Started',[
+            t('LCP会議財務報告','kazuto','','','Not Started',[]),
+        ]),
+        t('財務報告マニュアル','','','','Not Started',[
+            t('過去資料まとめ','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
+            t('良い財務報告について学習','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
+            t('テンプレ作成','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
+        ]),
+        ]},
+        {id:sid(),name:'KPI5：対内部財務報告数 #12',goalId:f1.id,memo:'実際値5 / Achieved 0%',tasks:[
+        t('LCM月次財務報告（Fレポ）','','','','Not Started',[
+            t('Fレポテンプレ作成','kazuto, momone','',d(3,7),'WIP',[]),
+            t('3月分Fレポ','kazuto, 財務mem',d(4,8),d(4,24),'Not Started',[]),
+            t('4月分Fレポ','kazuto, 財務mem',d(5,8),d(5,29),'Not Started',[]),
+            t('5月分Fレポ','kazuto, 財務mem',d(6,8),d(6,26),'Not Started',[]),
+            t('6月分Fレポ','kazuto, 財務mem',d(7,8),d(7,31),'Not Started',[]),
+            t('7月分Fレポ','kazuto, 財務mem',d(8,8),d(8,28),'Not Started',[]),
+            t('8月分Fレポ','kazuto, 財務mem',d(9,8),d(9,25),'Not Started',[]),
+        ]),
+        t('財務マニュアルver.2作成','kazuto, 財務mem',d(8,1),d(9,30),'Not Started',[]),
+        ]},
+        {id:sid(),name:'KPI6：（中長期、投資判断基準系）',goalId:f1.id,memo:'実際値4 / Achieved 0%',tasks:[
+        t('中長期財務方針の作成','',d(8,1),d(2,28,2027),'Not Started',[]),
+        t('LCM FinanceSs#5','',d(6,1),d(2,28,2027),'Not Started',[]),
+        t('投資判断基準導入','','','','Not Started',[
+            t('MCのものを。','kazuto',d(10,1),d(2,28,2027),'Not Started',[]),
+            t('支出','kazuto, 財務mem',d(4,1),d(3,31,2027),'Not Started',[]),
+            t('判断','kazuto, 財務mem',d(10,1),d(12,31),'Not Started',[]),
+        ]),
+        ]},
+    ];
+
+    } // end needF
+    // ── Archive ──
+    hi.areas.Archive.goals=[];
+    hi.areas.Archive.kpis=[
+        {id:sid(),name:'YP-FR集',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'GEN',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'OGX',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'ICX',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'Mkt',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'TM',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'BD',goalId:null,memo:'',tasks:[]},
+        {id:sid(),name:'F',goalId:null,memo:'',tasks:[]},
+    ];
+    hi._seedVer=HI_SEED_VER;
+    }
+
     function ensureAreas(){
     if(!D.areaTypes)D.areaTypes=JSON.parse(JSON.stringify(DEFAULT_AREA_TYPES));
     if(!D.lcs)D.lcs=makeSeed().lcs;
+    // Add any LCs in LC_META that are missing from stored data (e.g. FK added later)
+    LC_META.forEach(meta=>{
+        if(!D.lcs.find(x=>x.id===meta.id))
+        D.lcs.push({id:meta.id,name:meta.name,region:meta.region,areas:{},extraAreas:[]});
+    });
+    // Remove any LCs that are no longer in LC_META (e.g. SD removed)
+    D.lcs=D.lcs.filter(lc=>LC_META.find(m=>m.id===lc.id));
     D.lcs.forEach(lc=>{
         if(!lc.areas)lc.areas={};
         if(!lc.extraAreas)lc.extraAreas=[];
@@ -915,9 +1632,10 @@
             <div class="kpi-head" onclick="togK('${id}_${at.id}_${k.id}')">
             <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
             <div class="kpi-info">
-                <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div>
+                <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}${(()=>{const goals=area.goals||[];const g=goals.find(x=>x.id===k.goalId);return g?` · <span class="goal-type-chip" style="background:${g.type==='KGI'?'#037EF322':'#7552CC22'};color:${g.type==='KGI'?'#037EF3':'#7552CC'};border:1px solid ${g.type==='KGI'?'#037EF344':'#7552CC44'};font-size:9px;padding:1px 5px;border-radius:3px">${g.type}</span> ${h(g.name)}`:'';})()}</div>
                 <div class="kpi-ttl">${h(k.name)}</div>
                 ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
+                ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">📝 ${h(k.memo)}</div>`:''}
             </div>
             <div class="kpi-r">
                 <div class="kpi-pct" style="color:${c}">${pct}%</div>
@@ -971,6 +1689,23 @@
     function togK(id){
     document.getElementById('kb-'+id)?.classList.toggle('open');
     const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
+    }
+    function togGoal(id){
+    document.getElementById('kb-'+id)?.classList.toggle('open');
+    const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
+    }
+    function deleteGoal(lId,aId,gId){
+    const area=getLCArea(lId,aId);if(!area)return;
+    const g=area.goals?.find(x=>x.id===gId);if(!g)return;
+    const kpiCount=area.kpis.filter(k=>k.goalId===gId).length;
+    const msg=kpiCount?`「${g.name}」を削除すると ${kpiCount}件のKPIの紐づけが解除されます。続けますか？`:`「${g.name}」を削除しますか？`;
+    if(!confirm(msg))return;
+    area.goals=area.goals.filter(x=>x.id!==gId);
+    area.kpis.forEach(k=>{if(k.goalId===gId)k.goalId=null;});
+    save();buildNav();
+    if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
+    else if(view==='lc'&&lcId)rLC(lcId);
+    toast(`「${g.name}」を削除しました`);
     }
     function setF(s){fil=s;if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);else if(view==='lc'&&lcId)rLC(lcId);}
     function setAF(s){afilter=s;if(view==='lc'&&lcId)rLC(lcId);}
@@ -1055,15 +1790,18 @@
         return rows;
     }
 
-    const kpis=area.kpis.map((k,i)=>{
+    // Group KPIs by goal
+    const goals=area.goals||[];
+    function buildKpiBlock(k,i,totalKpis){
         const ks=kpiStats(k);const pct=ks.total?Math.round(ks.done/ks.total*100):0;
         return `<div class="kpi-block">
         <div class="kpi-head" onclick="togK('area_${aId}_${k.id}')">
             <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
             <div class="kpi-info">
-            <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div>
+            <div class="kpi-lbl">KPI ${i+1} / ${totalKpis}</div>
             <div class="kpi-ttl">${h(k.name)}</div>
             ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
+            ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">📝 ${h(k.memo)}</div>`:''}
             </div>
             <div class="kpi-r">
             <div class="kpi-pct" style="color:${c}">${pct}%</div>
@@ -1085,7 +1823,38 @@
             </table>
         </div>
         </div>`;
-    }).join('');
+    }
+
+    // Build grouped KPI list
+    let kpisHtml='';
+    const ungrouped=area.kpis.filter(k=>!k.goalId||!goals.find(g=>g.id===k.goalId));
+    // Goals with KPIs
+    goals.forEach(g=>{
+        const gKpis=area.kpis.filter(k=>k.goalId===g.id);
+        if(gKpis.length===0)return;
+        const gStats=gKpis.reduce((s,k)=>{const ks=kpiStats(k);s.done+=ks.done;s.total+=ks.total;return s;},{done:0,total:0});
+        const gPct=gStats.total?Math.round(gStats.done/gStats.total*100):0;
+        const typeColor=g.type==='KGI'?'#037EF3':g.type==='GI'?'#7552CC':'#8A8E96';
+        kpisHtml+=`<div class="goal-group">
+        <div class="goal-group-hd" onclick="togGoal('gg_${aId}_${g.id}')">
+            <span class="goal-type-chip" style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44">${g.type}</span>
+            <span class="goal-name">${h(g.name)}</span>
+            <span class="goal-stats">${gKpis.length} KPI · ${gStats.done}/${gStats.total} done · ${gPct}%</span>
+            <div class="goal-bar-mini"><div style="width:${gPct}%;background:${typeColor};height:100%;border-radius:2px"></div></div>
+            <button class="ib del" style="font-size:10px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();deleteGoal('${lId}','${aId}','${g.id}')">削除</button>
+            <div class="kpi-chev open" id="cv-gg_${aId}_${g.id}" style="margin-left:6px">›</div>
+        </div>
+        <div class="goal-group-body open" id="kb-gg_${aId}_${g.id}">
+            ${gKpis.map((k,i)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('')}
+        </div>
+        </div>`;
+    });
+    // Ungrouped
+    if(ungrouped.length>0){
+        if(goals.length>0)kpisHtml+=`<div class="goal-group-hd" style="cursor:default;color:var(--dim);font-size:11px;margin-top:8px">未分類のKPI</div>`;
+        kpisHtml+=ungrouped.map((k)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('');
+    }
+    const kpis=kpisHtml;
 
     const addKpiBtn=`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="openAddKpi('${lId}','${aId}')">+ KPI を追加...</button></div>`;
 
@@ -1386,12 +2155,15 @@
     document.getElementById('kpi-mttl').textContent='KPI 追加';
     document.getElementById('kn').value='';
     document.getElementById('kt').value='';document.getElementById('kac').value='0';
+    document.getElementById('kmemo').value='';
     document.getElementById('kpi-del-btn').style.display='none';
+    hideAddGoalInline();
     const el=document.getElementById('ka');const cLcId=lId||lcId;
     const lcATs=getLCAreaTypes(cLcId);
     const cAId=aId||areaId||lcATs[0]?.id;
     el.innerHTML=lcATs.map(at=>`<option value="${at.id}"${at.id===cAId?' selected':''}>${at.id}</option>`).join('');
     editingKpi={mode:'add',lId:cLcId};
+    updKpiGoals(cLcId,cAId,null);
     document.getElementById('ov-kpi').classList.add('open');
     setTimeout(()=>document.getElementById('kn').focus(),80);
     }
@@ -1402,10 +2174,46 @@
     document.getElementById('kpi-mttl').textContent='KPI 編集';
     document.getElementById('kn').value=k.name;
     document.getElementById('kt').value=k.target||'';document.getElementById('kac').value=k.actual||'';
+    document.getElementById('kmemo').value=k.memo||'';
     document.getElementById('kpi-del-btn').style.display='';
+    hideAddGoalInline();
     const el=document.getElementById('ka');
     el.innerHTML=getLCAreaTypes(lId).map(at=>`<option value="${at.id}"${at.id===aId?' selected':''}>${at.id}</option>`).join('');
+    updKpiGoals(lId,aId,k.goalId||null);
     document.getElementById('ov-kpi').classList.add('open');
+    }
+    function updKpiGoals(lId,aId,selGoalId){
+    const cLcId=lId||(editingKpi?editingKpi.lId:lcId);
+    const cAId=aId||document.getElementById('ka').value;
+    const area=getLCArea(cLcId,cAId);
+    const goals=area?(area.goals||[]):[];
+    const el=document.getElementById('kg');
+    el.innerHTML=`<option value="">${goals.length?'目標なし（未分類）':'— 目標未設定 —'}</option>`+
+        goals.map(g=>`<option value="${g.id}"${g.id===selGoalId?' selected':''}>[${g.type}] ${h(g.name)}</option>`).join('');
+    }
+    function showAddGoalInline(){
+    document.getElementById('add-goal-inline').style.display='';
+    document.getElementById('new-goal-name').value='';
+    setTimeout(()=>document.getElementById('new-goal-name').focus(),60);
+    }
+    function hideAddGoalInline(){
+    const el=document.getElementById('add-goal-inline');if(el)el.style.display='none';
+    }
+    function commitAddGoal(){
+    const name=document.getElementById('new-goal-name').value.trim();
+    if(!name){toast('目標名を入力してください','err');return;}
+    const type=document.getElementById('new-goal-type').value;
+    const cLcId=editingKpi?editingKpi.lId:lcId;
+    const cAId=document.getElementById('ka').value;
+    const area=getLCArea(cLcId,cAId);
+    if(!area){toast('エリアが見つかりません','err');return;}
+    if(!area.goals)area.goals=[];
+    const newGoal={id:gid(),name,type};
+    area.goals.push(newGoal);
+    save();
+    updKpiGoals(cLcId,cAId,newGoal.id);
+    hideAddGoalInline();
+    toast(`[${type}] 「${name}」を追加しました`);
     }
     function closeMKpi(){document.getElementById('ov-kpi').classList.remove('open');editingKpi=null;}
     function saveKpi(){
@@ -1414,16 +2222,18 @@
     const aId=document.getElementById('ka').value;
     const target=parseInt(document.getElementById('kt').value)||0;
     const actual=parseInt(document.getElementById('kac').value)||0;
+    const memo=document.getElementById('kmemo').value.trim();
+    const goalId=document.getElementById('kg').value||null;
     const cLcId=editingKpi.lId||lcId;
     if(editingKpi.mode==='edit'){
         const{lId,aId:oAId,kId}=editingKpi;
         const area=getLCArea(lId,oAId);const ki=area.kpis.findIndex(x=>x.id===kId);
         if(oAId!==aId){
-        const[kObj]=area.kpis.splice(ki,1);const nArea=getLCArea(lId,aId);nArea.kpis.push({...kObj,name,target,actual});
-        } else {area.kpis[ki]={...area.kpis[ki],name,target,actual};}
+        const[kObj]=area.kpis.splice(ki,1);const nArea=getLCArea(lId,aId);nArea.kpis.push({...kObj,name,target,actual,memo,goalId});
+        } else {area.kpis[ki]={...area.kpis[ki],name,target,actual,memo,goalId};}
         toast('KPIを更新しました');
     } else {
-        const area=getLCArea(cLcId,aId);area.kpis.push({id:gid(),name,target,actual,tasks:[]});
+        const area=getLCArea(cLcId,aId);area.kpis.push({id:gid(),name,target,actual,memo,goalId,tasks:[]});
         toast('KPIを追加しました');
     }
     save();buildNav();closeMKpi();
@@ -1583,6 +2393,432 @@
     document.querySelector('.sidebar').classList.remove('open');
     document.getElementById('sb-overlay').classList.remove('open');
     document.body.style.overflow='';
+    }
+
+    /* ── HI SEED DATA ── */
+    function applyHISeed(){
+    if(D.hiSeeded)return;
+    const hi=D.lcs.find(x=>x.id==='HI');
+    if(!hi)return;
+    const hasData=Object.values(hi.areas).some(a=>(a.kpis||[]).length>0);
+    if(hasData){D.hiSeeded=true;save();return;}
+    let _i=0;
+    const hid=()=>'hi'+(++_i);
+    const dt=(m,dy,yr)=>yr?`${yr}-${String(m).padStart(2,'0')}-${String(dy).padStart(2,'0')}`:`${m<=9||m>=10?2026:2026}-${String(m).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;
+    const tk=(name,res,sm,sd,em,ed,st,grp)=>({id:hid(),name,res:res||'',start:sm&&sd?dt(sm,sd):'',deadline:em&&ed?dt(em,ed,em<=3&&sd&&sm>=6?2027:em<=3&&!sm?2027:null):'',status:st==='DONE'?'DONE':st==='WIP'?'WIP':'NOT_STARTED',group:grp||''});
+
+    // ── OGX ──
+    const ogxG1=hid(); // KGI Re#27
+    hi.areas['OGX']={goals:[{id:ogxG1,name:'Re#27',type:'KGI'}],kpis:[
+        {id:hid(),name:'KPI1',target:1,actual:1,memo:'Achieved 100%',goalId:ogxG1,tasks:[
+        tk('がんばろ','',null,null,null,null,'NOT_STARTED','戦術apple'),
+        tk('いける','',null,null,null,null,'NOT_STARTED','戦術apple'),
+        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
+        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
+        ]},
+        {id:hid(),name:'KPI2',target:0,actual:2,memo:'DONE率 0.33',goalId:ogxG1,tasks:[
+        tk('がんばろう','',null,null,null,null,'DONE',''),
+        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
+        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
+        ]},
+        {id:hid(),name:'KPI3',target:0,actual:3,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
+        tk('ふぁいと','',null,null,null,null,'DONE',''),
+        ...Array.from({length:8},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI4',target:0,actual:4,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
+        tk('応援してる','',null,null,null,null,'DONE',''),
+        ...Array.from({length:9},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
+        tk('Best of LUCK','',null,null,null,null,'DONE',''),
+        ...Array.from({length:9},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.1 ／ CF-KPI',goalId:ogxG1,tasks:[
+        tk('GOOD LUCK','',null,null,null,null,'DONE',''),
+        ...Array.from({length:9},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+    ]};
+
+    // ── ICX ──
+    const icxG1=hid(),icxG2=hid(),icxG3=hid();
+    hi.areas['ICX']={goals:[
+        {id:icxG1,name:'Re#5 / Raise#6',type:'KGI'},
+        {id:icxG2,name:'テーマ設定をしたイベントを通したRaise#1 パートナー獲得#1',type:'GI'},
+        {id:icxG3,name:'研修の質向上を測る独自作成アンケート #5での9~10回答率100%',type:'GI'},
+    ],kpis:[
+        {id:hid(),name:'アポイントメントセールスによるRaise#5',target:5,actual:1,memo:'0% 達成 ／ アポtoヒアCVR10%、ヒアto提案CVR20%、提案toRaise CVR33%',goalId:icxG1,tasks:[
+        tk('4,5月のアポ数#290 4,5月中の上級生のタスクトラッキング','Sales ML',4,1,5,31,'NOT_STARTED','ヒアリング'),
+        tk('8月以降のアポ数#1380 アポ会の開催週#2','WGL',8,16,10,16,'NOT_STARTED','ヒアリング'),
+        tk('アポtoヒアCVR10%維持 2526termに検証された仮説の利用','All',2,14,10,16,'NOT_STARTED','ヒアリング'),
+        tk('6月のアルムナイ模擬渉外 アルムナイ日調','Taiki(XD)',2,14,4,30,'NOT_STARTED','6月のアルムナイ模擬渉外'),
+        tk('セールス合宿の開催 アルムナイ日調','Taiki(XD)',5,1,7,31,'NOT_STARTED','セールス合宿'),
+        tk('実践用ネトワキ探し','Sales ML',5,1,8,1,'NOT_STARTED','実践用ネトワキ'),
+        tk('9月~10月の模擬渉外、ネトワキ参加 アルムナイ日調','Taiki(XD)',null,null,null,null,'NOT_STARTED','9〜10月模擬渉外'),
+        tk('ネトワキ探し','Sales ML',null,null,null,null,'NOT_STARTED','9〜10月模擬渉外'),
+        ]},
+        {id:hid(),name:'Raise to Realize 100%',target:100,actual:2,memo:'0% 達成',goalId:icxG2,tasks:[
+        tk('IRCSメンバー組閣#4','Nana(IRCS ML)',5,1,5,9,'NOT_STARTED','Raise to Accepted 100%'),
+        tk('IRCS新入生メンバーに対するIR input','Nana(IRCS ML)',5,10,5,16,'NOT_STARTED','Raise to Accepted 100%'),
+        tk('メンバー育成のためのCall#1×4','Nana(IRCS ML)',5,10,5,16,'NOT_STARTED','Raise to Accepted 100%'),
+        tk('Callを置く海外LC探し','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
+        tk('当該LCとの日調','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
+        tk('Callの実施','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
+        tk('EP, 送り出しLCとの定期的なコミュニケーション','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Accepted to Realize 100%'),
+        tk('送り出しLCとの連携による、EP側Realize阻害要因への対処','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Accepted to Realize 100%'),
+        ]},
+        {id:hid(),name:'研修の質向上のための研修設計及び測定 #5',target:0,actual:3,memo:'0% 達成',goalId:icxG3,tasks:[
+        tk('ふぁいと','',null,null,null,null,'NOT_STARTED',''),
+        tk('ふぁいと','',null,null,null,null,'NOT_STARTED',''),
+        ...Array.from({length:7},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'TN研修後アンケート「弊団体のサービス/サポートを評価してください」で9以上100%',target:0,actual:4,memo:'DONE率 0.2',goalId:icxG3,tasks:[
+        tk('応援してる','',null,null,null,null,'DONE',''),
+        tk('応援してる','',null,null,null,null,'DONE',''),
+        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.4',goalId:icxG1,tasks:[
+        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.3 ／ CF-KPI',goalId:icxG1,tasks:[
+        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+    ]};
+
+    // ── Mkt ──
+    const mktG1=hid(),mktG2=hid(),mktG3=hid();
+    hi.areas['Mkt']={goals:[
+        {id:mktG1,name:'SNS総Reach数 #250,000',type:'KGI'},
+        {id:mktG2,name:'新歓説明会 導入数',type:'KGI'},
+        {id:mktG3,name:'高校生事業（CF-KPI）',type:'その他'},
+    ],kpis:[
+        {id:hid(),name:'申込書提出数',target:5,actual:3,memo:'60% 達成 ／ DONE率 0.6',goalId:mktG2,tasks:[
+        tk('コミュレス振り','koto, aoi, harukazu',3,21,3,25,'NOT_STARTED','online to新入生'),
+        tk('進捗共有','all eb',3,28,4,30,'NOT_STARTED','online to新入生'),
+        tk('コミュレス振り','aoi, koto',3,21,3,25,'NOT_STARTED','online to上級生'),
+        tk('進捗共有','all eb',3,28,4,30,'NOT_STARTED','online to上級生'),
+        tk('必要な役割洗い出し','koto, aoi',3,4,3,11,'NOT_STARTED','説明会 to新入生'),
+        tk('EBで共有','all eb',3,11,3,17,'NOT_STARTED','説明会 to新入生'),
+        tk('エリアで共有','all eb',3,17,3,24,'NOT_STARTED','説明会 to新入生'),
+        tk('ふるまい方の確認 to全体','all eb',3,20,3,27,'NOT_STARTED','説明会 to上級生'),
+        tk('contents list作成','koto, sarah, analysis mem',null,null,null,null,'DONE','SNS投稿'),
+        tk('投稿物作成者決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿'),
+        tk('投稿TL決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿'),
+        ]},
+        {id:hid(),name:'EXP問い合わせ数',target:0,actual:2,memo:'0% 達成',goalId:mktG1,tasks:[
+        tk('OGXDVDに共有してもらう','keisuke, koto, sarah',8,1,8,8,'NOT_STARTED','市場分析 ターゲット像'),
+        tk('市場となるゼミと授業を絞る','koto, sarah, keisuke, analysis mem',8,1,8,8,'NOT_STARTED','市場分析 ターゲット像'),
+        tk('アプローチの仕方（適切な文言など）の決定','koto, sarah, analysis mem',8,8,8,15,'NOT_STARTED','市場分析 ターゲット像'),
+        tk('事業再開からのEXPの流入経路をまとめる','koto, sarah, analysis mem',8,1,8,8,'NOT_STARTED','過去分析'),
+        tk('去年のEXP販促のMlogやFRを読みこむ','koto, sarah',8,1,8,8,'NOT_STARTED','過去分析'),
+        tk('コンテンツ決定','koto, sarah, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
+        tk('TL決定','koto, sarah, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
+        tk('TL管理者決定','koto, sarah, brand mem, analysis mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
+        tk('作成者決定','koto, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
+        tk('昨年度のデザイン・作り方の確認','koto, brand mem',8,15,8,22,'NOT_STARTED','ビラ'),
+        tk('デザイン作成者決定','koto, brand mem',8,15,8,22,'NOT_STARTED','ビラ'),
+        tk('TL決定','koto, sarah',8,15,8,22,'NOT_STARTED','ビラ'),
+        tk('配りに行く日決定','koto, sarah, brand mem, analysis mem',8,22,8,29,'NOT_STARTED','ビラ'),
+        tk('枚数決定','sarah, analysis mem',8,22,8,29,'NOT_STARTED','ビラ'),
+        tk('インサイトの合計（EXP販促関係投稿期間）','koto, sarah, analysis mem',11,30,12,15,'NOT_STARTED','分析'),
+        tk('その原因を分析','koto, sarah, analysis mem',12,15,12,22,'NOT_STARTED','分析'),
+        ]},
+        {id:hid(),name:'SNSからの流入数（to 新入生）',target:0,actual:3,memo:'DONE率 1.0（全完了）',goalId:mktG1,tasks:[
+        tk('segmentation N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
+        tk('targeting N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
+        tk('positioning N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
+        tk('targeting深掘り N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
+        tk('CJ策定 N/A','koto, sarah, analysis mem',2,25,3,4,'WIP','市場分析'),
+        tk('コンテンツ決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
+        tk('TL決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
+        tk('TL管理者決定','koto, sarah, brand mem, analysis mem',2,26,3,8,'WIP','SNS投稿 投稿物'),
+        tk('作成者決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
+        tk('インサイトの合計（新歓関係投稿期間）','koto, sarah, analysis mem',5,31,6,7,'NOT_STARTED','分析'),
+        tk('その原因を分析','koto, sarah, analysis mem',6,7,6,14,'NOT_STARTED','分析'),
+        ]},
+        {id:hid(),name:'SNS(Facebook)の閲覧数（to B）',target:0,actual:4,memo:'0% 達成',goalId:mktG1,tasks:[
+        tk('LCPに内容・文面作成依頼','koto, harukazu',6,1,6,15,'NOT_STARTED','最初の投稿 to B'),
+        tk('Mkt brandに投稿物作成依頼','koto',6,17,6,24,'NOT_STARTED','最初の投稿 to B'),
+        tk('投稿','brand mem',6,24,7,1,'NOT_STARTED','最初の投稿 to B'),
+        tk('BDにSNS上でのマナーのインプットを協力依頼','koto',6,1,6,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
+        tk('メンバーとつながりのあるアルムナイをバイネームで挙げる','koto, arisa',6,1,6,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
+        tk('アルムナイのアカウントをフォロー','koto, arisa',7,1,7,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
+        tk('LCP会議のMkt Areaの議題として挙げる','koto',2,15,2,22,'NOT_STARTED','to B特化した発信の仕方の研究'),
+        tk('意見を回収し、投稿内容や投稿頻度・投稿形態の確定','koto',2,22,3,1,'NOT_STARTED','to B特化した発信の仕方の研究'),
+        tk('Mkt analysisがFacebook運用しているボランティア団体などの投稿の傾向を分析','sarah, koto, analysis mem',6,1,6,15,'NOT_STARTED','競合から学ぶ'),
+        tk('変化させる必要がある点と真似して発信したほうが良い点の洗い出し・まとめ','sarah, analysis mem',6,15,6,22,'NOT_STARTED','競合から学ぶ'),
+        tk('Mkt brandへの共有','koto, sarah',6,22,7,29,'NOT_STARTED','競合から学ぶ'),
+        tk('申し送り事項に入れる','koto, sarah',12,1,12,8,'NOT_STARTED','競合から学ぶ'),
+        tk('用途を明確化','koto',2,21,2,28,'NOT_STARTED','Facebook運用計画'),
+        tk('運用計画の仮決定','koto, sarah',3,1,3,8,'NOT_STARTED','Facebook運用計画'),
+        tk('BD Areaに確認・共有','koto, arisa',3,8,3,15,'NOT_STARTED','Facebook運用計画'),
+        tk('運用計画の決定','koto, sarah',6,1,6,8,'NOT_STARTED','Facebook運用計画'),
+        tk('Mktメンバーへの共有','koto, sarah',6,15,6,22,'NOT_STARTED','Facebook運用計画'),
+        tk('MCチェックのあり方の確認','koto',3,1,3,8,'WIP','投稿の遅延リスクヘッジ'),
+        tk('各function忙しい時期の把握','koto, sarah',3,8,3,15,'NOT_STARTED','投稿の遅延リスクヘッジ'),
+        tk('1年間概要投稿物TLの作成','koto, sarah',3,15,3,22,'NOT_STARTED','投稿の遅延リスクヘッジ'),
+        tk('1年間のキャパを考えたうえでres振り','koto, sarah',6,20,6,27,'NOT_STARTED','投稿の遅延リスクヘッジ'),
+        tk('投稿するものの概要を決める','koto, sarah',2,24,3,2,'NOT_STARTED','投稿しやすい仕組み① テンプレ作成'),
+        tk('必要な型をMkt brandが作成','koto, brand mem',6,10,6,24,'NOT_STARTED','投稿しやすい仕組み① テンプレ作成'),
+        tk('全体でチェックするものだという共通認識を取る','koto',3,1,3,8,'WIP','投稿しやすい仕組み② TL共有'),
+        tk('TL管理担当者を決める','koto, sarah',6,24,7,1,'NOT_STARTED','投稿しやすい仕組み② TL共有'),
+        ]},
+        {id:hid(),name:'Mktアンケートでの「他エリアの事業理解度」平均 8/10',target:8,actual:5,memo:'0% 達成',goalId:mktG1,tasks:[
+        tk('項目の案出し（フロー①上級生向け現状把握）','koto, sarah',6,1,6,8,'NOT_STARTED','アンケートフロー①'),
+        tk('作成者決定','koto, sarah, brand mem, analysis mem',6,8,6,15,'NOT_STARTED','アンケートフロー①'),
+        tk('フロー日決定','koto, sarah',6,8,6,15,'NOT_STARTED','アンケートフロー①'),
+        tk('回答促進コミュ','koto, aoi',6,15,6,22,'NOT_STARTED','アンケートフロー①'),
+        tk('項目の案出し（フロー②夏頃 to全体）','koto, sarah',8,1,8,8,'NOT_STARTED','アンケートフロー②'),
+        tk('作成者決定','koto, sarah, brand mem, analysis mem',8,8,8,15,'NOT_STARTED','アンケートフロー②'),
+        tk('フロー日決定','koto, sarah',8,8,8,15,'NOT_STARTED','アンケートフロー②'),
+        tk('回答促進コミュ','koto, sarah',8,15,8,22,'NOT_STARTED','アンケートフロー②'),
+        tk('項目の案出し（フロー③冬頃 to全体）','koto, sarah',12,1,12,8,'NOT_STARTED','アンケートフロー③'),
+        tk('作成者決定','koto, sarah, brand mem, analysis mem',12,8,12,15,'NOT_STARTED','アンケートフロー③'),
+        tk('フロー日決定','koto, sarah',12,8,12,15,'NOT_STARTED','アンケートフロー③'),
+        tk('回答促進コミュ','koto, sarah',12,15,12,22,'NOT_STARTED','アンケートフロー③'),
+        tk('項目の案出し（フロー④年度終わり to全体）','koto, sarah',3,1,3,8,null,'NOT_STARTED','アンケートフロー④'),
+        tk('作成者決定','koto, sarah, brand mem, analysis mem',3,8,3,15,null,'NOT_STARTED','アンケートフロー④'),
+        tk('フロー日決定','koto, sarah',3,8,3,15,null,'NOT_STARTED','アンケートフロー④'),
+        tk('回答促進コミュ','koto, sarah',3,15,3,22,null,'NOT_STARTED','アンケートフロー④'),
+        tk('過去のアンケートフロー・回答コミュの方法の洗い出し','koto, sarah, analysis mem',6,15,6,22,'NOT_STARTED','アンケートを形骸化させない'),
+        tk('コミュ方法の決定','koto, sarah',6,15,6,22,'NOT_STARTED','アンケートを形骸化させない'),
+        tk('項目の案出しの際に聞く背景まで決める','sarah, koto',6,1,6,8,'NOT_STARTED','回答回収の具体化'),
+        tk('アンケートの目的明確化','koto, sarah',3,1,3,8,'NOT_STARTED','回答回収の具体化'),
+        tk('メンバーの理想状態を明確化','koto, sarah',3,1,3,8,'NOT_STARTED','回答回収の具体化'),
+        tk('分析する手順を決める','koto, sarah, analysis mem',6,15,6,22,'NOT_STARTED','回答回収の具体化'),
+        tk('各エリア月に投稿したいこと回収','koto, all eb',5,24,5,31,'NOT_STARTED','to E SNS投稿'),
+        tk('brandに内部インスタの投稿内容を共有','koto, brand mem',6,1,6,8,'NOT_STARTED','to E SNS投稿'),
+        tk('月のTLをエリアで共有','koto, sarah, brand mem, analysis mem',6,1,6,8,'NOT_STARTED','to E 定期投稿'),
+        tk('製作担当者の決定','koto, brand mem',6,8,6,15,'NOT_STARTED','to E 定期投稿'),
+        tk('TL管理者の決定','koto, sarah, brand mem, analysis mem',6,8,6,15,'NOT_STARTED','to E 定期投稿'),
+        tk('テンプレの作成','koto, brand mem',6,15,6,22,'NOT_STARTED','to E 定期投稿'),
+        ]},
+        {id:hid(),name:'高校生事業 参加した高校生の人数 60人（CF-KPI）',target:60,actual:4,memo:'0% 達成 ／ CF-KPI',goalId:mktG3,tasks:[
+        tk('アンケート回答協力の依頼 to mem','koto, sarah',7,1,7,8,'NOT_STARTED','市場を知る アンケート'),
+        tk('アンケートを作成する','koto, sarah, brand mem, analysis mem',7,1,7,8,'NOT_STARTED','市場を知る アンケート'),
+        tk('回答を集めて分析','koto, sarah, analysis mem',7,15,7,22,'NOT_STARTED','市場を知る アンケート'),
+        tk('今年のエバを読みこむ','koto, sarah',7,1,7,8,'NOT_STARTED','過去分析'),
+        tk('メンバーと共有','koto, sarah',7,8,7,15,'NOT_STARTED','過去分析'),
+        tk('今年の分の残し方を決める','koto, sarah',12,15,12,22,'NOT_STARTED','過去分析'),
+        tk('樫原さん ヒアリング','koto',7,15,7,22,'NOT_STARTED','ヒアリング'),
+        tk('去年やったメンバー ヒアリング','koto, sarah',7,15,7,22,'NOT_STARTED','ヒアリング'),
+        tk('実施メンバーの募集（夏）','koto, sarah',7,1,7,8,'NOT_STARTED','年2回開催 夏'),
+        tk('メンバー決定（夏）','koto, sarah',7,8,7,15,'NOT_STARTED','年2回開催 夏'),
+        tk('開催場所決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','年2回開催 夏'),
+        tk('コンテンツ作成（夏）','koto, sarah',7,15,7,29,'NOT_STARTED','年2回開催 夏'),
+        tk('Fと話し合って予算の決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','年2回開催 夏'),
+        tk('good, more, try 申し送りを記録（夏）','koto, sarah',8,23,8,30,'NOT_STARTED','年2回開催 夏'),
+        tk('実施メンバーの募集（冬）','koto, sarah',11,1,11,8,'NOT_STARTED','年2回開催 冬'),
+        tk('メンバー決定（冬）','koto, sarah',11,8,11,15,'NOT_STARTED','年2回開催 冬'),
+        tk('開催場所決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','年2回開催 冬'),
+        tk('コンテンツ作成（冬）','koto, sarah',11,15,11,29,'NOT_STARTED','年2回開催 冬'),
+        tk('Fと話し合って予算の決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','年2回開催 冬'),
+        tk('good, more, try 申し送りを記録（冬）','koto, sarah',1,24,1,31,'NOT_STARTED','年2回開催 冬'),
+        tk('投稿物決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
+        tk('TL決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
+        tk('TL管理者決定（夏）','koto, sarah, brand mem, analysis mem',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
+        tk('作成者決定（夏）','koto, brand mem',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
+        tk('投稿する（夏）','koto',8,1,8,15,'NOT_STARTED','SNS発信 投稿（夏）'),
+        tk('投稿物決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
+        tk('TL決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
+        tk('TL管理者決定（冬）','koto, sarah, brand mem, analysis mem',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
+        tk('作成者決定（冬）','koto, brand mem',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
+        tk('投稿する（冬）','koto',12,1,12,15,'NOT_STARTED','SNS発信 投稿（冬）'),
+        tk('インサイトの合計を出す（夏 事業関係投稿期間）','koto, sarah, analysis mem',9,1,9,15,'NOT_STARTED','分析（夏）'),
+        tk('その原因を分析する（夏）','koto, sarah, analysis mem',9,15,9,30,'NOT_STARTED','分析（夏）'),
+        tk('インサイトの合計を出す（冬 事業関係投稿期間）','koto, sarah, analysis mem',1,15,9,22,'NOT_STARTED','分析（冬）'),
+        tk('その原因を分析する（冬）','koto, sarah, analysis mem',1,24,1,31,'NOT_STARTED','分析（冬）'),
+        ]},
+    ]};
+
+    // ── TM ──
+    const tmG1=hid();
+    hi.areas['TM']={goals:[{id:tmG1,name:'（KGI 未設定）',type:'KGI'}],kpis:[
+        {id:hid(),name:'KPI1',target:5,actual:3,memo:'60% 達成 ／ DONE率 2/5',goalId:tmG1,tasks:[
+        tk('がんばろっ','',null,null,null,null,'DONE','戦術apple'),
+        tk('（タスク）','',null,null,null,null,'DONE','戦術apple'),
+        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
+        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
+        ]},
+        {id:hid(),name:'KPI2',target:0,actual:2,memo:'DONE率 0.33',goalId:tmG1,tasks:[
+        tk('がんばろう','',null,null,null,null,'DONE',''),
+        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
+        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
+        ]},
+        {id:hid(),name:'KPI3',target:0,actual:3,memo:'DONE率 0.2',goalId:tmG1,tasks:[
+        ...Array.from({length:2},()=>tk('ふぁいと','',null,null,null,null,'DONE','')),
+        ...Array.from({length:7},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI4',target:0,actual:4,memo:'DONE率 0.2',goalId:tmG1,tasks:[
+        ...Array.from({length:2},()=>tk('応援してる','',null,null,null,null,'DONE','')),
+        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.4',goalId:tmG1,tasks:[
+        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.3 ／ CF-KPI',goalId:tmG1,tasks:[
+        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+    ]};
+
+    // ── BD ──
+    const bdG1=hid(),bdG2=hid();
+    hi.areas['BD']={goals:[
+        {id:bdG1,name:'アルムナイ接点数 ／ ネームバリュー = 認知拡大 x 信頼醸成 x 行動転換力',type:'KGI'},
+        {id:bdG2,name:'外部関係者数',type:'KGI'},
+    ],kpis:[
+        {id:hid(),name:'ネームバリュー = 認知拡大 x 信頼醸成 x 行動転換力',target:5,actual:3,memo:'60% 達成 ／ DONE率 0',goalId:bdG1,tasks:[
+        tk('ペルソナ決め（協働SH）','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
+        tk('アプローチ方法決定','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
+        tk('渉外','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
+        tk('契約','arisa',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
+        tk('案出し（コンテンツ）','arisa, haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('GSS記入','haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('企画書作成','haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('MC check','haruki',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('協働相手に打診','arisa, haruki',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('合意','arisa',null,null,null,null,'NOT_STARTED','コンテンツ'),
+        tk('ペルソナ決め（集客）','arisa, haruki',null,null,null,null,'NOT_STARTED','集客'),
+        tk('他LCヒアリング','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
+        tk('過去事例参照','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
+        tk('アプローチ方法決定（集客）','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
+        tk('実施','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
+        ]},
+        {id:hid(),name:'外部リソースのHI内部への還元',target:0,actual:3,memo:'0% 達成',goalId:bdG2,tasks:[
+        tk('SRB講師（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
+        tk('事後研修（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
+        tk('過去渡航性ヒアリング（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
+        tk('模擬渉外（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
+        tk('ビジコン（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
+        tk('企業セミナー（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
+        tk('高校生事業','arisa, koto',null,null,null,null,'NOT_STARTED','事業成長 高校生'),
+        tk('LCM登壇（アルムナイ）','arisa, aoi',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
+        tk('アルムナイ訪問','arisa, aoi',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
+        tk('若手アルムナイ総会','all eb',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
+        tk('アルムナイ総会','all eb',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
+        tk('若手アルムナイ総会（寄付金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 寄付金'),
+        tk('アルムナイ総会（寄付金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 寄付金'),
+        tk('LCM登壇（協賛金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 協賛金'),
+        tk('イベント（協賛金）','arisa, kazuto, haruki',null,null,null,null,'NOT_STARTED','集金 協賛金'),
+        tk('アルムナイ訪問（情報把握）','arisa, 会期設計 mem',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
+        tk('アルムナイ図鑑の更新','arisa, 会期設計 mem',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
+        tk('エリア需要把握 BD Ss','arisa',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
+        tk('エリアD 定例o2o（需要把握）','all eb',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
+        tk('エリアD 定例o2o（進捗確認）','all eb',null,null,null,null,'NOT_STARTED','コミュ管理'),
+        tk('コミュ歴記録','arisa',null,null,null,null,'NOT_STARTED','蓄積'),
+        ]},
+        {id:hid(),name:'KPI3',target:0,actual:4,memo:'DONE率 0.2',goalId:bdG1,tasks:[
+        ...Array.from({length:2},()=>tk('応援してる','',null,null,null,null,'DONE','')),
+        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI4',target:0,actual:5,memo:'DONE率 0.4',goalId:bdG1,tasks:[
+        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+        {id:hid(),name:'KPI5（CF-KPI）',target:0,actual:4,memo:'DONE率 0.33 ／ CF-KPI',goalId:bdG1,tasks:[
+        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
+        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
+        ]},
+    ]};
+
+    // ── Finance (F) ──
+    const fG1=hid();
+    hi.areas['F']={goals:[{id:fG1,name:'年間支出200万円（金額仮）',type:'GI'}],kpis:[
+        {id:hid(),name:'KPI 1：予算履行率〇％',target:0,actual:1,memo:'0% 達成',goalId:fG1,tasks:[
+        tk('想定可能支出先/支出額一覧作成','kazuto',3,1,3,8,'NOT_STARTED','月次予実管理'),
+        tk('予算作成','kazuto',3,1,3,26,'NOT_STARTED','月次予実管理'),
+        tk('予実管理フォーマット作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','月次予実管理'),
+        tk('4月分予実管理','kazuto, 財務mem',5,1,5,7,'NOT_STARTED','月次予実管理'),
+        tk('5月分予実管理','kazuto, 財務mem',6,1,6,7,'NOT_STARTED','月次予実管理'),
+        tk('6月分予実管理','kazuto, 財務mem',7,1,7,7,'NOT_STARTED','月次予実管理'),
+        tk('7月分予実管理','kazuto, 財務mem',8,1,8,7,'NOT_STARTED','月次予実管理'),
+        tk('8月分予実管理','kazuto, 財務mem',9,1,9,7,'NOT_STARTED','月次予実管理'),
+        tk('財務マニュアルver.1作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','EB内財務報告'),
+        tk('報告フォーマット作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','EB内財務報告'),
+        tk('4月分財務報告','kazuto',5,1,5,12,'NOT_STARTED','EB内財務報告'),
+        tk('5月分財務報告','kazuto',6,1,6,9,'NOT_STARTED','EB内財務報告'),
+        tk('6月分財務報告','kazuto',7,1,7,7,'NOT_STARTED','EB内財務報告'),
+        tk('7月分財務報告','kazuto',8,1,8,11,'NOT_STARTED','EB内財務報告'),
+        tk('8月分財務報告','kazuto',9,1,9,8,'NOT_STARTED','EB内財務報告'),
+        ]},
+        {id:hid(),name:'KPI 2：注力収益額〇円',target:0,actual:2,memo:'0% 達成',goalId:fG1,tasks:[
+        tk('若手アルムナイ総会財務報告','kazuto',6,13,7,3,'NOT_STARTED','アルムナイ寄附金'),
+        tk('月次口座残高管理表の作成','kazuto, 財務mem, 会計mem',5,1,5,30,'NOT_STARTED','アルムナイ寄附金'),
+        tk('想定支出先/支出額一覧作成','kazuto',3,1,3,4,'NOT_STARTED','アルムナイ寄附金'),
+        tk('口座残高安定マニュアル作成','kazuto',3,1,3,7,'NOT_STARTED','アルムナイ寄附金'),
+        ]},
+        {id:hid(),name:'KPI3：資格審査項目抵触数 #0',target:0,actual:3,memo:'0% 達成',goalId:fG1,tasks:[
+        tk('仕訳帳提出TL管理シートの作成','kazuto, nonomi',4,10,null,null,'WIP','月次仕訳帳提出不備#0'),
+        tk('4月分仕訳帳提出','kazuto, 会計mem',4,24,5,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
+        tk('5月分仕訳帳提出','kazuto, 会計mem',5,25,6,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
+        tk('6月分仕訳帳提出','kazuto, 会計mem',6,24,7,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
+        tk('7月分仕訳帳提出','kazuto, 会計mem',7,25,8,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
+        tk('8月分仕訳帳提出','kazuto, 会計mem',8,25,9,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
+        tk('仕訳帳check（Q1局内監査）','kazuto, 会計mem',7,3,7,10,'NOT_STARTED','Q1局内監査'),
+        tk('書類（Q1局内監査）','kazuto, 会計mem',7,3,7,10,'NOT_STARTED','Q1局内監査'),
+        tk('立替金精算（Q1局内監査）','kazuto, 会計mem',7,10,7,31,'NOT_STARTED','Q1局内監査'),
+        tk('未払金精算（Q1局内監査）','kazuto',7,10,7,31,'NOT_STARTED','Q1局内監査'),
+        tk('仕訳帳check（中間決算前局内監査）','kazuto, 会計mem',9,3,9,10,'NOT_STARTED','中間決算前局内監査'),
+        tk('書類（中間決算前局内監査）','kazuto, 会計mem',9,3,9,10,'NOT_STARTED','中間決算前局内監査'),
+        tk('立替金精算（中間決算前局内監査）','kazuto, 会計mem',9,10,9,30,'NOT_STARTED','中間決算前局内監査'),
+        tk('未払金精算（中間決算前局内監査）','kazuto',9,10,9,30,'NOT_STARTED','中間決算前局内監査'),
+        tk('中間決算','kazuto',9,15,null,null,'NOT_STARTED','中間決算'),
+        tk('会計/監査マニュアル改訂・動画化','kazuto, 会計mem',4,1,7,31,'NOT_STARTED','会計/監査マニュアル'),
+        tk('Finance新メンバー組閣#4','kazuto',6,15,7,30,'NOT_STARTED','会計人材育成#5'),
+        tk('会計テスト合格者#5','kazuto, nonomi',8,1,10,31,'NOT_STARTED','会計人材育成#5'),
+        ]},
+        {id:hid(),name:'KPI4：対外部財務報告数 #3',target:3,actual:4,memo:'0% 達成',goalId:fG1,tasks:[
+        tk('若手アルムナイ総会財務報告','kazuto',6,13,7,3,'NOT_STARTED','若手アルムナイ総会'),
+        tk('アルムナイ総会財務報告','kazuto',null,null,null,null,'NOT_STARTED','アルムナイ総会'),
+        tk('LCP会議財務報告','kazuto',null,null,null,null,'NOT_STARTED','LCP会議'),
+        tk('過去資料まとめ','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
+        tk('良い財務報告について学習','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
+        tk('テンプレ作成','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
+        ]},
+        {id:hid(),name:'KPI5：対内部財務報告数 #12',target:12,actual:5,memo:'0% 達成',goalId:fG1,tasks:[
+        tk('Fレポテンプレ作成','kazuto, momone',3,7,null,null,'WIP','LCM月次財務報告(Fレポ)'),
+        tk('3月分Fレポ','kazuto, 財務mem',4,8,4,24,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('4月分Fレポ','kazuto, 財務mem',5,8,5,29,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('5月分Fレポ','kazuto, 財務mem',6,8,6,26,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('6月分Fレポ','kazuto, 財務mem',7,8,7,31,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('7月分Fレポ','kazuto, 財務mem',8,8,8,28,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('8月分Fレポ','kazuto, 財務mem',9,8,9,25,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        tk('財務マニュアルver.2作成','kazuto, 財務mem',8,1,9,30,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
+        ]},
+        {id:hid(),name:'KPI6：（中長期・投資判断基準系）（CF-KPI）',target:0,actual:4,memo:'0% 達成 ／ CF-KPI',goalId:fG1,tasks:[
+        tk('中長期財務方針の作成','',8,1,2,28,'NOT_STARTED','中長期財務方針'),
+        tk('LCM FinanceSs#5','',6,1,2,28,'NOT_STARTED','中長期財務方針'),
+        tk('MCのものを。（投資判断基準導入）','kazuto',10,1,2,28,'NOT_STARTED','投資判断基準導入'),
+        tk('支出','kazuto, 財務mem',4,1,3,31,'NOT_STARTED','投資判断基準導入'),
+        tk('判断','kazuto, 財務mem',10,1,12,31,'NOT_STARTED','投資判断基準導入'),
+        ]},
+    ]};
+
+    // ── Archive (extra area) ──
+    // Archive is not a default area - add as extra area
+    const archColor='#52565E';
+    if(!hi.extraAreas)hi.extraAreas=[];
+    if(!hi.extraAreas.find(x=>x.id==='Archive')){
+        hi.extraAreas.push({id:'Archive',name:'Archive',color:archColor});
+    }
+    if(!hi.areas['Archive'])hi.areas['Archive']={kpis:[]};
+    hi.areas['Archive']={goals:[],kpis:[
+        {id:hid(),name:'YP-FR集',target:0,actual:1,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'GEN',target:0,actual:2,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'OGX Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'ICX Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'Mkt Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'TM Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'BD Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+        {id:hid(),name:'F Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
+    ]};
+
+    D.hiSeeded=true;
+    save();
+    console.log('[HI Seed] Applied HI Action Tracker data successfully.');
     }
 
     /* ── INIT ── */
