@@ -15,12 +15,8 @@
     html{font-size:14px;}
     body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-height:100vh;}
     .app{display:flex;min-height:100vh;}
-
-    /* ── SIDEBAR ── */
     .sidebar{width:210px;min-width:210px;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;background:var(--dark);z-index:100;overflow-y:auto;}
     .logo{padding:16px 14px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
-    .logo-eye{display:flex;align-items:center;gap:9px;margin-bottom:6px;}
-    .logo-wordmark{display:flex;flex-direction:column;}
     .logo-title{font-size:22px;font-weight:900;color:#fff;letter-spacing:0.06em;line-height:1;}
     .logo-sub{font-size:9px;font-weight:700;color:rgba(255,255,255,0.32);letter-spacing:0.16em;text-transform:uppercase;margin-top:3px;}
     .nav{flex:1;padding-top:4px;}
@@ -42,8 +38,6 @@
     .breadcrumb-sep{color:var(--faint);}
     .sidebar-foot{border-top:1px solid rgba(255,255,255,0.08);padding:10px;display:flex;flex-direction:column;gap:5px;}
     .sf-btn{font-family:'Lato',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:6px 10px;cursor:pointer;border-radius:5px;text-align:center;display:block;width:100%;}
-
-    /* ── TOPBAR ── */
     .main{margin-left:210px;flex:1;}
     .topbar{position:sticky;top:0;z-index:50;background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(27,44,94,0.06);}
     .topbar-l{display:flex;align-items:center;gap:10px;}
@@ -60,15 +54,9 @@
     .btn-fill:hover{background:#243a7a;border-color:#243a7a;}
     .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary);}
     .btn-primary:hover{background:#0264c5;border-color:#0264c5;}
-
-    /* ── CONTENT ── */
     .content{padding:24px;}
-
-    /* ── DASHBOARD ── */
     .dash-hero{background:var(--dark);border-radius:10px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;overflow:hidden;position:relative;}
     .dash-hero::before{content:'';position:absolute;right:-40px;top:-40px;width:260px;height:260px;background:radial-gradient(circle,rgba(3,126,243,0.25) 0%,transparent 70%);pointer-events:none;}
-    .dh-left{}
-    .dh-eyewrap{margin-bottom:8px;}
     .dh-title{font-size:44px;font-weight:900;line-height:0.92;color:#fff;letter-spacing:0.02em;}
     .dh-title span{color:#FFC845;}
     .dh-sub{font-size:10px;color:rgba(255,255,255,0.38);margin-top:9px;letter-spacing:0.1em;text-transform:uppercase;}
@@ -81,8 +69,6 @@
     .stat-n{font-size:44px;font-weight:900;line-height:1;letter-spacing:-0.03em;}
     .stat-n.g{color:var(--done)}.stat-n.a{color:var(--wip)}.stat-n.d{color:var(--faint)}.stat-n.p{color:var(--primary);}
     .stat-l{font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--dim);margin-top:3px;}
-
-    /* ── RANKING TABLE ── */
     .section-label{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
     .rank-tbl{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;}
     .rank-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.13em;color:var(--dim);text-align:left;padding:9px 14px;border-bottom:1px solid var(--border);background:var(--bg);}
@@ -101,16 +87,12 @@
     .prog-pct{font-size:18px;font-weight:900;min-width:42px;}
     .bdn{font-size:10px;color:var(--dim);}
     .gn{color:var(--done)}.an2{color:var(--wip);}
-
-    /* ── LC VIEW ── */
     .fbar{display:flex;align-items:center;gap:5px;margin-bottom:18px;flex-wrap:wrap;}
     .fl{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);margin-right:4px;}
     .fb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:5px 11px;border:1.5px solid var(--border);cursor:pointer;background:var(--white);color:var(--dim);transition:all 0.08s;border-radius:4px;}
     .fb:hover{border-color:var(--text);color:var(--text);}
     .fb.active{background:var(--dark);color:#fff;border-color:var(--dark);}
     .fr-right{margin-left:auto;font-size:20px;font-weight:900;}
-
-    /* ── KPI BLOCK ── */
     .kpi-block{background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
     .kpi-head{display:flex;align-items:stretch;cursor:pointer;transition:background 0.08s;}
     .kpi-head:hover{background:var(--bg);}
@@ -126,8 +108,6 @@
     .kpi-cnt{font-size:10px;color:var(--dim);}
     .kpi-chev{width:36px;border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:17px;transition:transform 0.14s;flex-shrink:0;}
     .kpi-chev.open{transform:rotate(90deg);}
-
-    /* ── TASK TABLE ── */
     .kpi-body{display:none;border-top:1px solid var(--border);}
     .kpi-body.open{display:block;}
     .tt{width:100%;border-collapse:collapse;}
@@ -154,15 +134,11 @@
     .tnote-empty{color:var(--faint);font-size:10px;cursor:pointer;}
     .tnote-empty:hover{color:var(--text);}
     textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
-
-    /* ── CHIPS ── */
     .chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;border-radius:4px;cursor:pointer;user-select:none;transition:opacity 0.1s;white-space:nowrap;border:none;}
     .chip:hover{opacity:0.78;}
     .chip.done{color:var(--done);background:var(--done-bg);}
     .chip.wip{color:var(--wip);background:var(--wip-bg);}
     .chip.ns{color:var(--dim);background:var(--ns-bg);}
-
-    /* ── AREA PAGE HERO ── */
     .area-hero{border-radius:10px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;}
     .area-hero::before{content:'';position:absolute;right:-30px;top:-30px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.12) 0%,transparent 70%);pointer-events:none;}
     .ah-title{font-size:52px;font-weight:900;line-height:1;color:#fff;letter-spacing:-0.02em;}
@@ -172,24 +148,20 @@
     .ah-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:0.14em;text-transform:uppercase;}
     .ah-total{font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;}
     .area-section{margin-bottom:4px;}
-    .area-section-hd{display:flex;align-items:center;gap:10px;padding:10px 16px 10px;background:var(--white);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:2px solid;margin-bottom:0;}
+    .area-section-hd{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--white);border:1px solid var(--border);border-radius:8px 8px 0 0;border-bottom:2px solid;margin-bottom:0;}
     .area-section-hd-title{font-size:20px;font-weight:900;letter-spacing:0.04em;}
     .area-section-stats{font-size:10px;color:var(--dim);margin-left:6px;}
     .area-section-pct{font-size:20px;font-weight:900;margin-left:auto;}
     .area-section-body{border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;margin-bottom:16px;}
-
-    /* ── GOAL GROUPS ── */
-    .goal-group{margin-bottom:6px}
-    .goal-group-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:8px;cursor:pointer;border:1.5px solid var(--border);margin-bottom:4px;transition:background .15s}
-    .goal-group-hd:hover{background:var(--bg2)}
-    .goal-type-chip{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.06em;padding:2px 6px;border-radius:3px;flex-shrink:0}
-    .goal-name{font-size:13px;font-weight:800;color:var(--dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .goal-stats{font-size:10px;color:var(--dim);flex-shrink:0;white-space:nowrap}
-    .goal-bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0;overflow:hidden}
-    .goal-group-body{display:none;padding-left:12px;border-left:2px solid var(--border);margin-bottom:4px}
-    .goal-group-body.open{display:block}
-
-    /* ── GANTT ── */
+    .goal-group{margin-bottom:6px;}
+    .goal-group-hd{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg);border-radius:8px;cursor:pointer;border:1.5px solid var(--border);margin-bottom:4px;transition:background .15s;}
+    .goal-group-hd:hover{background:var(--bg2);}
+    .goal-type-chip{display:inline-block;font-size:9px;font-weight:900;letter-spacing:.06em;padding:2px 6px;border-radius:3px;flex-shrink:0;}
+    .goal-name{font-size:13px;font-weight:800;color:var(--dark);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .goal-stats{font-size:10px;color:var(--dim);flex-shrink:0;white-space:nowrap;}
+    .goal-bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0;overflow:hidden;}
+    .goal-group-body{display:none;padding-left:12px;border-left:2px solid var(--border);margin-bottom:4px;}
+    .goal-group-body.open{display:block;}
     .gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
     .gantt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap;}
     .gantt-legend{display:flex;align-items:center;gap:12px;font-size:11px;font-weight:700;margin-right:auto;}
@@ -233,15 +205,11 @@
     .g-bar:hover{opacity:0.8;}
     .g-row.g-child .g-chart .g-bar{height:11px;border-radius:2px;top:50%;transform:translateY(-50%);}
     .g-today{position:absolute;top:0;bottom:0;width:2px;z-index:5;pointer-events:none;background:#F85A40;opacity:0.7;}
-
-    /* ── AREA MGMT ── */
     .area-list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
     .area-list-row:last-child{border-bottom:none;}
     .area-color-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
     .area-list-name{flex:1;font-size:13px;font-weight:700;color:var(--dark);}
     .area-list-stats{font-size:10px;color:var(--dim);}
-
-    /* ── MODAL ── */
     .overlay{position:fixed;inset:0;background:rgba(27,44,94,0.48);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
     .overlay.open{display:flex;}
     .modal{background:var(--white);border:1px solid var(--border);border-radius:10px;width:460px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(27,44,94,0.2);animation:popIn 0.15s ease;}
@@ -258,30 +226,19 @@
     .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .mf{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end;background:var(--bg);border-radius:0 0 10px 10px;}
     .sub-banner{background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-size:11px;color:var(--wip);font-weight:700;}
-
-    /* ── TOAST ── */
     .toast{position:fixed;bottom:22px;right:22px;background:var(--dark);color:#fff;padding:9px 14px;font-size:12px;font-weight:700;z-index:2000;animation:slideUp 0.18s ease;border-radius:5px;box-shadow:0 4px 14px rgba(27,44,94,0.2);}
     @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     .toast.err{background:var(--danger);}
-
     ::-webkit-scrollbar{width:5px;height:5px;}
     ::-webkit-scrollbar-track{background:transparent;}
     ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-
-    /* ── HAMBURGER BUTTON ── */
     .ham{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer;flex-shrink:0;}
     .ham span{display:block;width:16px;height:1.5px;background:var(--text);border-radius:1px;transition:all 0.2s;}
     .ham span+span{margin-top:4px;}
-
-    /* ── SIDEBAR OVERLAY ── */
     .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99;backdrop-filter:blur(1px);}
     .sidebar-overlay.open{display:block;}
 
-    /* ══════════════════════════════════════
-    RESPONSIVE
-    ══════════════════════════════════════ */
-
-    /* ── TABLET (≤ 1024px) ── */
+    /* ── BUG FIX: 1024px media query now properly closed ── */
     @media(max-width:1024px){
     .rank-tbl .bdn{display:none;}
     .g-name{width:160px;min-width:160px;}
@@ -289,28 +246,15 @@
     .g-name-hd{width:160px;min-width:160px;}
     .g-area-hd{width:160px;min-width:160px;}
     .gantt-inner{min-width:600px;}
-    }
+    } /* ← 閉じ括弧を追加 */
 
-    /* ── MOBILE (≤ 768px) ── */
     @media(max-width:768px){
     html{font-size:13px;}
-
-    /* Sidebar: slide-in drawer */
-    .sidebar{
-        transform:translateX(-100%);
-        transition:transform 0.25s ease;
-        z-index:200;
-        width:240px;
-        min-width:240px;
-    }
+    .sidebar{transform:translateX(-100%);transition:transform 0.25s ease;z-index:200;width:240px;min-width:240px;}
     .sidebar.open{transform:translateX(0);}
     .sidebar-overlay{display:none;}
     .sidebar-overlay.open{display:block;}
-
-    /* Main area: full width */
     .main{margin-left:0;}
-
-    /* Topbar */
     .topbar{padding:0 14px;height:52px;gap:8px;}
     .ham{display:flex;}
     .page-title{font-size:17px;}
@@ -318,87 +262,50 @@
     .search-box{display:none;}
     .topbar-r{gap:5px;}
     #addbtn,#addkpibtn{font-size:10px;padding:5px 10px;}
-
-    /* Content padding */
     .content{padding:14px;}
-
-    /* Dashboard hero */
     .dash-hero{flex-direction:column;align-items:flex-start;gap:10px;padding:16px 18px;}
     .dh-right{text-align:left;}
     .dh-title{font-size:32px;}
     .dh-pct{font-size:44px;}
-
-    /* Stat row */
     .stat-row{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
     .stat-n{font-size:32px;}
-
-    /* Ranking table: hide less important columns */
-    .rank-tbl .rank-tbl-region,
-    .rank-tbl th:nth-child(6),
-    .rank-tbl td:nth-child(6){display:none;}
+    .rank-tbl .rank-tbl-region,.rank-tbl th:nth-child(6),.rank-tbl td:nth-child(6){display:none;}
     .lc-id-big{font-size:15px;}
     .prog-track{width:60px;}
     .prog-pct{font-size:14px;}
-
-    /* Filter bar */
     .fbar{gap:4px;}
     .fb{padding:4px 8px;font-size:9px;}
     .fr-right{font-size:16px;}
-
-    /* Area section header */
     .area-section-hd{padding:8px 12px;}
     .area-section-hd-title{font-size:16px;}
     .area-section-pct{font-size:16px;}
-
-    /* KPI block */
     .kpi-idx{width:42px;font-size:26px;}
     .kpi-ttl{font-size:12px;}
     .kpi-pct{font-size:20px;}
     .kpi-bar{width:56px;}
     .kpi-r{padding:8px 10px;}
-
-    /* Task table → horizontal scroll */
     .kpi-body{overflow-x:auto;-webkit-overflow-scrolling:touch;}
     .tt{min-width:520px;}
     .tnote{max-width:110px;}
     .group-cell{max-width:80px;}
     .group-cell-label{max-width:72px;}
-
-    /* Area hero */
     .area-hero{flex-direction:column;align-items:flex-start;gap:8px;padding:16px 18px;}
     .ah-title{font-size:38px;}
     .ah-pct{font-size:40px;}
     .ah-right{text-align:left;}
-
-    /* Gantt toolbar */
     .gantt-toolbar{gap:6px;padding:8px 10px;}
     .gantt-legend{flex-wrap:wrap;gap:8px;font-size:10px;}
     .g-name-hd,.g-name{width:120px;min-width:120px;}
     .g-area-hd{width:120px;min-width:120px;}
     .g-res-hd,.g-res,.g-area-res{display:none;}
     .gantt-inner{min-width:460px;}
-
-    /* Modals: full-screen on small phones */
-    .modal,.modal-wide{
-        width:100%;
-        max-width:100%;
-        max-height:100dvh;
-        border-radius:16px 16px 0 0;
-        margin-top:auto;
-    }
+    .modal,.modal-wide{width:100%;max-width:100%;max-height:100dvh;border-radius:16px 16px 0 0;margin-top:auto;}
     .overlay{align-items:flex-end;}
-
-    /* Toast: bottom center */
     .toast{bottom:14px;right:14px;left:14px;text-align:center;}
-
-    /* Breadcrumb */
     .breadcrumb{font-size:9px;}
-
-    /* Nav sub items - slightly larger hit target */
     .nav-sub-item{padding:7px 14px 7px 28px;}
     }
 
-    /* ── SMALL MOBILE (≤ 400px) ── */
     @media(max-width:400px){
     .stat-row{grid-template-columns:1fr 1fr;}
     .stat-n{font-size:28px;}
@@ -407,29 +314,44 @@
     #addbtn{display:none!important;}
     .fr2{grid-template-columns:1fr;}
     }
-
     </style>
     </head>
     <body>
+
+    <!-- ===== LOGIN OVERLAY ===== -->
+    <div id="login-overlay" style="position:fixed;inset:0;background:#1B2C5E;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+    <div style="text-align:center;margin-bottom:32px">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px">AIESEC in Japan</div>
+        <div style="font-size:42px;font-weight:900;color:#fff;letter-spacing:0.04em;line-height:1.05">LC ACTION<br><span style="color:#FFC845">TRACKER</span></div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:10px;letter-spacing:0.14em;text-transform:uppercase">2627 · Internal Use Only</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:320px;max-width:calc(100vw - 32px)">
+        <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px">パスワードを入力</div>
+        <input id="login-pw" type="password" placeholder="Password" autocomplete="off"
+        style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-family:'Lato',sans-serif;padding:10px 14px;outline:none;border-radius:7px;margin-bottom:8px;letter-spacing:2px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter')checkLogin()">
+        <div id="login-err" style="display:none;font-size:11px;color:#F85A40;margin-bottom:8px;font-weight:700">❌ パスワードが違います</div>
+        <button onclick="checkLogin()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">入る →</button>
+    </div>
+    </div>
+
     <div class="app">
 
     <!-- SIDEBAR -->
     <nav class="sidebar">
-    <div class="logo">
-        <div style="margin-bottom:8px">
-        <img src="data:image/webp;base64,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" alt="AIESEC" style="width:176px;height:auto;display:block;border-radius:3px;" />
-        </div>
+        <div class="logo">
+        <div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:0.1em;margin-bottom:4px">AIESEC</div>
         <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.32)">in Japan · LC Tracker · 2627</div>
-    </div>
-    <div class="nav">
+        </div>
+        <div class="nav">
         <div class="nav-label">View</div>
         <div class="nav-item" data-view="dashboard" onclick="sw('dashboard',this)">
-        <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
-        ダッシュボード
+            <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+            ダッシュボード
         </div>
         <div class="nav-item" data-view="gantt" onclick="sw('gantt',this)">
-        <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
-        ガントチャート
+            <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+            ガントチャート
         </div>
         <div class="nav-label" style="margin-top:8px">East</div>
         <div id="nav-east"></div>
@@ -437,38 +359,38 @@
         <div id="nav-central"></div>
         <div class="nav-label" style="margin-top:4px">West</div>
         <div id="nav-west"></div>
-    </div>
-    <div class="sidebar-foot">
+        </div>
+        <div class="sidebar-foot">
         <button class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none" onclick="openAreaMgmt()">⚙ エリア管理</button>
         <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ Export JSON</button>
         <label class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer">
-        ↑ Import
-        <input type="file" accept=".json" style="display:none" onchange="importD(event)">
+            ↑ Import
+            <input type="file" accept=".json" style="display:none" onchange="importD(event)">
         </label>
-    </div>
+        </div>
     </nav>
 
     <main class="main">
-    <div class="topbar">
+        <div class="topbar">
         <div class="topbar-l">
-        <button class="ham" onclick="toggleSidebar()" aria-label="メニュー">
+            <button class="ham" onclick="toggleSidebar()" aria-label="メニュー">
             <span></span><span></span><span></span>
-        </button>
-        <div>
+            </button>
+            <div>
             <div class="page-title" id="ptitle">DASHBOARD</div>
             <div class="page-sub" id="psub"></div>
-        </div>
+            </div>
         </div>
         <div class="topbar-r">
-        <div class="search-box">
+            <div class="search-box">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--faint);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             <input type="text" placeholder="タスク検索 (⌘K)" id="si" oninput="applyF()">
+            </div>
+            <button class="btn btn-fill" id="addbtn" style="display:none" onclick="openAdd()">+ タスク追加</button>
+            <button class="btn btn-primary" id="addkpibtn" style="display:none" onclick="openAddKpi()">+ KPI 追加</button>
         </div>
-        <button class="btn btn-fill" id="addbtn" style="display:none" onclick="openAdd()">+ タスク追加</button>
-        <button class="btn btn-primary" id="addkpibtn" style="display:none" onclick="openAddKpi()">+ KPI 追加</button>
         </div>
-    </div>
-    <div class="content" id="ct"></div>
+        <div class="content" id="ct"></div>
     </main>
     </div>
 
@@ -556,11 +478,23 @@
     <!-- AREA MGMT MODAL -->
     <div class="overlay" id="ov-area">
     <div class="modal modal-wide">
-        <div class="mh">エリア管理（共通エリアの編集・削除）</div>
+        <div class="mh">⚙ エリア管理</div>
         <div class="mb">
-        <div class="fl2" style="margin-bottom:8px">共通エリア一覧</div>
-        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">※ エリアの追加は各LCページから行えます</div>
+        <div class="fl2" style="margin-bottom:6px">共通エリア一覧（全LC共有）</div>
+        <div style="font-size:11px;color:var(--wip);background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-weight:700">⚠ エリア削除はパスワード保護されています。削除するとそのエリアの全タスクが失われます。</div>
         <div id="area-list"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1.5px solid var(--border)">
+            <div class="fl2" style="margin-bottom:8px">新しい共通エリアを追加（全LCに追加されます）</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fi" id="new-area-name" placeholder="エリア名（例: HR, Archive...）" style="flex:1;min-width:150px">
+            <input type="color" id="new-area-color" value="#037EF3" style="width:36px;height:36px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:5px">
+            <button class="btn btn-fill" onclick="addAreaTypeGlobal()">追加</button>
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div class="fl2" style="margin-bottom:6px">LC個別エリアを追加（特定LCのみ）</div>
+            <div style="font-size:11px;color:var(--dim);margin-bottom:8px">特定のLCにだけエリアを追加したい場合は、そのLCのページ下部からも追加できます。</div>
+            </div>
+        </div>
         </div>
         <div class="mf">
         <button class="btn" onclick="closeMArea()">閉じる</button>
@@ -568,9 +502,9 @@
     </div>
     </div>
 
-    <!-- PIN Modal -->
+    <!-- PIN MODAL -->
     <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:var(--card);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+    <div style="background:var(--white);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
         <div style="font-size:16px;font-weight:700;margin-bottom:6px;">🔒 管理者認証</div>
         <div style="font-size:13px;color:var(--dim);margin-bottom:16px;">この操作にはパスワードが必要です</div>
         <input id="pinInput" type="password" class="fi" placeholder="パスワードを入力" style="width:100%;margin-bottom:8px;font-size:15px;letter-spacing:2px;" autocomplete="off">
@@ -584,6 +518,31 @@
 
     <script>
     const SK = 'aiesec_lc2627v1';
+    const LOGIN_PW = 'aiesec';
+    const LOGIN_SK = 'aiesec_lc2627_auth';
+
+    /* ── LOGIN ── */
+    function checkLogin(){
+    const val = document.getElementById('login-pw').value;
+    if(val === LOGIN_PW){
+        sessionStorage.setItem(LOGIN_SK, '1');
+        document.getElementById('login-overlay').style.display = 'none';
+        document.getElementById('login-pw').value = '';
+        document.getElementById('login-err').style.display = 'none';
+    } else {
+        document.getElementById('login-err').style.display = 'block';
+        document.getElementById('login-pw').value = '';
+        document.getElementById('login-pw').focus();
+    }
+    }
+
+    function initLogin(){
+    if(sessionStorage.getItem(LOGIN_SK)==='1'){
+        document.getElementById('login-overlay').style.display='none';
+    } else {
+        setTimeout(()=>document.getElementById('login-pw').focus(),100);
+    }
+    }
 
     const LC_META = [
     {id:'HD',  name:'北海道委員会',              region:'East'},
@@ -635,732 +594,46 @@
     };
     }
 
-    let D, view='dashboard', lcId=null, areaId=null, areaLcId=null, afilter='ALL', fil='ALL', gfil='ALL';
-    let editing=null, editingKpi=null, expandedSubs=new Set(), editingParent=null;
-
-    /* ── DATA UTILS ── */
+    let D, view='dashboard', lcId=null, areaId=null, afilter='ALL', fil='ALL', gfil='ALL';
+    let editing=null, editingKpi=null, editingParent=null;
 
     function load(){
-    try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();seedHIIfEmpty();return;}}catch(e){}
+    try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();return;}}catch(e){}
     D=makeSeed();
-    seedHIIfEmpty();
     }
 
-    function seedHIIfEmpty(){
-    const hi=D.lcs.find(x=>x.id==='HI');
-    if(!hi)return;
-    const HI_SEED_VER=2;
-    // Detect if area has real named KPIs vs placeholders like 'KPI5'
-    const _hasRealKPIs=(area)=>{
-        if(!hi.areas[area]||!hi.areas[area].kpis||hi.areas[area].kpis.length===0)return false;
-        if(hi._seedVer&&hi._seedVer>=HI_SEED_VER)return true;
-        return !hi.areas[area].kpis.some(k=>/^KPI[0-9]+$/.test(k.name));
-    };
-    const needOGX=!_hasRealKPIs('OGX');
-    const needTM=!_hasRealKPIs('TM');
-    const needICX=!_hasRealKPIs('ICX');
-    const needMkt=!_hasRealKPIs('Mkt');
-    const needBD=!_hasRealKPIs('BD');
-    const needF=!_hasRealKPIs('F');
-    if(!needOGX&&!needTM&&!needICX&&!needMkt&&!needBD&&!needF){hi._seedVer=HI_SEED_VER;return;}
-    // const needTM=!_hasRealKPIs('TM');
-    // const needICX=!_hasRealKPIs('ICX');
-    // const needMkt=!_hasRealKPIs('Mkt');
-    // const needBD=!_hasRealKPIs('BD');
-    // const needF=!_hasRealKPIs('F');
-    // if(!needOGX&&!needTM&&!needICX&&!needMkt&&!needBD&&!needF){hi._seedVer=HI_SEED_VER;return;}
-    let _i=0;
-    function sid(){return'hi'+(++_i);}
-    function t(name,res,start,dead,status,children){
-        return{id:sid(),name,res:res||'',start:start||'',deadline:dead||'',status:status||'Not Started',children:children||[]};
-    }
-    function d(m,day,yr){
-        const y=yr||2026;
-        return y+'-'+(m<10?'0'+m:m)+'-'+(day<10?'0'+day:day);
-    }
-    // Add Archive extraArea
-    if(!hi.extraAreas)hi.extraAreas=[];
-    if(!hi.extraAreas.find(x=>x.id==='Archive')){
-        hi.extraAreas.push({id:'Archive',name:'Archive',color:'#52565E'});
-    }
-    if(!hi.areas.Archive)hi.areas.Archive={kpis:[]};
-
-    // ── OGX ──
-    if(needOGX){
-    const og1={id:sid(),name:'Re#27',type:'KGI'};
-    hi.areas.OGX.goals=[og1];
-    hi.areas.OGX.kpis=[
-        {id:sid(),name:'KPI1',goalId:og1.id,memo:'目標1 / 実際値1',tasks:[
-        t('戦術apple','','','','Not Started',[
-            t('がんばろ','','','','Not Started',[]),
-            t('いける','','','','Not Started',[]),
-        ]),
-        t('戦術bunny','','','','Not Started',[
-            t('戦術bunny task1','','','','Not Started',[]),
-            t('戦術bunny task2','','','','Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI2',goalId:og1.id,memo:'DONE率0.33',tasks:[
-        t('がんばろう 1','','','','DONE',[]),
-        t('がんばろう 2','','','','Not Started',[]),
-        t('がんばろう 3','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI3',goalId:og1.id,memo:'DONE率0.1',tasks:[
-        t('ふぁいと 1','','','','DONE',[]),
-        t('ふぁいと 2','','','','Not Started',[]),t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
-        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),t('ふぁいと 7','','','','Not Started',[]),
-        t('ふぁいと 8','','','','Not Started',[]),t('ふぁいと 9','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI4',goalId:og1.id,memo:'DONE率0.1',tasks:[
-        t('応援してる 1','','','','DONE',[]),
-        t('応援してる 2','','','','Not Started',[]),t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
-        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),t('応援してる 7','','','','Not Started',[]),
-        t('応援してる 8','','','','Not Started',[]),t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI5',goalId:og1.id,memo:'DONE率0.1',tasks:[
-        t('Best of LUCK 1','','','','DONE',[]),
-        t('Best of LUCK 2','','','','Not Started',[]),t('Best of LUCK 3','','','','Not Started',[]),t('Best of LUCK 4','','','','Not Started',[]),
-        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),t('Best of LUCK 7','','','','Not Started',[]),
-        t('Best of LUCK 8','','','','Not Started',[]),t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI6',goalId:og1.id,memo:'DONE率0.1',tasks:[
-        t('GOOD LUCK 1','','','','DONE',[]),
-        t('GOOD LUCK 2','','','','Not Started',[]),t('GOOD LUCK 3','','','','Not Started',[]),t('GOOD LUCK 4','','','','Not Started',[]),
-        t('GOOD LUCK 5','','','','Not Started',[]),t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
-        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),t('GOOD LUCK 10','','','','Not Started',[]),
-        ]},
-    ];
-
-    } // end needOGX
-    // ── ICX ──
-    if(needICX){
-    const ic1={id:sid(),name:'Re#5, Raise#6',type:'KGI'};
-    const ic2={id:sid(),name:'テーマ設定をしたイベントを通したRaise#1 / パートナー獲得#1',type:'GI'};
-    const ic3={id:sid(),name:'研修の質向上を測る独自作成アンケート #5での9~10回答率100%',type:'GI'};
-    hi.areas.ICX.goals=[ic1,ic2,ic3];
-    hi.areas.ICX.kpis=[
-        {id:sid(),name:'アポイントメントセールスによるRaise#5',goalId:ic1.id,memo:'目標5 / 実際値1 / Achieved 0%\n小さなKPI: 渉外獲得数#75 / 4~5月アポ数#290 / 4~5月中の上級生のタスクトラッキング\n※↑のためのアポ数は#750だが、リスクヘッジやジョブレスを防ぐためにメンバーのキャパシティーから逆算したアポ数をおいている\nアポtoヒアCVR10%維持(2526termに検証された仮説の利用) / ヒアto提案CVR20% / 提案toRaiseCVR33%',tasks:[
-        t('ヒアリング','','','','Not Started',[
-            t('渉外獲得数#75 4, 5月のアポ数#290 4, 5月中の上級生のタスクトラッキング','Sales ML',d(4,1),d(5,31),'Not Started',[]),
-            t('8月以降のアポ数#1380 アポ会の開催週#2','WGL',d(8,16),d(10,16),'Not Started',[]),
-            t('アポtoヒアCVR10%維持 2526termに検証された仮説の利用','All',d(2,14),d(10,16),'Not Started',[]),
-        ]),
-        t('6月のアルムナイ模擬渉外','','','','Not Started',[
-            t('アルムナイ日調','Taiki(XD)',d(2,14),d(4,30),'Not Started',[]),
-        ]),
-        t('セールス合宿の開催','','','','Not Started',[
-            t('アルムナイ日調','Taiki(XD)',d(5,1),d(7,31),'Not Started',[]),
-        ]),
-        t('実践用ネトワキ探し','Sales ML',d(5,1),d(8,1),'Not Started',[]),
-        t('9月~10月の模擬渉外・ネトワキ参加','','','','Not Started',[
-            t('アルムナイ日調','Taiki(XD)','','','Not Started',[]),
-            t('ネトワキ探し','Sales ML','','','Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'Raise to Realize 100%',goalId:ic1.id,memo:'目標100 / 実際値2\n小さなKPI: Raise to Accepted 100% → 1人でCallを置ける新入生メンバー数#4 / Raise to Open間の広報IR Call#3 / Accepted to Realize 100%',tasks:[
-        t('Raise to Accepted 100%','','','','Not Started',[
-            t('1人でCallを置くことができる新入生メンバー数#4','','','','Not Started',[
-            t('IRCSメンバー組閣#4','Nana(IRCS ML)',d(5,1),d(5,9),'Not Started',[]),
-            t('IRCS新入生メンバーに対するIR input','Nana(IRCS ML)',d(5,10),d(5,16),'Not Started',[]),
-            t('メンバー育成のためのCall#1×4','Nana(IRCS ML)',d(5,10),d(5,16),'Not Started',[]),
-            ]),
-            t('Raise to Open間の広報IR Call#3','','','','Not Started',[
-            t('Callを置く海外LC探し','Nana(IRCS ML)','','','Not Started',[]),
-            t('当該LCとの日調','Nana(IRCS ML)','','','Not Started',[]),
-            t('Callの実施','Nana(IRCS ML)','','','Not Started',[]),
-            ]),
-        ]),
-        t('Accepted to Realize 100%','','','','Not Started',[
-            t('Accepted to Realize間のEPへのサポート','','','','Not Started',[
-            t('EP・送り出しLCとの定期的なコミュニケーション','Nana(IRCS ML)','','','Not Started',[]),
-            t('送り出しLCとの連携による、EP側Realize阻害要因への対処','Nana(IRCS ML)','','','Not Started',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'研修の質向上のための研修設計及び測定 #5',goalId:ic3.id,memo:'実際値3',tasks:[
-        t('ふぁいと 1','','','','Not Started',[]),t('ふぁいと 2','','','','Not Started',[]),
-        t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
-        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),
-        t('ふぁいと 7','','','','Not Started',[]),t('ふぁいと 8','','','','Not Started',[]),
-        t('ふぁいと 9','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'TN研修後アンケートの項目「海外インターンシップにおける弊団体のサービス/サポートを評価してください」で9以上100%',goalId:ic3.id,memo:'DONE率0.2',tasks:[
-        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
-        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
-        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
-        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
-        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI5',goalId:ic1.id,memo:'DONE率0.4',tasks:[
-        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
-        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
-        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
-        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
-        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI6',goalId:ic1.id,memo:'DONE率0.3',tasks:[
-        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
-        t('GOOD LUCK 3','','','','DONE',[]),
-        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
-        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
-        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
-        t('GOOD LUCK 10','','','','Not Started',[]),
-        ]},
-    ];
-
-    } // end needICX
-
-    // ── Mkt ──
-    if(needMkt){
-    const mk1={id:sid(),name:'SNS総Reach数 #250,000',type:'KGI'};
-    const mk2={id:sid(),name:'新歓説明会 導入数',type:'GI'};
-    hi.areas.Mkt.goals=[mk1,mk2];
-    hi.areas.Mkt.kpis=[
-        {id:sid(),name:'申込書提出数',goalId:mk2.id,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
-        t('新歓期の丁寧なコミュ online','','','','Not Started',[
-            t('to新入生','','','','Not Started',[
-            t('コミュレス振り','koto, aoi, harukazu',d(3,21),d(3,25),'Not Started',[]),
-            t('進捗共有','all eb',d(3,28),d(4,30),'Not Started',[]),
-            ]),
-            t('to上級生','','','','Not Started',[
-            t('コミュレス振り','aoi, koto',d(3,21),d(3,25),'Not Started',[]),
-            t('進捗共有','all eb',d(3,28),d(4,30),'Not Started',[]),
-            ]),
-        ]),
-        t('新歓期の丁寧なコミュ @説明会','','','','Not Started',[
-            t('to新入生','','','','Not Started',[
-            t('必要な役割洗い出し','koto, aoi',d(3,4),d(3,11),'Not Started',[]),
-            t('EBで共有','all eb',d(3,11),d(3,17),'Not Started',[]),
-            t('エリアで共有','all eb',d(3,17),d(3,24),'Not Started',[]),
-            ]),
-            t('to上級 ふるまい方の確認','','','','Not Started',[
-            t('to全体','all eb',d(3,20),d(3,27),'Not Started',[]),
-            ]),
-        ]),
-        t('SNS投稿','','','','Not Started',[
-            t('投稿物','','','','Not Started',[
-            t('contents list作成','koto, sarah, analysis mem','','','DONE',[]),
-            t('投稿物作成者決定','koto, brand mem','','','DONE',[]),
-            t('投稿TL決定','koto, brand mem','','','DONE',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'EXP問い合わせ数',goalId:mk1.id,memo:'実際値2',tasks:[
-        t('市場分析','','','','Not Started',[
-            t('ターゲット像を明確にする','','','','Not Started',[
-            t('OGX VPDに共有してもらう','keisuke, koto, sarah',d(8,1),d(8,8),'Not Started',[]),
-            t('市場となるゼミと授業を絞る','koto, sarah, keisuke, analysis mem',d(8,1),d(8,8),'Not Started',[]),
-            t('アプローチの仕方（適切な文言など）の決定','koto, sarah, analysis mem',d(8,8),d(8,15),'Not Started',[]),
-            ]),
-            t('過去分析','','','','Not Started',[
-            t('事業再開からのEXPの流入経路をまとめる','koto, sarah, analysis mem',d(8,1),d(8,8),'Not Started',[]),
-            t('去年のEXP販促のときのMlogやFRを読みこむ','koto, sarah',d(8,1),d(8,8),'Not Started',[]),
-            ]),
-        ]),
-        t('発信','','','','Not Started',[
-            t('投稿物','','','','Not Started',[
-            t('コンテンツ決定','koto, sarah, brand mem',d(8,8),d(8,15),'Not Started',[]),
-            t('TL決定','koto, sarah, brand mem',d(8,8),d(8,15),'Not Started',[]),
-            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(8,8),d(8,15),'Not Started',[]),
-            t('作成者決定','koto, brand mem',d(8,8),d(8,15),'Not Started',[]),
-            ]),
-            t('ビラ','','','','Not Started',[
-            t('昨年度のデザイン・作り方の確認','koto, brand mem',d(8,15),d(8,22),'Not Started',[]),
-            t('デザイン作成者決定','koto, brand mem',d(8,15),d(8,22),'Not Started',[]),
-            t('TL決定','koto, sarah',d(8,15),d(8,22),'Not Started',[]),
-            t('配りに行く日決定','koto, sarah, brand mem, analysis mem',d(8,22),d(8,29),'Not Started',[]),
-            t('枚数決定','sarah, analysis mem',d(8,22),d(8,29),'Not Started',[]),
-            ]),
-        ]),
-        t('分析','','','','Not Started',[
-            t('インサイトの合計（EXP販促関係投稿期間）','koto, sarah, analysis mem',d(11,30),d(12,15),'Not Started',[]),
-            t('その原因を分析','koto, sarah, analysis mem',d(12,15),d(12,22),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'to新入生 SNSからの流入数',goalId:mk1.id,memo:'DONE率1.0',tasks:[
-        t('市場分析','','','','Not Started',[
-            t('segmentation','koto, sarah, analysis mem','','','DONE',[]),
-            t('targeting','koto, sarah, analysis mem','','','DONE',[]),
-            t('positioning','koto, sarah, analysis mem','','','DONE',[]),
-            t('targeting深掘り','koto, sarah, analysis mem','','','DONE',[]),
-            t('CJ策定','koto, sarah, analysis mem',d(2,25),d(3,4),'WIP',[]),
-        ]),
-        t('SNS投稿','','','','Not Started',[
-            t('投稿物','','','','Not Started',[
-            t('コンテンツ決定','koto, brand mem','','','DONE',[]),
-            t('TL決定','koto, brand mem','','','DONE',[]),
-            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(2,26),d(3,8),'WIP',[]),
-            t('作成者決定','koto, brand mem','','','DONE',[]),
-            ]),
-        ]),
-        t('分析','','','','Not Started',[
-            t('インサイトの合計（新歓関係投稿期間）','koto, sarah, analysis mem',d(5,31),d(6,7),'Not Started',[]),
-            t('その原因を分析','koto, sarah, analysis mem',d(6,7),d(6,14),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'to B SNS(Facebook)の閲覧数',goalId:mk1.id,memo:'実際値4',tasks:[
-        t('HIFacebookアカウントのフォロワーを増やしてからの投稿開始','','','','Not Started',[
-            t('最初の投稿（団体紹介・次年度の方針の共有）','','','','Not Started',[
-            t('LCPに内容、文面作成依頼⇒作成','koto, harukazu',d(6,1),d(6,15),'Not Started',[]),
-            t('Mkt brandに投稿物作成依頼⇒作成','koto',d(6,17),d(6,24),'Not Started',[]),
-            t('投稿','brand mem',d(6,24),d(7,1),'Not Started',[]),
-            ]),
-            t('アルムナイのアカウントをフォローする','','','','Not Started',[
-            t('BDにSNS上でのマナーのインプットを協力依頼','koto',d(6,1),d(6,8),'Not Started',[]),
-            t('メンバーとつながりのある、もしくはアルムナイ訪問などに協力的なアルムナイをバイネームで挙げる','koto, arisa',d(6,1),d(6,8),'Not Started',[]),
-            t('アルムナイのアカウントをフォロー','koto, arisa',d(7,1),d(7,8),'Not Started',[]),
-            ]),
-        ]),
-        t('to Bに特化した発信の仕方の研究','','','','Not Started',[
-            t('アルムナイにヒアリング','','','','Not Started',[
-            t('LCP会議のMkt Areaの議題として挙げる','koto',d(2,15),d(2,22),'Not Started',[]),
-            t('意見を回収し投稿内容・頻度・形態の確定','koto',d(2,22),d(3,1),'Not Started',[]),
-            ]),
-            t('to Bに向けて発信している競合から学ぶ','','','','Not Started',[
-            t('Facebookを運用しているボランティア・学生団体の投稿の傾向を分析','sarah, koto, analysis mem',d(6,1),d(6,15),'Not Started',[]),
-            t('AIESECだから変化させる点と、真似して発信したほうが良い点の洗い出し','sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
-            t('Mkt brandへの共有','koto, sarah',d(6,22),d(7,29),'Not Started',[]),
-            t('申し送り事項に入れる','koto, sarah',d(12,1),d(12,8),'Not Started',[]),
-            ]),
-        ]),
-        t('定期的なSNSの運用','','','','Not Started',[
-            t('Facebookの運用計画を明確にする','','','','Not Started',[
-            t('用途を明確化','koto',d(2,21),d(2,28),'Not Started',[]),
-            t('運用計画の仮決定','koto, sarah',d(3,1),d(3,8),'Not Started',[]),
-            t('BD Areaに確認・共有','koto, arisa',d(3,8),d(3,15),'Not Started',[]),
-            t('運用計画の決定','koto, sarah',d(6,1),d(6,8),'Not Started',[]),
-            t('Mktメンバーへの共有','koto, sarah',d(6,15),d(6,22),'Not Started',[]),
-            ]),
-            t('投稿の遅延・停滞のリスクヘッジ','','','','Not Started',[
-            t('MCチェックのあり方の確認（with Mktメンバー）','koto',d(3,1),d(3,8),'WIP',[]),
-            t('各function忙しい時期の把握','koto, sarah',d(3,8),d(3,15),'Not Started',[]),
-            t('1年間概要投稿物TLの作成','koto, sarah',d(3,15),d(3,22),'Not Started',[]),
-            t('1年間のキャパを考えたうえでres振り','koto, sarah',d(6,20),d(6,27),'Not Started',[]),
-            ]),
-            t('投稿しやすい仕組みづくり① Facebookテンプレの作成','','','','Not Started',[
-            t('投稿するものの概要を決める','koto, sarah',d(2,24),d(3,2),'Not Started',[]),
-            t('必要な型をMkt brandが作成（ex.活動報告テンプレ）','koto, brand mem',d(6,10),d(6,24),'Not Started',[]),
-            ]),
-            t('投稿しやすい仕組みづくり② Mkt M(全体)でTLの共有','','','','Not Started',[
-            t('全体でチェックするものだという共通認識を取る','koto',d(3,1),d(3,8),'WIP',[]),
-            t('投稿ごとに作成者とは別でTL管理担当者を決める（AreaD+α）','koto, sarah',d(6,24),d(7,1),'Not Started',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'Mktアンケートでの「他エリアの事業理解度」平均8/10',goalId:null,memo:'目標8 / 実際値5',tasks:[
-        t('アンケート','','','','Not Started',[
-            t('フロー① 上級生向け現状把握','','','','Not Started',[
-            t('項目の案出し','koto, sarah',d(6,1),d(6,8),'Not Started',[]),
-            t('作成者決定','koto, sarah, brand mem, analysis mem',d(6,8),d(6,15),'Not Started',[]),
-            t('フロー日決定','koto, sarah',d(6,8),d(6,15),'Not Started',[]),
-            t('回答促進コミュ','koto, aoi',d(6,15),d(6,22),'Not Started',[]),
-            ]),
-            t('フロー② 夏頃 to全体','','','','Not Started',[
-            t('項目の案出し','koto, sarah',d(8,1),d(8,8),'Not Started',[]),
-            t('作成者決定','koto, sarah, brand mem, analysis mem',d(8,8),d(8,15),'Not Started',[]),
-            t('フロー日決定','koto, sarah',d(8,8),d(8,15),'Not Started',[]),
-            t('回答促進コミュ','koto, sarah',d(8,15),d(8,22),'Not Started',[]),
-            ]),
-            t('フロー③ 冬頃 to全体','','','','Not Started',[
-            t('項目の案出し','koto, sarah',d(12,1),d(12,8),'Not Started',[]),
-            t('作成者決定','koto, sarah, brand mem, analysis mem',d(12,8),d(12,15),'Not Started',[]),
-            t('フロー日決定','koto, sarah',d(12,8),d(12,15),'Not Started',[]),
-            t('回答促進コミュ','koto, sarah',d(12,15),d(12,22),'Not Started',[]),
-            ]),
-            t('フロー④ 年度終わり to全体','','','','Not Started',[
-            t('項目の案出し','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
-            t('作成者決定','koto, sarah, brand mem, analysis mem',d(3,8,2027),d(3,15,2027),'Not Started',[]),
-            t('フロー日決定','koto, sarah',d(3,8,2027),d(3,15,2027),'Not Started',[]),
-            t('回答促進コミュ','koto, sarah',d(3,15,2027),d(3,22,2027),'Not Started',[]),
-            ]),
-            t('アンケートを形骸化させない','','','','Not Started',[
-            t('過去のアンケートフロー・回答コミュの方法の洗い出し','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
-            t('コミュ方法の決定','koto, sarah',d(6,15),d(6,22),'Not Started',[]),
-            ]),
-            t('回答回収のその後の具体化','','','','Not Started',[
-            t('項目の案出しの際に、聞く背景まで決める','sarah, koto',d(6,1),d(6,8),'Not Started',[]),
-            t('アンケートの目的明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
-            t('メンバーの理想状態を明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
-            t('分析する手順を決める','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
-            ]),
-        ]),
-        t('to E SNS投稿','','','','Not Started',[
-            t('投稿物決定','','','','Not Started',[
-            t('各エリア月に投稿したいこと回収（事業報告など）','koto, all eb',d(5,24),d(5,31),'Not Started',[]),
-            t('brandに内部インスタの投稿内容を共有','koto, brand mem',d(6,1),d(6,8),'Not Started',[]),
-            ]),
-            t('定期的に投稿','','','','Not Started',[
-            t('月のTLをエリアで共有','koto, sarah, brand mem, analysis mem',d(6,1),d(6,8),'Not Started',[]),
-            t('製作担当者の決定','koto, brand mem',d(6,8),d(6,15),'Not Started',[]),
-            t('TL管理者の決定','koto, sarah, brand mem, analysis mem',d(6,8),d(6,15),'Not Started',[]),
-            t('テンプレの作成','koto, brand mem',d(6,15),d(6,22),'Not Started',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'高校生事業 参加した高校生の人数60人',goalId:mk2.id,memo:'目標60 / 実際値4',tasks:[
-        t('市場を知る','','','','Not Started',[
-            t('アンケート to高校生','','','','Not Started',[
-            t('アンケート回答協力の依頼 to mem','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
-            t('アンケートを作成する','koto, sarah, brand mem, analysis mem',d(7,1),d(7,8),'Not Started',[]),
-            t('回答を集めて分析','koto, sarah, analysis mem',d(7,15),d(7,22),'Not Started',[]),
-            ]),
-            t('過去分析','','','','Not Started',[
-            t('今年のエバを読みこむ','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
-            t('メンバーと共有','koto, sarah',d(7,8),d(7,15),'Not Started',[]),
-            t('今年の分の残し方を決める','koto, sarah',d(12,15),d(12,22),'Not Started',[]),
-            ]),
-            t('ヒアリング','','','','Not Started',[
-            t('樫原さん','koto',d(7,15),d(7,22),'Not Started',[]),
-            t('去年やったメンバー','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
-            ]),
-        ]),
-        t('年2回開催 夏休み実施','','','','Not Started',[
-            t('実施メンバーの募集','koto, sarah',d(7,1),d(7,8),'Not Started',[]),
-            t('メンバー決定','koto, sarah',d(7,8),d(7,15),'Not Started',[]),
-            t('開催場所決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
-            t('コンテンツ作成','koto, sarah',d(7,15),d(7,29),'Not Started',[]),
-            t('Fと話し合って予算の決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
-            t('good, more, try 申し送りを記録','koto, sarah',d(8,23),d(8,30),'Not Started',[]),
-        ]),
-        t('年2回開催 冬休み開催','','','','Not Started',[
-            t('実施メンバーの募集','koto, sarah',d(11,1),d(11,8),'Not Started',[]),
-            t('メンバー決定','koto, sarah',d(11,8),d(11,15),'Not Started',[]),
-            t('開催場所決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
-            t('コンテンツ作成','koto, sarah',d(11,15),d(11,29),'Not Started',[]),
-            t('Fと話し合って予算の決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
-            t('good, more, try 申し送りを記録','koto, sarah',d(1,24,2027),d(1,31,2027),'Not Started',[]),
-        ]),
-        t('SNS発信','','','','Not Started',[
-            t('投稿（夏）','','','','Not Started',[
-            t('投稿物決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
-            t('TL決定','koto, sarah',d(7,15),d(7,22),'Not Started',[]),
-            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(7,15),d(7,22),'Not Started',[]),
-            t('作成者決定','koto, brand mem',d(7,15),d(7,22),'Not Started',[]),
-            t('投稿する','koto',d(8,1),d(8,15),'Not Started',[]),
-            ]),
-            t('投稿（冬）','','','','Not Started',[
-            t('投稿物決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
-            t('TL決定','koto, sarah',d(11,15),d(11,22),'Not Started',[]),
-            t('TL管理者決定','koto, sarah, brand mem, analysis mem',d(11,15),d(11,22),'Not Started',[]),
-            t('作成者決定','koto, brand mem',d(11,15),d(11,22),'Not Started',[]),
-            t('投稿する','koto',d(12,1),d(12,15),'Not Started',[]),
-            ]),
-            t('分析（夏）','','','','Not Started',[
-            t('インサイトの合計を出す（事業関係の投稿期間）','koto, sarah, analysis mem',d(9,1),d(9,15),'Not Started',[]),
-            t('その原因を分析する','koto, sarah, analysis mem',d(9,15),d(9,30),'Not Started',[]),
-            ]),
-            t('分析（冬）','','','','Not Started',[
-            t('インサイトの合計を出す（事業関係の投稿期間）','koto, sarah, analysis mem',d(1,15,2027),d(9,22),'Not Started',[]),
-            t('その原因を分析する','koto, sarah, analysis mem',d(1,24,2027),d(1,31,2027),'Not Started',[]),
-            ]),
-        ]),
-        ]},
-    ];
-
-    } // end needMkt
-    // ── TM ──
-    if(needTM){
-    hi.areas.TM.goals=[];
-    hi.areas.TM.kpis=[
-        {id:sid(),name:'KPI1',goalId:null,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
-        t('戦術apple','','','','Not Started',[
-            t('がんばろっ','','','','DONE',[]),
-            t('DONE task','','','','DONE',[]),
-        ]),
-        t('戦術bunny','','','','Not Started',[
-            t('戦術bunny task1','','','','Not Started',[]),
-            t('戦術bunny task2','','','','Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI2',goalId:null,memo:'DONE率0.33',tasks:[
-        t('がんばろう 1','','','','DONE',[]),
-        t('がんばろう 2','','','','Not Started',[]),
-        t('がんばろう 3','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI3',goalId:null,memo:'DONE率0.2',tasks:[
-        t('ふぁいと 1','','','','DONE',[]),t('ふぁいと 2','','','','DONE',[]),
-        t('ふぁいと 3','','','','Not Started',[]),t('ふぁいと 4','','','','Not Started',[]),
-        t('ふぁいと 5','','','','Not Started',[]),t('ふぁいと 6','','','','Not Started',[]),
-        t('ふぁいと 7','','','','Not Started',[]),t('ふぁいと 8','','','','Not Started',[]),
-        t('ふぁいと 9','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI4',goalId:null,memo:'DONE率0.2',tasks:[
-        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
-        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
-        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
-        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
-        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI5',goalId:null,memo:'DONE率0.4',tasks:[
-        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
-        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
-        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
-        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
-        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI6',goalId:null,memo:'DONE率0.3',tasks:[
-        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
-        t('GOOD LUCK 3','','','','DONE',[]),
-        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
-        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
-        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
-        t('GOOD LUCK 10','','','','Not Started',[]),
-        ]},
-    ];
-
-    } // end needTM
-    // ── BD ──
-    if(needBD){
-    const bd1={id:sid(),name:'アルムナイ接点数',type:'KGI'};
-    const bd2={id:sid(),name:'外部関係者数',type:'KGI'};
-    hi.areas.BD.goals=[bd1,bd2];
-    hi.areas.BD.kpis=[
-        {id:sid(),name:'ネームバリュー = 認知拡大 × 信頼醸成 × 行動転換力',goalId:bd2.id,memo:'目標5 / 実際値3 / Achieved 60%',tasks:[
-        t('イベント','','','','Not Started',[
-            t('協働SH','','','','Not Started',[
-            t('ペルソナ決め','arisa, haruki','','','Not Started',[]),
-            t('アプローチ方法決定','arisa, haruki','','','Not Started',[]),
-            t('渉外','arisa, haruki','','','Not Started',[]),
-            t('契約','arisa','','','Not Started',[]),
-            ]),
-            t('コンテンツ','','','','Not Started',[
-            t('案出し','arisa, haruki, alliance mem','','','Not Started',[]),
-            t('GSS記入','haruki, alliance mem','','','Not Started',[]),
-            t('企画書作成','haruki, alliance mem','','','Not Started',[]),
-            t('MC check','haruki','','','Not Started',[]),
-            t('協働相手に打診','arisa, haruki','','','Not Started',[]),
-            t('合意','arisa','','','Not Started',[]),
-            ]),
-            t('集客','','','','Not Started',[
-            t('ペルソナ決め','arisa, haruki','','','Not Started',[]),
-            t('他LCヒアリング','haruki, alliance mem','','','Not Started',[]),
-            t('過去事例参照','haruki, alliance mem','','','Not Started',[]),
-            t('アプローチ方法決定','haruki, alliance mem','','','Not Started',[]),
-            t('実施','haruki, alliance mem','','','Not Started',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'外部リソースのHI内部への還元',goalId:bd1.id,memo:'実際値3',tasks:[
-        t('事業成長','','','','Not Started',[
-            t('GV','','','','Not Started',[
-            t('SRB講師','arisa, keisuke','','','Not Started',[]),
-            t('事後研修','arisa, keisuke','','','Not Started',[]),
-            t('過去渡航性ヒアリング','arisa, keisuke','','','Not Started',[]),
-            ]),
-            t('iGTa','','','','Not Started',[
-            t('模擬渉外','arisa, taiki','','','Not Started',[]),
-            t('ビジコン','arisa, taiki','','','Not Started',[]),
-            t('企業セミナー','arisa, taiki','','','Not Started',[]),
-            ]),
-            t('高校生事業','arisa, koto','','','Not Started',[]),
-        ]),
-        t('人材育成','','','','Not Started',[
-            t('アルムナイ接点','','','','Not Started',[
-            t('LCM登壇','arisa, aoi','','','Not Started',[]),
-            t('アルムナイ訪問','arisa, aoi','','','Not Started',[]),
-            t('若手アルムナイ総会','all eb','','','Not Started',[]),
-            t('アルムナイ総会','all eb','','','Not Started',[]),
-            ]),
-        ]),
-        t('集金','','','','Not Started',[
-            t('寄付金','','','','Not Started',[
-            t('若手アルムナイ総会','arisa, kazuto','','','Not Started',[]),
-            t('アルムナイ総会','arisa, kazuto','','','Not Started',[]),
-            ]),
-            t('協賛金','','','','Not Started',[
-            t('LCM登壇','arisa, kazuto','','','Not Started',[]),
-            t('イベント','arisa, kazuto, haruki','','','Not Started',[]),
-            ]),
-        ]),
-        t('期待値調整','','','','Not Started',[
-            t('アルムナイ情報把握','','','','Not Started',[
-            t('アルムナイ訪問','arisa, 会期設計 mem','','','Not Started',[]),
-            t('アルムナイ図鑑の更新','arisa, 会期設計 mem','','','Not Started',[]),
-            t('エリア需要把握 BD Ss','arisa','','','Not Started',[]),
-            t('エリアD 定例o2o','all eb','','','Not Started',[]),
-            ]),
-            t('コミュ管理','','','','Not Started',[
-            t('進捗確認 エリアD 定例o2o','all eb','','','Not Started',[]),
-            ]),
-            t('蓄積','','','','Not Started',[
-            t('コミュ歴記録','arisa','','','Not Started',[]),
-            ]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI3',goalId:bd1.id,memo:'DONE率0.2',tasks:[
-        t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
-        t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
-        t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
-        t('応援してる 7','','','','Not Started',[]),t('応援してる 8','','','','Not Started',[]),
-        t('応援してる 9','','','','Not Started',[]),t('応援してる 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI4',goalId:bd2.id,memo:'DONE率0.4',tasks:[
-        t('Best of LUCK 1','','','','DONE',[]),t('Best of LUCK 2','','','','DONE',[]),
-        t('Best of LUCK 3','','','','DONE',[]),t('Best of LUCK 4','','','','DONE',[]),
-        t('Best of LUCK 5','','','','Not Started',[]),t('Best of LUCK 6','','','','Not Started',[]),
-        t('Best of LUCK 7','','','','Not Started',[]),t('Best of LUCK 8','','','','Not Started',[]),
-        t('Best of LUCK 9','','','','Not Started',[]),t('Best of LUCK 10','','','','Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI5',goalId:bd2.id,memo:'DONE率0.33',tasks:[
-        t('GOOD LUCK 1','','','','DONE',[]),t('GOOD LUCK 2','','','','DONE',[]),
-        t('GOOD LUCK 3','','','','DONE',[]),
-        t('GOOD LUCK 4','','','','Not Started',[]),t('GOOD LUCK 5','','','','Not Started',[]),
-        t('GOOD LUCK 6','','','','Not Started',[]),t('GOOD LUCK 7','','','','Not Started',[]),
-        t('GOOD LUCK 8','','','','Not Started',[]),t('GOOD LUCK 9','','','','Not Started',[]),
-        ]},
-    ];
-
-    } // end needBD
-
-    // ── Finance ──
-    if(needF){
-    const f1={id:sid(),name:'年間支出200万円(金額仮)',type:'GI'};
-    hi.areas.F.goals=[f1];
-    hi.areas.F.kpis=[
-        {id:sid(),name:'KPI 1：予算履行率〇％',goalId:f1.id,memo:'実際値1 / Achieved 0%',tasks:[
-        t('月次予実管理','','','','Not Started',[
-            t('想定可能支出先/支出額一覧作成','kazuto',d(3,1),d(3,8),'Not Started',[]),
-            t('予算作成','kazuto',d(3,1),d(3,26),'Not Started',[]),
-            t('予実管理フォーマット作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
-            t('4月分予実管理','kazuto, 財務mem',d(5,1),d(5,7),'Not Started',[]),
-            t('5月分予実管理','kazuto, 財務mem',d(6,1),d(6,7),'Not Started',[]),
-            t('6月分予実管理','kazuto, 財務mem',d(7,1),d(7,7),'Not Started',[]),
-            t('7月分予実管理','kazuto, 財務mem',d(8,1),d(8,7),'Not Started',[]),
-            t('8月分予実管理','kazuto, 財務mem',d(9,1),d(9,7),'Not Started',[]),
-        ]),
-        t('EB内財務報告','','','','Not Started',[
-            t('財務マニュアルver.1作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
-            t('報告フォーマット作成','kazuto, 財務mem',d(3,16),d(4,30),'Not Started',[]),
-            t('4月分財務報告','kazuto',d(5,1),d(5,12),'Not Started',[]),
-            t('5月分財務報告','kazuto',d(6,1),d(6,9),'Not Started',[]),
-            t('6月分財務報告','kazuto',d(7,1),d(7,7),'Not Started',[]),
-            t('7月分財務報告','kazuto',d(8,1),d(8,11),'Not Started',[]),
-            t('8月分財務報告','kazuto',d(9,1),d(9,8),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI 2：注力収益額〇円',goalId:f1.id,memo:'実際値2 / Achieved 0%',tasks:[
-        t('アルムナイ寄附金','','','','Not Started',[
-            t('若手アルムナイ総会財務報告','kazuto',d(6,13),d(7,3),'Not Started',[]),
-            t('月次口座残高管理表の作成','kazuto, 財務mem, 会計mem',d(5,1),d(5,30),'Not Started',[]),
-            t('想定支出先/支出額一覧作成','kazuto',d(3,1),d(3,4),'Not Started',[]),
-            t('口座残高安定マニュアル作成','kazuto',d(3,1),d(3,7),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI3：資格審査項目抵触数 #0',goalId:f1.id,memo:'実際値3 / Achieved 0%',tasks:[
-        t('月次仕訳帳提出不備#0','','','','Not Started',[
-            t('仕訳帳提出TL管理シートの作成','kazuto, nonomi','',d(4,10),'WIP',[]),
-            t('4月分仕訳帳提出','kazuto, 会計mem',d(4,24),d(5,3),'Not Started',[]),
-            t('5月分仕訳帳提出','kazuto, 会計mem',d(5,25),d(6,3),'Not Started',[]),
-            t('6月分仕訳帳提出','kazuto, 会計mem',d(6,24),d(7,3),'Not Started',[]),
-            t('7月分仕訳帳提出','kazuto, 会計mem',d(7,25),d(8,3),'Not Started',[]),
-            t('8月分仕訳帳提出','kazuto, 会計mem',d(8,25),d(9,3),'Not Started',[]),
-        ]),
-        t('Q1局内監査','','','','Not Started',[
-            t('仕訳帳check','kazuto, 会計mem',d(7,3),d(7,10),'Not Started',[]),
-            t('書類','kazuto, 会計mem',d(7,3),d(7,10),'Not Started',[]),
-            t('立替金精算','kazuto, 会計mem',d(7,10),d(7,31),'Not Started',[]),
-            t('未払金精算','kazuto',d(7,10),d(7,31),'Not Started',[]),
-        ]),
-        t('中間決算前局内監査','','','','Not Started',[
-            t('仕訳帳check','kazuto, 会計mem',d(9,3),d(9,10),'Not Started',[]),
-            t('書類','kazuto, 会計mem',d(9,3),d(9,10),'Not Started',[]),
-            t('立替金精算','kazuto, 会計mem',d(9,10),d(9,30),'Not Started',[]),
-            t('未払金精算','kazuto',d(9,10),d(9,30),'Not Started',[]),
-        ]),
-        t('中間決算','kazuto','',d(9,15),'Not Started',[]),
-        t('会計/監査マニュアル改訂・動画化','kazuto, 会計mem',d(4,1),d(7,31),'Not Started',[]),
-        t('会計人材育成#5','','','','Not Started',[
-            t('Finance新メンバー組閣#4','kazuto',d(6,15),d(7,30),'Not Started',[]),
-            t('会計テスト合格者#5','kazuto, nonomi',d(8,1),d(10,31),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI4：対外部財務報告数 #3',goalId:f1.id,memo:'実際値4 / Achieved 0%',tasks:[
-        t('若手アルムナイ総会','','','','Not Started',[
-            t('若手アルムナイ総会財務報告','kazuto',d(6,13),d(7,3),'Not Started',[]),
-        ]),
-        t('アルムナイ総会','','','','Not Started',[
-            t('アルムナイ総会財務報告','kazuto','','','Not Started',[]),
-        ]),
-        t('LCP会議','','','','Not Started',[
-            t('LCP会議財務報告','kazuto','','','Not Started',[]),
-        ]),
-        t('財務報告マニュアル','','','','Not Started',[
-            t('過去資料まとめ','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
-            t('良い財務報告について学習','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
-            t('テンプレ作成','kazuto, 財務mem',d(6,1),d(6,15),'Not Started',[]),
-        ]),
-        ]},
-        {id:sid(),name:'KPI5：対内部財務報告数 #12',goalId:f1.id,memo:'実際値5 / Achieved 0%',tasks:[
-        t('LCM月次財務報告（Fレポ）','','','','Not Started',[
-            t('Fレポテンプレ作成','kazuto, momone','',d(3,7),'WIP',[]),
-            t('3月分Fレポ','kazuto, 財務mem',d(4,8),d(4,24),'Not Started',[]),
-            t('4月分Fレポ','kazuto, 財務mem',d(5,8),d(5,29),'Not Started',[]),
-            t('5月分Fレポ','kazuto, 財務mem',d(6,8),d(6,26),'Not Started',[]),
-            t('6月分Fレポ','kazuto, 財務mem',d(7,8),d(7,31),'Not Started',[]),
-            t('7月分Fレポ','kazuto, 財務mem',d(8,8),d(8,28),'Not Started',[]),
-            t('8月分Fレポ','kazuto, 財務mem',d(9,8),d(9,25),'Not Started',[]),
-        ]),
-        t('財務マニュアルver.2作成','kazuto, 財務mem',d(8,1),d(9,30),'Not Started',[]),
-        ]},
-        {id:sid(),name:'KPI6：（中長期、投資判断基準系）',goalId:f1.id,memo:'実際値4 / Achieved 0%',tasks:[
-        t('中長期財務方針の作成','',d(8,1),d(2,28,2027),'Not Started',[]),
-        t('LCM FinanceSs#5','',d(6,1),d(2,28,2027),'Not Started',[]),
-        t('投資判断基準導入','','','','Not Started',[
-            t('MCのものを。','kazuto',d(10,1),d(2,28,2027),'Not Started',[]),
-            t('支出','kazuto, 財務mem',d(4,1),d(3,31,2027),'Not Started',[]),
-            t('判断','kazuto, 財務mem',d(10,1),d(12,31),'Not Started',[]),
-        ]),
-        ]},
-    ];
-
-    } // end needF
-    // ── Archive ──
-    hi.areas.Archive.goals=[];
-    hi.areas.Archive.kpis=[
-        {id:sid(),name:'YP-FR集',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'GEN',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'OGX',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'ICX',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'Mkt',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'TM',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'BD',goalId:null,memo:'',tasks:[]},
-        {id:sid(),name:'F',goalId:null,memo:'',tasks:[]},
-    ];
-    hi._seedVer=HI_SEED_VER;
-    }
-
+    /* ── BUG FIX: ensureAreas — if(lc.areaTypes) block now properly closed ── */
     function ensureAreas(){
-    if(!D.areaTypes)D.areaTypes=JSON.parse(JSON.stringify(DEFAULT_AREA_TYPES));
-    if(!D.lcs)D.lcs=makeSeed().lcs;
-    // Add any LCs in LC_META that are missing from stored data (e.g. FK added later)
+    if(!D.areaTypes) D.areaTypes=JSON.parse(JSON.stringify(DEFAULT_AREA_TYPES));
+    if(!D.lcs) D.lcs=makeSeed().lcs;
     LC_META.forEach(meta=>{
         if(!D.lcs.find(x=>x.id===meta.id))
         D.lcs.push({id:meta.id,name:meta.name,region:meta.region,areas:{},extraAreas:[]});
     });
-    // Remove any LCs that are no longer in LC_META (e.g. SD removed)
     D.lcs=D.lcs.filter(lc=>LC_META.find(m=>m.id===lc.id));
     D.lcs.forEach(lc=>{
-        if(!lc.areas)lc.areas={};
-        if(!lc.extraAreas)lc.extraAreas=[];
-        // Migrate old per-LC areaTypes → move non-global ones to extraAreas
+        if(!lc.areas) lc.areas={};
+        if(!lc.extraAreas) lc.extraAreas=[];
+        /* BUG FIX: if block now properly closed with } before getLCAreaTypes call */
         if(lc.areaTypes){
         lc.areaTypes.forEach(at=>{
             if(!D.areaTypes.find(x=>x.id===at.id)&&!lc.extraAreas.find(x=>x.id===at.id))
             lc.extraAreas.push(at);
         });
         delete lc.areaTypes;
-        }
+        } /* ← この } が元々なかった */
         getLCAreaTypes(lc.id).forEach(at=>{
-        if(!lc.areas[at.id])lc.areas[at.id]={kpis:[]};
+        if(!lc.areas[at.id]) lc.areas[at.id]={kpis:[]};
         });
     });
     }
+
     function getLCAreaTypes(lId){
     const lc=D.lcs.find(x=>x.id===lId);if(!lc)return[];
     const extras=(lc.extraAreas||[]).filter(e=>!D.areaTypes.find(g=>g.id===e.id));
-    return[...D.areaTypes,...extras];
+    return [...D.areaTypes,...extras];
     }
-    function getAreaColor(lId,aId){const at=getLCAreaTypes(lId).find(x=>x.id===aId);return at?at.color:'#52565E';}
+
     function getAreaColor(lId,aId){const at=getLCAreaTypes(lId).find(x=>x.id===aId);return at?at.color:'#52565E';}
     function save(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}}
     function gid(){return 'x'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
@@ -1370,13 +643,13 @@
     function sl(s){return s==='DONE'?'Done':s==='WIP'?'WIP':'Not Started';}
     function sc(s){return s==='DONE'?'done':s==='WIP'?'wip':'ns';}
     function si(s){return s==='DONE'?'✓':s==='WIP'?'◑':'';}
+
     function getLCArea(lId,aId){
     const lc=D.lcs.find(x=>x.id===lId);if(!lc)return null;
-    if(!lc.areas[aId])lc.areas[aId]={kpis:[]};
+    if(!lc.areas[aId]) lc.areas[aId]={kpis:[]};
     return lc.areas[aId];
     }
 
-    /* ── STATS ── */
     function taskStats(t){
     let d=0,w=0,n=0,tot=0;
     function count(x){
@@ -1386,31 +659,33 @@
     }
     count(t);return{done:d,wip:w,ns:n,total:tot};
     }
+
     function kpiStats(k){
     let d=0,w=0,n=0,t=0;
     k.tasks.forEach(task=>{const s=taskStats(task);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
     return{done:d,wip:w,ns:n,total:t};
     }
+
     function lcAreaStats(lId,aId){
     const area=getLCArea(lId,aId);if(!area)return{done:0,wip:0,ns:0,total:0,pct:0};
     let d=0,w=0,n=0,t=0;
     area.kpis.forEach(k=>{const s=kpiStats(k);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
     return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
     }
+
     function lcStats(lId){
     let d=0,w=0,n=0,t=0;
     getLCAreaTypes(lId).forEach(at=>{const s=lcAreaStats(lId,at.id);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
     return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
     }
+
     function totals(){
     let d=0,w=0,n=0,t=0;
     D.lcs.forEach(lc=>{const s=lcStats(lc.id);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
     return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
     }
 
-    /* ── NAVIGATION ── */
     function buildNav(){
-    const inLC = (view==='lc'||view==='area') && lcId;
     ['East','Central','West'].forEach(region=>{
         const suffix=region.toLowerCase();
         document.getElementById('nav-'+suffix).innerHTML=
@@ -1418,8 +693,6 @@
             const s=lcStats(lc.id);const rc=REGION_COLORS[region];
             const lcActive=(view==='lc'||view==='area')&&lcId===lc.id;
             const subOpen=lcActive;
-
-            // Area sub-items (shown when this LC is active)
             const subItems=subOpen?`<div class="nav-sub open" id="subnav-${lc.id}">
             <div class="nav-sub-divider"></div>
             ${getLCAreaTypes(lc.id).map(at=>{
@@ -1433,7 +706,6 @@
                 </div>`;
             }).join('')}
             </div>`:'';
-
             return `<div>
             <div class="nav-item${lcActive?' active':''}" data-lc="${lc.id}" onclick="swLC('${lc.id}',this)"
                 style="border-left-color:${lcActive?rc:'transparent'}">
@@ -1445,7 +717,6 @@
             </div>`;
         }).join('');
     });
-    // Update top nav active states
     document.querySelectorAll('.nav-item[data-view]').forEach(n=>{
         n.classList.toggle('active',n.dataset.view===view);
     });
@@ -1466,6 +737,7 @@
         rGantt();closeSidebar();
     }
     }
+
     function swLC(id,el){
     view='lc';lcId=id;areaId=null;fil='ALL';afilter='ALL';
     const lc=D.lcs.find(x=>x.id===id);
@@ -1475,6 +747,7 @@
     document.getElementById('addkpibtn').style.display='';
     buildNav();rLC(id);closeSidebar();
     }
+
     function swArea(lId,aId){
     view='area';lcId=lId;areaId=aId;fil='ALL';
     const lc=D.lcs.find(x=>x.id===lId);
@@ -1491,10 +764,8 @@
     buildNav();rArea(lId,aId);closeSidebar();
     }
 
-    /* ── DASHBOARD ── */
     function rDash(){
     const s=totals();
-    // Sort LCs by done%
     const sorted=[...D.lcs].map(lc=>({...lc,...lcStats(lc.id)})).sort((a,b)=>b.pct-a.pct);
     const rows=sorted.map((lc,i)=>{
         const rc=REGION_COLORS[lc.region];
@@ -1561,13 +832,59 @@
         </table>`;
     }
 
-    /* ── LC VIEW ── */
+    /* ── BUG FIX: buildTaskRows — ri+=span moved OUTSIDE the for loop ── */
+    function buildTaskRowsInner(tasks, lId, aId, kId, c){
+    let rows='';
+    let ri=0;
+    while(ri<tasks.length){
+        const t=tasks[ri];
+        const grp=t.group||'';
+        let span=1;
+        if(grp){
+        while(ri+span<tasks.length && tasks[ri+span].group===grp) span++;
+        }
+        const over=isOver(t.deadline)&&t.status!=='DONE';
+        rows+=`<tr class="tr" id="row-${t.id}">
+        <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
+            ${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>`:''}
+        </td>
+        <td class="tn">${h(t.name)}</td>
+        <td class="tres">${h(t.res||'—')}</td>
+        <td class="tdt">${fd(t.start)}</td>
+        <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
+        <td><span class="chip ${sc(t.status)}" onclick="cycTask('${lId}','${aId}','${kId}','${t.id}',event)">${si(t.status)?si(t.status)+' ':''}${sl(t.status)}</span></td>
+        <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ メモ</span>`}</td>
+        <td><div class="ta">
+            <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
+            <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
+        </div></td>
+        </tr>`;
+        for(let j=1;j<span;j++){
+        const tj=tasks[ri+j];
+        const overj=isOver(tj.deadline)&&tj.status!=='DONE';
+        rows+=`<tr class="tr" id="row-${tj.id}">
+            <td class="tn">${h(tj.name)}</td>
+            <td class="tres">${h(tj.res||'—')}</td>
+            <td class="tdt">${fd(tj.start)}</td>
+            <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
+            <td><span class="chip ${sc(tj.status)}" onclick="cycTask('${lId}','${aId}','${kId}','${tj.id}',event)">${si(tj.status)?si(tj.status)+' ':''}${sl(tj.status)}</span></td>
+            <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ メモ</span>`}</td>
+            <td><div class="ta">
+            <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
+            <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
+            </div></td>
+        </tr>`;
+        }
+        ri+=span; /* ← BUG FIX: forループの外に移動 */
+    }
+    return rows;
+    }
+
     function rLC(id){
     const lc=D.lcs.find(x=>x.id===id);if(!lc)return;
     const s=lcStats(id);const rc=REGION_COLORS[lc.region]||'#037EF3';
     const q=document.getElementById('si').value.toLowerCase();
 
-    // Area filter bar
     const fbar=`<div class="fbar">
         <span class="fl">エリア</span>
         <button class="fb ${afilter==='ALL'?'active':''}" onclick="setAF('ALL')">全エリア</button>
@@ -1585,53 +902,13 @@
         const ks=kpiStats(k);const dn=ks.done;const tot2=ks.total;
         const pct=tot2?Math.round(dn/tot2*100):0;
 
-        // Filter tasks
         let tasks=k.tasks.filter(t=>{
             if(fil!=='ALL'&&t.status!==fil)return false;
             if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q)&&!(t.group||'').toLowerCase().includes(q))return false;
             return true;
         });
 
-        // Render rows with group (大タスク) column
-        let rows='';
-        let ri=0;
-        while(ri<tasks.length){
-            const t=tasks[ri];const grp=t.group||'';
-            let span=1;
-            if(grp){while(ri+span<tasks.length&&tasks[ri+span].group===grp)span++;}
-            const over=isOver(t.deadline)&&t.status!=='DONE';
-            rows+=`<tr class="tr" id="row-${t.id}">
-            <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
-                ${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>`:''}
-            </td>
-            <td class="tn">${h(t.name)}</td>
-            <td class="tres">${h(t.res||'—')}</td>
-            <td class="tdt">${fd(t.start)}</td>
-            <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
-            <td><span class="chip ${sc(t.status)}" onclick="cycTask('${id}','${at.id}','${k.id}','${t.id}',event)">${si(t.status)?si(t.status)+' ':''}${sl(t.status)}</span></td>
-            <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${id}','${at.id}','${k.id}','${t.id}')">+ メモ</span>`}</td>
-            <td><div class="ta">
-                <button class="ib" onclick="openEdit('${id}','${at.id}','${k.id}','${t.id}')">編集</button>
-                <button class="ib del" onclick="delT('${id}','${at.id}','${k.id}','${t.id}',null)">削除</button>
-            </div></td>
-            </tr>`;
-            for(let j=1;j<span;j++){
-            const tj=tasks[ri+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
-            rows+=`<tr class="tr" id="row-${tj.id}">
-                <td class="tn">${h(tj.name)}</td>
-                <td class="tres">${h(tj.res||'—')}</td>
-                <td class="tdt">${fd(tj.start)}</td>
-                <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
-                <td><span class="chip ${sc(tj.status)}" onclick="cycTask('${id}','${at.id}','${k.id}','${tj.id}',event)">${si(tj.status)?si(tj.status)+' ':''}${sl(tj.status)}</span></td>
-                <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${id}','${at.id}','${k.id}','${tj.id}')">+ メモ</span>`}</td>
-                <td><div class="ta">
-                <button class="ib" onclick="openEdit('${id}','${at.id}','${k.id}','${tj.id}')">編集</button>
-                <button class="ib del" onclick="delT('${id}','${at.id}','${k.id}','${tj.id}',null)">削除</button>
-                </div></td>
-            </tr>`;
-            }
-            ri+=span;
-        }
+        const rows=buildTaskRowsInner(tasks, id, at.id, k.id, c);
 
         return `<div class="kpi-block">
             <div class="kpi-head" onclick="togK('${id}_${at.id}_${k.id}')">
@@ -1679,7 +956,6 @@
         </div>`;
     }).join('');
 
-    // Status filter
     const statusBar=`<div style="margin-bottom:16px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
         <span class="fl">ステータス</span>
         <button class="fb ${fil==='ALL'?'active':''}" onclick="setF('ALL')">All</button>
@@ -1689,28 +965,30 @@
     </div>`;
 
     document.getElementById('ct').innerHTML=fbar+statusBar+areaBlocks+`
-    <div style="padding:16px 0 8px">
-        <div id="add-area-panel-${id}" style="display:none;background:var(--card);border:1.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:8px">
-        <div class="fl2" style="margin-bottom:10px">このLCにエリアを追加</div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input class="fi" id="new-area-name-${id}" placeholder="エリア名（例: HR, Archive...）" style="flex:1;min-width:150px">
-            <input type="color" id="new-area-color-${id}" value="#037EF3" style="width:36px;height:36px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0">
+        <div style="padding:16px 0 8px">
+        <div id="add-area-panel-${id}" style="display:none;background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:8px">
+            <div class="fl2" style="margin-bottom:10px">このLCにエリアを追加（${id}専用）</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fi" id="new-area-name-${id}" placeholder="エリア名（例: IM, PDなど）" style="flex:1;min-width:150px">
+            <input type="color" id="new-area-color-${id}" value="#037EF3" style="width:36px;height:36px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:5px">
             <button class="btn btn-fill" onclick="addAreaToLC('${id}')">追加</button>
             <button class="btn" onclick="document.getElementById('add-area-panel-${id}').style.display='none'">キャンセル</button>
+            </div>
         </div>
-        </div>
-        <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ エリアを追加</button>
-    </div>`;
+        <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ エリアを追加（${id}専用）</button>
+        </div>`;
     }
 
     function togK(id){
     document.getElementById('kb-'+id)?.classList.toggle('open');
     const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
     }
+
     function togGoal(id){
     document.getElementById('kb-'+id)?.classList.toggle('open');
     const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
     }
+
     function deleteGoal(lId,aId,gId){
     const area=getLCArea(lId,aId);if(!area)return;
     const g=area.goals?.find(x=>x.id===gId);if(!g)return;
@@ -1724,6 +1002,7 @@
     else if(view==='lc'&&lcId)rLC(lcId);
     toast(`「${g.name}」を削除しました`);
     }
+
     function setF(s){fil=s;if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);else if(view==='lc'&&lcId)rLC(lcId);}
     function setAF(s){afilter=s;if(view==='lc'&&lcId)rLC(lcId);}
     function applyF(){
@@ -1733,7 +1012,6 @@
     else if(view==='gantt')rGantt();
     }
 
-    /* ── AREA PAGE (single area full view) ── */
     function rArea(lId,aId){
     const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
     const at=getLCAreaTypes(lId).find(x=>x.id===aId);if(!at)return;
@@ -1741,7 +1019,6 @@
     const as=lcAreaStats(lId,aId);
     const q=document.getElementById('si').value.toLowerCase();
 
-    // Stat cards
     const stats=`<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
         <div class="stat-card"><div class="stat-l">KPIs</div><div class="stat-n p" style="color:${c}">${area.kpis.length}</div></div>
         <div class="stat-card"><div class="stat-l">完了 Done</div><div class="stat-n g">${as.done}</div></div>
@@ -1749,7 +1026,6 @@
         <div class="stat-card"><div class="stat-l">未着手</div><div class="stat-n d">${as.ns}</div></div>
     </div>`;
 
-    // Status filter bar
     const fbar=`<div class="fbar" style="margin-bottom:16px">
         <span class="fl">Filter</span>
         <button class="fb ${fil==='ALL'?'active':''}" onclick="setF('ALL')">All (${as.total})</button>
@@ -1759,55 +1035,16 @@
         <div class="fr-right" style="color:${c}">${as.done}/${as.total}</div>
     </div>`;
 
-    // KPI blocks
+    /* BUG FIX: buildTaskRows also uses the shared buildTaskRowsInner (ri+=span outside for loop) */
     function buildTaskRows(k){
         let tasks=k.tasks.filter(t=>{
         if(fil!=='ALL'&&t.status!==fil)return false;
         if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q)&&!(t.group||'').toLowerCase().includes(q))return false;
         return true;
         });
-        let rows='';let ri=0;
-        while(ri<tasks.length){
-        const t=tasks[ri];const grp=t.group||'';
-        let span=1;
-        if(grp){while(ri+span<tasks.length&&tasks[ri+span].group===grp)span++;}
-        const over=isOver(t.deadline)&&t.status!=='DONE';
-        rows+=`<tr class="tr" id="row-${t.id}">
-            <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
-            ${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>`:''}
-            </td>
-            <td class="tn">${h(t.name)}</td>
-            <td class="tres">${h(t.res||'—')}</td>
-            <td class="tdt">${fd(t.start)}</td>
-            <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
-            <td><span class="chip ${sc(t.status)}" onclick="cycTask('${lId}','${aId}','${k.id}','${t.id}',event)">${si(t.status)?si(t.status)+' ':''}${sl(t.status)}</span></td>
-            <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${k.id}','${t.id}')">+ メモ</span>`}</td>
-            <td><div class="ta">
-            <button class="ib" onclick="openEdit('${lId}','${aId}','${k.id}','${t.id}')">編集</button>
-            <button class="ib del" onclick="delT('${lId}','${aId}','${k.id}','${t.id}',null)">削除</button>
-            </div></td>
-        </tr>`;
-        for(let j=1;j<span;j++){
-            const tj=tasks[ri+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
-            rows+=`<tr class="tr" id="row-${tj.id}">
-            <td class="tn">${h(tj.name)}</td>
-            <td class="tres">${h(tj.res||'—')}</td>
-            <td class="tdt">${fd(tj.start)}</td>
-            <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
-            <td><span class="chip ${sc(tj.status)}" onclick="cycTask('${lId}','${aId}','${k.id}','${tj.id}',event)">${si(tj.status)?si(tj.status)+' ':''}${sl(tj.status)}</span></td>
-            <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${k.id}','${tj.id}')">+ メモ</span>`}</td>
-            <td><div class="ta">
-                <button class="ib" onclick="openEdit('${lId}','${aId}','${k.id}','${tj.id}')">編集</button>
-                <button class="ib del" onclick="delT('${lId}','${aId}','${k.id}','${tj.id}',null)">削除</button>
-            </div></td>
-            </tr>`;
-        }
-        ri+=span;
-        }
-        return rows;
+        return buildTaskRowsInner(tasks, lId, aId, k.id, c);
     }
 
-    // Group KPIs by goal
     const goals=area.goals||[];
     function buildKpiBlock(k,i,totalKpis){
         const ks=kpiStats(k);const pct=ks.total?Math.round(ks.done/ks.total*100):0;
@@ -1842,10 +1079,8 @@
         </div>`;
     }
 
-    // Build grouped KPI list
     let kpisHtml='';
     const ungrouped=area.kpis.filter(k=>!k.goalId||!goals.find(g=>g.id===k.goalId));
-    // Goals with KPIs
     goals.forEach(g=>{
         const gKpis=area.kpis.filter(k=>k.goalId===g.id);
         if(gKpis.length===0)return;
@@ -1862,16 +1097,14 @@
             <div class="kpi-chev open" id="cv-gg_${aId}_${g.id}" style="margin-left:6px">›</div>
         </div>
         <div class="goal-group-body open" id="kb-gg_${aId}_${g.id}">
-            ${gKpis.map((k,i)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('')}
+            ${gKpis.map((k)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('')}
         </div>
         </div>`;
     });
-    // Ungrouped
     if(ungrouped.length>0){
-        if(goals.length>0)kpisHtml+=`<div class="goal-group-hd" style="cursor:default;color:var(--dim);font-size:11px;margin-top:8px">未分類のKPI</div>`;
+        if(goals.length>0) kpisHtml+=`<div class="goal-group-hd" style="cursor:default;color:var(--dim);font-size:11px;margin-top:8px">未分類のKPI</div>`;
         kpisHtml+=ungrouped.map((k)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('');
     }
-    const kpis=kpisHtml;
 
     const addKpiBtn=`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="openAddKpi('${lId}','${aId}')">+ KPI を追加...</button></div>`;
 
@@ -1887,10 +1120,9 @@
             <div class="ah-total">${as.done} / ${as.total} tasks · ${area.kpis.length} KPIs</div>
         </div>
         </div>
-        ${stats}${fbar}${kpis}${addKpiBtn}`;
+        ${stats}${fbar}${kpisHtml}${addKpiBtn}`;
     }
 
-    /* ── TASK STATUS CYCLE ── */
     function cycTask(lId,aId,kId,tId,e){
     if(e)e.stopPropagation();
     const area=getLCArea(lId,aId);if(!area)return;
@@ -1907,7 +1139,6 @@
     if(view==='dashboard')rDash();
     }
 
-    /* ── DELETE TASK ── */
     function delT(lId,aId,kId,tId,parentId){
     if(!confirm('削除しますか？'))return;
     const area=getLCArea(lId,aId);if(!area)return;
@@ -1924,23 +1155,7 @@
     else if(view==='dashboard')rDash();
     toast('削除しました');
     }
-    function delT(lId,aId,kId,tId,parentId){
-    if(!confirm('削除しますか？'))return;
-    const area=getLCArea(lId,aId);if(!area)return;
-    const k=area.kpis.find(x=>x.id===kId);if(!k)return;
-    if(parentId&&parentId!=='null'){
-        const parent=k.tasks.find(x=>x.id===parentId);
-        if(parent)parent.children=(parent.children||[]).filter(x=>x.id!==tId);
-    } else {
-        k.tasks=k.tasks.filter(x=>x.id!==tId);
-    }
-    save();buildNav();
-    if(view==='lc'&&lcId)rLC(lcId);
-    else if(view==='dashboard')rDash();
-    toast('削除しました');
-    }
 
-    /* ── GANTT ── */
     const G_START=new Date(2026,1,1);
     const G_END=new Date(2026,8,30);
     const G_MS=G_END-G_START;
@@ -1967,7 +1182,6 @@
 
     function rGantt(){
     const todayPct=Math.max(0,Math.min(100,(new Date()-G_START)/G_MS*100));
-    // LC filter for gantt
     const filtLC=gfil==='ALL'?null:gfil;
     const lcsToShow=filtLC?D.lcs.filter(x=>x.id===filtLC):D.lcs;
 
@@ -2078,6 +1292,7 @@
     document.getElementById('ov').classList.add('open');
     setTimeout(()=>document.getElementById('fn').focus(),80);
     }
+
     function openEdit(lId,aId,kId,tId){
     editingParent=null;
     const area=getLCArea(lId,aId);if(!area)return;
@@ -2100,12 +1315,14 @@
     document.getElementById('ov').classList.add('open');
     setTimeout(()=>document.getElementById('fn').focus(),80);
     }
+
     function fillAreaSel(lId,sa,sk){
     const el=document.getElementById('fa');
     const cLcId=lId||lcId;
     el.innerHTML=getLCAreaTypes(cLcId).map(at=>`<option value="${at.id}"${at.id===sa?' selected':''}>${at.id}</option>`).join('');
     updK(lId,sa,sk);
     }
+
     function updK(lId,aId,kId){
     const cLcId=lId||(editing?editing.lId:lcId);
     const cAId=aId||document.getElementById('fa').value;
@@ -2113,6 +1330,7 @@
     document.getElementById('fk').innerHTML=(area?area.kpis:[]).map(k=>`<option value="${k.id}"${k.id===kId?' selected':''}>${h(k.name.slice(0,45))}</option>`).join('');
     refreshGroupList(cLcId,cAId);
     }
+
     function refreshGroupList(lId,aId){
     const cLcId=lId||(editing?editing.lId:lcId);
     const cAId=aId||document.getElementById('fa').value;
@@ -2121,10 +1339,12 @@
     const groups=[...new Set(area.kpis.flatMap(k=>k.tasks.map(t=>t.group||'')).filter(Boolean))];
     dl.innerHTML=groups.map(g=>`<option value="${h(g)}">`).join('');
     }
+
     function closeM(){
     document.getElementById('ov').classList.remove('open');
     editing=null;editingParent=null;
     }
+
     function saveT(){
     const name=document.getElementById('fn').value.trim();
     if(!name){toast('タスク名を入力してください','err');return;}
@@ -2146,7 +1366,6 @@
         const{lId,aId,kId,tId}=editing;
         const area=getLCArea(lId,aId);const k=area.kpis.find(x=>x.id===kId);
         if(cAId!==aId||cKId!==kId){
-        // Move to different area/kpi
         k.tasks=k.tasks.filter(x=>x.id!==tId);
         const nArea=getLCArea(lId,cAId);const nk=nArea.kpis.find(x=>x.id===cKId);
         if(nk)nk.tasks.push({id:tId,...obj});
@@ -2184,6 +1403,7 @@
     document.getElementById('ov-kpi').classList.add('open');
     setTimeout(()=>document.getElementById('kn').focus(),80);
     }
+
     function openEditKpi(lId,aId,kId){
     const area=getLCArea(lId,aId);if(!area)return;
     const k=area.kpis.find(x=>x.id===kId);if(!k)return;
@@ -2199,6 +1419,7 @@
     updKpiGoals(lId,aId,k.goalId||null);
     document.getElementById('ov-kpi').classList.add('open');
     }
+
     function updKpiGoals(lId,aId,selGoalId){
     const cLcId=lId||(editingKpi?editingKpi.lId:lcId);
     const cAId=aId||document.getElementById('ka').value;
@@ -2208,6 +1429,7 @@
     el.innerHTML=`<option value="">${goals.length?'目標なし（未分類）':'— 目標未設定 —'}</option>`+
         goals.map(g=>`<option value="${g.id}"${g.id===selGoalId?' selected':''}>[${g.type}] ${h(g.name)}</option>`).join('');
     }
+
     function showAddGoalInline(){
     document.getElementById('add-goal-inline').style.display='';
     document.getElementById('new-goal-name').value='';
@@ -2216,6 +1438,7 @@
     function hideAddGoalInline(){
     const el=document.getElementById('add-goal-inline');if(el)el.style.display='none';
     }
+
     function commitAddGoal(){
     const name=document.getElementById('new-goal-name').value.trim();
     if(!name){toast('目標名を入力してください','err');return;}
@@ -2232,7 +1455,9 @@
     hideAddGoalInline();
     toast(`[${type}] 「${name}」を追加しました`);
     }
+
     function closeMKpi(){document.getElementById('ov-kpi').classList.remove('open');editingKpi=null;}
+
     function saveKpi(){
     const name=document.getElementById('kn').value.trim();
     if(!name){toast('KPI名を入力してください','err');return;}
@@ -2257,6 +1482,7 @@
     if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
     else if(view==='lc'&&lcId)rLC(lcId);
     }
+
     function delKpi(){
     if(!editingKpi||editingKpi.mode!=='edit')return;
     const{lId,aId,kId}=editingKpi;
@@ -2269,32 +1495,18 @@
     }
 
     /* ── AREA MANAGEMENT ── */
-    // Global areaTypes = shared across all LCs (defaults + any "add to all")
-    // LC-specific extra areas live in lc.extraAreas (array of {id,name,color})
-    // getLCAreaTypes() merges global + lc.extraAreas
-
-    let areaMgmtLcId=null;
-
     function openAreaMgmt(){
-    areaMgmtLcId=lcId||D.lcs[0].id;
     renderAreaMgmt();
-    document.getElementById('new-area-name').value='';
-    document.getElementById('new-area-color').value=COLOR_PALETTE[D.areaTypes.length%COLOR_PALETTE.length];
-    // Build LC checkboxes — pre-check current LC if in LC view
-    const checks=document.getElementById('lc-checkboxes');
-    checks.innerHTML=D.lcs.map(l=>`
-        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;font-weight:700;color:var(--text)">
-        <input type="checkbox" id="lc-chk-${l.id}" value="${l.id}" ${l.id===areaMgmtLcId?'checked':''} style="width:13px;height:13px;cursor:pointer">
-        ${l.id}
-        </label>`).join('');
+    const nameEl=document.getElementById('new-area-name');
+    const colorEl=document.getElementById('new-area-color');
+    if(nameEl)nameEl.value='';
+    if(colorEl)colorEl.value=COLOR_PALETTE[D.areaTypes.length%COLOR_PALETTE.length];
     document.getElementById('ov-area').classList.add('open');
     }
+
     function closeMArea(){document.getElementById('ov-area').classList.remove('open');}
-    function toggleAllLcCheck(val){
-    D.lcs.forEach(l=>{const el=document.getElementById('lc-chk-'+l.id);if(el)el.checked=val;});
-    }
+
     function renderAreaMgmt(){
-    // Show global areas with edit/delete
     document.getElementById('area-list').innerHTML=D.areaTypes.map((at,i)=>{
         const lcCount=D.lcs.filter(lc=>lc.areas[at.id]&&lc.areas[at.id].kpis.length>0).length;
         const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[at.id];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
@@ -2302,33 +1514,31 @@
         <div class="area-color-swatch" style="background:${at.color}"></div>
         <input class="fi" style="flex:1;font-size:13px;font-weight:700;padding:4px 7px" value="${h(at.name)}"
             onchange="renameAreaType('${at.id}',this.value)">
-        <input type="color" value="${at.color}" style="width:28px;height:28px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0"
+        <input type="color" value="${at.color}" style="width:28px;height:28px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:4px"
             onchange="recolorAreaType('${at.id}',this.value)">
         <span style="font-size:10px;color:var(--dim);min-width:90px;text-align:right">${lcCount} LC / ${taskCount} tasks</span>
         <button class="ib del" onclick="deleteAreaType('${at.id}')" style="font-size:10px" ${D.areaTypes.length<=1?'disabled':''}>削除</button>
         </div>`;
     }).join('');
     }
-    function renameAreaType(aId,newName){
-    const at=D.areaTypes.find(x=>x.id===aId);
-    if(at)at.name=newName.trim()||aId;
-    save();buildNav();
-    if(view==='lc'&&lcId)rLC(lcId);
-    else if(view==='area'&&areaId===aId)rArea(lcId,aId);
-    }
-    function recolorAreaType(aId,color){
-    const at=D.areaTypes.find(x=>x.id===aId);
-    if(at){at.color=color;save();buildNav();}
-    if(view==='lc'&&lcId)rLC(lcId);
-    else if(view==='area'&&areaId===aId)rArea(lcId,aId);
-    }
-    function addAreaType(){
-    // Legacy: kept for compatibility but no longer called from UI
-    }
-    function addAreaToLC(lId){
-    const name=document.getElementById('new-area-name-'+lId).value.trim();
+
+    function addAreaTypeGlobal(){
+    const name=(document.getElementById('new-area-name').value||'').trim();
     if(!name){toast('エリア名を入力してください','err');return;}
-    const color=document.getElementById('new-area-color-'+lId).value;
+    const color=document.getElementById('new-area-color').value;
+    if(D.areaTypes.find(x=>x.id===name)){toast('同名のエリアが既に存在します','err');return;}
+    D.areaTypes.push({id:name,name,color});
+    D.lcs.forEach(lc=>{if(!lc.areas[name])lc.areas[name]={kpis:[]};});
+    save();buildNav();renderAreaMgmt();
+    document.getElementById('new-area-name').value='';
+    toast(`「${name}」を全LCに追加しました`);
+    if(view==='lc'&&lcId)rLC(lcId);
+    }
+
+    function addAreaToLC(lId){
+    const name=(document.getElementById('new-area-name-'+lId)?.value||'').trim();
+    if(!name){toast('エリア名を入力してください','err');return;}
+    const color=document.getElementById('new-area-color-'+lId)?.value||'#037EF3';
     const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
     const existing=getLCAreaTypes(lId);
     if(existing.find(x=>x.id===name||x.name===name)){toast('同名のエリアが既に存在します','err');return;}
@@ -2339,12 +1549,26 @@
     toast(`「${name}」を ${lId} に追加しました`);
     rLC(lId);
     }
-    function _doAddAreaType(){
-    // no-op (legacy)
+
+    function renameAreaType(aId,newName){
+    const at=D.areaTypes.find(x=>x.id===aId);
+    if(at)at.name=newName.trim()||aId;
+    save();buildNav();
+    if(view==='lc'&&lcId)rLC(lcId);
+    else if(view==='area'&&areaId===aId)rArea(lcId,aId);
     }
+
+    function recolorAreaType(aId,color){
+    const at=D.areaTypes.find(x=>x.id===aId);
+    if(at){at.color=color;save();buildNav();}
+    if(view==='lc'&&lcId)rLC(lcId);
+    else if(view==='area'&&areaId===aId)rArea(lcId,aId);
+    }
+
     function deleteAreaType(aId){
     requirePin(()=>_doDeleteAreaType(aId));
     }
+
     function _doDeleteAreaType(aId){
     const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[aId];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
     const msg=taskCount>0?`「${aId}」を削除すると ${taskCount}件のタスクが全LCから削除されます。続けますか？`:`「${aId}」を削除しますか？`;
@@ -2365,6 +1589,7 @@
     /* ── PIN PROTECTION ── */
     const ADMIN_PIN = 'sryo';
     let _pinCallback = null;
+
     function requirePin(callback){
     _pinCallback = callback;
     const mo = document.getElementById('pinModal');
@@ -2373,6 +1598,7 @@
     mo.style.display = 'flex';
     setTimeout(()=>document.getElementById('pinInput').focus(), 80);
     }
+
     function submitPin(){
     const val = document.getElementById('pinInput').value;
     if(val === ADMIN_PIN){
@@ -2384,13 +1610,11 @@
         document.getElementById('pinInput').focus();
     }
     }
+
     function closePinModal(){
     document.getElementById('pinModal').style.display = 'none';
     _pinCallback = null;
     }
-    document.addEventListener('keydown', e => {
-    if(e.key === 'Enter' && document.getElementById('pinModal').style.display === 'flex') submitPin();
-    });
 
     /* ── EXPORT / IMPORT ── */
     function exportD(){
@@ -2398,6 +1622,7 @@
     const u=URL.createObjectURL(b);const a=document.createElement('a');
     a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('エクスポートしました');
     }
+
     function importD(e){
     const f=e.target.files[0];if(!f)return;
     const r=new FileReader();
@@ -2415,6 +1640,8 @@
     document.addEventListener('keydown',e=>{
     if(e.key==='Escape'){closeM();closeMKpi();closeMArea();}
     if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
+    if(e.key==='Enter' && document.getElementById('pinModal').style.display==='flex') submitPin();
+    if(e.key==='Enter' && document.getElementById('login-overlay').style.display!=='none') checkLogin();
     });
     document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)closeM();});
     document.getElementById('ov-kpi').addEventListener('click',function(e){if(e.target===this)closeMKpi();});
@@ -2434,434 +1661,9 @@
     document.body.style.overflow='';
     }
 
-    /* ── HI SEED DATA ── */
-    function applyHISeed(){
-    if(D.hiSeeded)return;
-    const hi=D.lcs.find(x=>x.id==='HI');
-    if(!hi)return;
-    const hasData=Object.values(hi.areas).some(a=>(a.kpis||[]).length>0);
-    if(hasData){D.hiSeeded=true;save();return;}
-    let _i=0;
-    const hid=()=>'hi'+(++_i);
-    const dt=(m,dy,yr)=>yr?`${yr}-${String(m).padStart(2,'0')}-${String(dy).padStart(2,'0')}`:`${m<=9||m>=10?2026:2026}-${String(m).padStart(2,'0')}-${String(dy).padStart(2,'0')}`;
-    const tk=(name,res,sm,sd,em,ed,st,grp)=>({id:hid(),name,res:res||'',start:sm&&sd?dt(sm,sd):'',deadline:em&&ed?dt(em,ed,em<=3&&sd&&sm>=6?2027:em<=3&&!sm?2027:null):'',status:st==='DONE'?'DONE':st==='WIP'?'WIP':'NOT_STARTED',group:grp||''});
-
-    // ── OGX ──
-    const ogxG1=hid(); // KGI Re#27
-    hi.areas['OGX']={goals:[{id:ogxG1,name:'Re#27',type:'KGI'}],kpis:[
-        {id:hid(),name:'KPI1',target:1,actual:1,memo:'Achieved 100%',goalId:ogxG1,tasks:[
-        tk('がんばろ','',null,null,null,null,'NOT_STARTED','戦術apple'),
-        tk('いける','',null,null,null,null,'NOT_STARTED','戦術apple'),
-        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
-        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
-        ]},
-        {id:hid(),name:'KPI2',target:0,actual:2,memo:'DONE率 0.33',goalId:ogxG1,tasks:[
-        tk('がんばろう','',null,null,null,null,'DONE',''),
-        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
-        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
-        ]},
-        {id:hid(),name:'KPI3',target:0,actual:3,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
-        tk('ふぁいと','',null,null,null,null,'DONE',''),
-        ...Array.from({length:8},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI4',target:0,actual:4,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
-        tk('応援してる','',null,null,null,null,'DONE',''),
-        ...Array.from({length:9},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.1',goalId:ogxG1,tasks:[
-        tk('Best of LUCK','',null,null,null,null,'DONE',''),
-        ...Array.from({length:9},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.1 ／ CF-KPI',goalId:ogxG1,tasks:[
-        tk('GOOD LUCK','',null,null,null,null,'DONE',''),
-        ...Array.from({length:9},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-    ]};
-
-    // ── ICX ──
-    const icxG1=hid(),icxG2=hid(),icxG3=hid();
-    hi.areas['ICX']={goals:[
-        {id:icxG1,name:'Re#5 / Raise#6',type:'KGI'},
-        {id:icxG2,name:'テーマ設定をしたイベントを通したRaise#1 パートナー獲得#1',type:'GI'},
-        {id:icxG3,name:'研修の質向上を測る独自作成アンケート #5での9~10回答率100%',type:'GI'},
-    ],kpis:[
-        {id:hid(),name:'アポイントメントセールスによるRaise#5',target:5,actual:1,memo:'0% 達成 ／ アポtoヒアCVR10%、ヒアto提案CVR20%、提案toRaise CVR33%',goalId:icxG1,tasks:[
-        tk('4,5月のアポ数#290 4,5月中の上級生のタスクトラッキング','Sales ML',4,1,5,31,'NOT_STARTED','ヒアリング'),
-        tk('8月以降のアポ数#1380 アポ会の開催週#2','WGL',8,16,10,16,'NOT_STARTED','ヒアリング'),
-        tk('アポtoヒアCVR10%維持 2526termに検証された仮説の利用','All',2,14,10,16,'NOT_STARTED','ヒアリング'),
-        tk('6月のアルムナイ模擬渉外 アルムナイ日調','Taiki(XD)',2,14,4,30,'NOT_STARTED','6月のアルムナイ模擬渉外'),
-        tk('セールス合宿の開催 アルムナイ日調','Taiki(XD)',5,1,7,31,'NOT_STARTED','セールス合宿'),
-        tk('実践用ネトワキ探し','Sales ML',5,1,8,1,'NOT_STARTED','実践用ネトワキ'),
-        tk('9月~10月の模擬渉外、ネトワキ参加 アルムナイ日調','Taiki(XD)',null,null,null,null,'NOT_STARTED','9〜10月模擬渉外'),
-        tk('ネトワキ探し','Sales ML',null,null,null,null,'NOT_STARTED','9〜10月模擬渉外'),
-        ]},
-        {id:hid(),name:'Raise to Realize 100%',target:100,actual:2,memo:'0% 達成',goalId:icxG2,tasks:[
-        tk('IRCSメンバー組閣#4','Nana(IRCS ML)',5,1,5,9,'NOT_STARTED','Raise to Accepted 100%'),
-        tk('IRCS新入生メンバーに対するIR input','Nana(IRCS ML)',5,10,5,16,'NOT_STARTED','Raise to Accepted 100%'),
-        tk('メンバー育成のためのCall#1×4','Nana(IRCS ML)',5,10,5,16,'NOT_STARTED','Raise to Accepted 100%'),
-        tk('Callを置く海外LC探し','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
-        tk('当該LCとの日調','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
-        tk('Callの実施','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Raise to Open間の広報IR Call#3'),
-        tk('EP, 送り出しLCとの定期的なコミュニケーション','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Accepted to Realize 100%'),
-        tk('送り出しLCとの連携による、EP側Realize阻害要因への対処','Nana(IRCS ML)',null,null,null,null,'NOT_STARTED','Accepted to Realize 100%'),
-        ]},
-        {id:hid(),name:'研修の質向上のための研修設計及び測定 #5',target:0,actual:3,memo:'0% 達成',goalId:icxG3,tasks:[
-        tk('ふぁいと','',null,null,null,null,'NOT_STARTED',''),
-        tk('ふぁいと','',null,null,null,null,'NOT_STARTED',''),
-        ...Array.from({length:7},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'TN研修後アンケート「弊団体のサービス/サポートを評価してください」で9以上100%',target:0,actual:4,memo:'DONE率 0.2',goalId:icxG3,tasks:[
-        tk('応援してる','',null,null,null,null,'DONE',''),
-        tk('応援してる','',null,null,null,null,'DONE',''),
-        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.4',goalId:icxG1,tasks:[
-        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.3 ／ CF-KPI',goalId:icxG1,tasks:[
-        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-    ]};
-
-    // ── Mkt ──
-    const mktG1=hid(),mktG2=hid(),mktG3=hid();
-    hi.areas['Mkt']={goals:[
-        {id:mktG1,name:'SNS総Reach数 #250,000',type:'KGI'},
-        {id:mktG2,name:'新歓説明会 導入数',type:'KGI'},
-        {id:mktG3,name:'高校生事業（CF-KPI）',type:'その他'},
-    ],kpis:[
-        {id:hid(),name:'申込書提出数',target:5,actual:3,memo:'60% 達成 ／ DONE率 0.6',goalId:mktG2,tasks:[
-        tk('コミュレス振り','koto, aoi, harukazu',3,21,3,25,'NOT_STARTED','online to新入生'),
-        tk('進捗共有','all eb',3,28,4,30,'NOT_STARTED','online to新入生'),
-        tk('コミュレス振り','aoi, koto',3,21,3,25,'NOT_STARTED','online to上級生'),
-        tk('進捗共有','all eb',3,28,4,30,'NOT_STARTED','online to上級生'),
-        tk('必要な役割洗い出し','koto, aoi',3,4,3,11,'NOT_STARTED','説明会 to新入生'),
-        tk('EBで共有','all eb',3,11,3,17,'NOT_STARTED','説明会 to新入生'),
-        tk('エリアで共有','all eb',3,17,3,24,'NOT_STARTED','説明会 to新入生'),
-        tk('ふるまい方の確認 to全体','all eb',3,20,3,27,'NOT_STARTED','説明会 to上級生'),
-        tk('contents list作成','koto, sarah, analysis mem',null,null,null,null,'DONE','SNS投稿'),
-        tk('投稿物作成者決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿'),
-        tk('投稿TL決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿'),
-        ]},
-        {id:hid(),name:'EXP問い合わせ数',target:0,actual:2,memo:'0% 達成',goalId:mktG1,tasks:[
-        tk('OGXDVDに共有してもらう','keisuke, koto, sarah',8,1,8,8,'NOT_STARTED','市場分析 ターゲット像'),
-        tk('市場となるゼミと授業を絞る','koto, sarah, keisuke, analysis mem',8,1,8,8,'NOT_STARTED','市場分析 ターゲット像'),
-        tk('アプローチの仕方（適切な文言など）の決定','koto, sarah, analysis mem',8,8,8,15,'NOT_STARTED','市場分析 ターゲット像'),
-        tk('事業再開からのEXPの流入経路をまとめる','koto, sarah, analysis mem',8,1,8,8,'NOT_STARTED','過去分析'),
-        tk('去年のEXP販促のMlogやFRを読みこむ','koto, sarah',8,1,8,8,'NOT_STARTED','過去分析'),
-        tk('コンテンツ決定','koto, sarah, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
-        tk('TL決定','koto, sarah, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
-        tk('TL管理者決定','koto, sarah, brand mem, analysis mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
-        tk('作成者決定','koto, brand mem',8,8,8,15,'NOT_STARTED','発信 投稿物'),
-        tk('昨年度のデザイン・作り方の確認','koto, brand mem',8,15,8,22,'NOT_STARTED','ビラ'),
-        tk('デザイン作成者決定','koto, brand mem',8,15,8,22,'NOT_STARTED','ビラ'),
-        tk('TL決定','koto, sarah',8,15,8,22,'NOT_STARTED','ビラ'),
-        tk('配りに行く日決定','koto, sarah, brand mem, analysis mem',8,22,8,29,'NOT_STARTED','ビラ'),
-        tk('枚数決定','sarah, analysis mem',8,22,8,29,'NOT_STARTED','ビラ'),
-        tk('インサイトの合計（EXP販促関係投稿期間）','koto, sarah, analysis mem',11,30,12,15,'NOT_STARTED','分析'),
-        tk('その原因を分析','koto, sarah, analysis mem',12,15,12,22,'NOT_STARTED','分析'),
-        ]},
-        {id:hid(),name:'SNSからの流入数（to 新入生）',target:0,actual:3,memo:'DONE率 1.0（全完了）',goalId:mktG1,tasks:[
-        tk('segmentation N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
-        tk('targeting N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
-        tk('positioning N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
-        tk('targeting深掘り N/A','koto, sarah, analysis mem',null,null,null,null,'DONE','市場分析'),
-        tk('CJ策定 N/A','koto, sarah, analysis mem',2,25,3,4,'WIP','市場分析'),
-        tk('コンテンツ決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
-        tk('TL決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
-        tk('TL管理者決定','koto, sarah, brand mem, analysis mem',2,26,3,8,'WIP','SNS投稿 投稿物'),
-        tk('作成者決定','koto, brand mem',null,null,null,null,'DONE','SNS投稿 投稿物'),
-        tk('インサイトの合計（新歓関係投稿期間）','koto, sarah, analysis mem',5,31,6,7,'NOT_STARTED','分析'),
-        tk('その原因を分析','koto, sarah, analysis mem',6,7,6,14,'NOT_STARTED','分析'),
-        ]},
-        {id:hid(),name:'SNS(Facebook)の閲覧数（to B）',target:0,actual:4,memo:'0% 達成',goalId:mktG1,tasks:[
-        tk('LCPに内容・文面作成依頼','koto, harukazu',6,1,6,15,'NOT_STARTED','最初の投稿 to B'),
-        tk('Mkt brandに投稿物作成依頼','koto',6,17,6,24,'NOT_STARTED','最初の投稿 to B'),
-        tk('投稿','brand mem',6,24,7,1,'NOT_STARTED','最初の投稿 to B'),
-        tk('BDにSNS上でのマナーのインプットを協力依頼','koto',6,1,6,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
-        tk('メンバーとつながりのあるアルムナイをバイネームで挙げる','koto, arisa',6,1,6,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
-        tk('アルムナイのアカウントをフォロー','koto, arisa',7,1,7,8,'NOT_STARTED','アルムナイのアカウントをフォロー'),
-        tk('LCP会議のMkt Areaの議題として挙げる','koto',2,15,2,22,'NOT_STARTED','to B特化した発信の仕方の研究'),
-        tk('意見を回収し、投稿内容や投稿頻度・投稿形態の確定','koto',2,22,3,1,'NOT_STARTED','to B特化した発信の仕方の研究'),
-        tk('Mkt analysisがFacebook運用しているボランティア団体などの投稿の傾向を分析','sarah, koto, analysis mem',6,1,6,15,'NOT_STARTED','競合から学ぶ'),
-        tk('変化させる必要がある点と真似して発信したほうが良い点の洗い出し・まとめ','sarah, analysis mem',6,15,6,22,'NOT_STARTED','競合から学ぶ'),
-        tk('Mkt brandへの共有','koto, sarah',6,22,7,29,'NOT_STARTED','競合から学ぶ'),
-        tk('申し送り事項に入れる','koto, sarah',12,1,12,8,'NOT_STARTED','競合から学ぶ'),
-        tk('用途を明確化','koto',2,21,2,28,'NOT_STARTED','Facebook運用計画'),
-        tk('運用計画の仮決定','koto, sarah',3,1,3,8,'NOT_STARTED','Facebook運用計画'),
-        tk('BD Areaに確認・共有','koto, arisa',3,8,3,15,'NOT_STARTED','Facebook運用計画'),
-        tk('運用計画の決定','koto, sarah',6,1,6,8,'NOT_STARTED','Facebook運用計画'),
-        tk('Mktメンバーへの共有','koto, sarah',6,15,6,22,'NOT_STARTED','Facebook運用計画'),
-        tk('MCチェックのあり方の確認','koto',3,1,3,8,'WIP','投稿の遅延リスクヘッジ'),
-        tk('各function忙しい時期の把握','koto, sarah',3,8,3,15,'NOT_STARTED','投稿の遅延リスクヘッジ'),
-        tk('1年間概要投稿物TLの作成','koto, sarah',3,15,3,22,'NOT_STARTED','投稿の遅延リスクヘッジ'),
-        tk('1年間のキャパを考えたうえでres振り','koto, sarah',6,20,6,27,'NOT_STARTED','投稿の遅延リスクヘッジ'),
-        tk('投稿するものの概要を決める','koto, sarah',2,24,3,2,'NOT_STARTED','投稿しやすい仕組み① テンプレ作成'),
-        tk('必要な型をMkt brandが作成','koto, brand mem',6,10,6,24,'NOT_STARTED','投稿しやすい仕組み① テンプレ作成'),
-        tk('全体でチェックするものだという共通認識を取る','koto',3,1,3,8,'WIP','投稿しやすい仕組み② TL共有'),
-        tk('TL管理担当者を決める','koto, sarah',6,24,7,1,'NOT_STARTED','投稿しやすい仕組み② TL共有'),
-        ]},
-        {id:hid(),name:'Mktアンケートでの「他エリアの事業理解度」平均 8/10',target:8,actual:5,memo:'0% 達成',goalId:mktG1,tasks:[
-        tk('項目の案出し（フロー①上級生向け現状把握）','koto, sarah',6,1,6,8,'NOT_STARTED','アンケートフロー①'),
-        tk('作成者決定','koto, sarah, brand mem, analysis mem',6,8,6,15,'NOT_STARTED','アンケートフロー①'),
-        tk('フロー日決定','koto, sarah',6,8,6,15,'NOT_STARTED','アンケートフロー①'),
-        tk('回答促進コミュ','koto, aoi',6,15,6,22,'NOT_STARTED','アンケートフロー①'),
-        tk('項目の案出し（フロー②夏頃 to全体）','koto, sarah',8,1,8,8,'NOT_STARTED','アンケートフロー②'),
-        tk('作成者決定','koto, sarah, brand mem, analysis mem',8,8,8,15,'NOT_STARTED','アンケートフロー②'),
-        tk('フロー日決定','koto, sarah',8,8,8,15,'NOT_STARTED','アンケートフロー②'),
-        tk('回答促進コミュ','koto, sarah',8,15,8,22,'NOT_STARTED','アンケートフロー②'),
-        tk('項目の案出し（フロー③冬頃 to全体）','koto, sarah',12,1,12,8,'NOT_STARTED','アンケートフロー③'),
-        tk('作成者決定','koto, sarah, brand mem, analysis mem',12,8,12,15,'NOT_STARTED','アンケートフロー③'),
-        tk('フロー日決定','koto, sarah',12,8,12,15,'NOT_STARTED','アンケートフロー③'),
-        tk('回答促進コミュ','koto, sarah',12,15,12,22,'NOT_STARTED','アンケートフロー③'),
-        tk('項目の案出し（フロー④年度終わり to全体）','koto, sarah',3,1,3,8,null,'NOT_STARTED','アンケートフロー④'),
-        tk('作成者決定','koto, sarah, brand mem, analysis mem',3,8,3,15,null,'NOT_STARTED','アンケートフロー④'),
-        tk('フロー日決定','koto, sarah',3,8,3,15,null,'NOT_STARTED','アンケートフロー④'),
-        tk('回答促進コミュ','koto, sarah',3,15,3,22,null,'NOT_STARTED','アンケートフロー④'),
-        tk('過去のアンケートフロー・回答コミュの方法の洗い出し','koto, sarah, analysis mem',6,15,6,22,'NOT_STARTED','アンケートを形骸化させない'),
-        tk('コミュ方法の決定','koto, sarah',6,15,6,22,'NOT_STARTED','アンケートを形骸化させない'),
-        tk('項目の案出しの際に聞く背景まで決める','sarah, koto',6,1,6,8,'NOT_STARTED','回答回収の具体化'),
-        tk('アンケートの目的明確化','koto, sarah',3,1,3,8,'NOT_STARTED','回答回収の具体化'),
-        tk('メンバーの理想状態を明確化','koto, sarah',3,1,3,8,'NOT_STARTED','回答回収の具体化'),
-        tk('分析する手順を決める','koto, sarah, analysis mem',6,15,6,22,'NOT_STARTED','回答回収の具体化'),
-        tk('各エリア月に投稿したいこと回収','koto, all eb',5,24,5,31,'NOT_STARTED','to E SNS投稿'),
-        tk('brandに内部インスタの投稿内容を共有','koto, brand mem',6,1,6,8,'NOT_STARTED','to E SNS投稿'),
-        tk('月のTLをエリアで共有','koto, sarah, brand mem, analysis mem',6,1,6,8,'NOT_STARTED','to E 定期投稿'),
-        tk('製作担当者の決定','koto, brand mem',6,8,6,15,'NOT_STARTED','to E 定期投稿'),
-        tk('TL管理者の決定','koto, sarah, brand mem, analysis mem',6,8,6,15,'NOT_STARTED','to E 定期投稿'),
-        tk('テンプレの作成','koto, brand mem',6,15,6,22,'NOT_STARTED','to E 定期投稿'),
-        ]},
-        {id:hid(),name:'高校生事業 参加した高校生の人数 60人（CF-KPI）',target:60,actual:4,memo:'0% 達成 ／ CF-KPI',goalId:mktG3,tasks:[
-        tk('アンケート回答協力の依頼 to mem','koto, sarah',7,1,7,8,'NOT_STARTED','市場を知る アンケート'),
-        tk('アンケートを作成する','koto, sarah, brand mem, analysis mem',7,1,7,8,'NOT_STARTED','市場を知る アンケート'),
-        tk('回答を集めて分析','koto, sarah, analysis mem',7,15,7,22,'NOT_STARTED','市場を知る アンケート'),
-        tk('今年のエバを読みこむ','koto, sarah',7,1,7,8,'NOT_STARTED','過去分析'),
-        tk('メンバーと共有','koto, sarah',7,8,7,15,'NOT_STARTED','過去分析'),
-        tk('今年の分の残し方を決める','koto, sarah',12,15,12,22,'NOT_STARTED','過去分析'),
-        tk('樫原さん ヒアリング','koto',7,15,7,22,'NOT_STARTED','ヒアリング'),
-        tk('去年やったメンバー ヒアリング','koto, sarah',7,15,7,22,'NOT_STARTED','ヒアリング'),
-        tk('実施メンバーの募集（夏）','koto, sarah',7,1,7,8,'NOT_STARTED','年2回開催 夏'),
-        tk('メンバー決定（夏）','koto, sarah',7,8,7,15,'NOT_STARTED','年2回開催 夏'),
-        tk('開催場所決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','年2回開催 夏'),
-        tk('コンテンツ作成（夏）','koto, sarah',7,15,7,29,'NOT_STARTED','年2回開催 夏'),
-        tk('Fと話し合って予算の決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','年2回開催 夏'),
-        tk('good, more, try 申し送りを記録（夏）','koto, sarah',8,23,8,30,'NOT_STARTED','年2回開催 夏'),
-        tk('実施メンバーの募集（冬）','koto, sarah',11,1,11,8,'NOT_STARTED','年2回開催 冬'),
-        tk('メンバー決定（冬）','koto, sarah',11,8,11,15,'NOT_STARTED','年2回開催 冬'),
-        tk('開催場所決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','年2回開催 冬'),
-        tk('コンテンツ作成（冬）','koto, sarah',11,15,11,29,'NOT_STARTED','年2回開催 冬'),
-        tk('Fと話し合って予算の決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','年2回開催 冬'),
-        tk('good, more, try 申し送りを記録（冬）','koto, sarah',1,24,1,31,'NOT_STARTED','年2回開催 冬'),
-        tk('投稿物決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
-        tk('TL決定（夏）','koto, sarah',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
-        tk('TL管理者決定（夏）','koto, sarah, brand mem, analysis mem',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
-        tk('作成者決定（夏）','koto, brand mem',7,15,7,22,'NOT_STARTED','SNS発信 投稿（夏）'),
-        tk('投稿する（夏）','koto',8,1,8,15,'NOT_STARTED','SNS発信 投稿（夏）'),
-        tk('投稿物決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
-        tk('TL決定（冬）','koto, sarah',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
-        tk('TL管理者決定（冬）','koto, sarah, brand mem, analysis mem',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
-        tk('作成者決定（冬）','koto, brand mem',11,15,11,22,'NOT_STARTED','SNS発信 投稿（冬）'),
-        tk('投稿する（冬）','koto',12,1,12,15,'NOT_STARTED','SNS発信 投稿（冬）'),
-        tk('インサイトの合計を出す（夏 事業関係投稿期間）','koto, sarah, analysis mem',9,1,9,15,'NOT_STARTED','分析（夏）'),
-        tk('その原因を分析する（夏）','koto, sarah, analysis mem',9,15,9,30,'NOT_STARTED','分析（夏）'),
-        tk('インサイトの合計を出す（冬 事業関係投稿期間）','koto, sarah, analysis mem',1,15,9,22,'NOT_STARTED','分析（冬）'),
-        tk('その原因を分析する（冬）','koto, sarah, analysis mem',1,24,1,31,'NOT_STARTED','分析（冬）'),
-        ]},
-    ]};
-
-    // ── TM ──
-    const tmG1=hid();
-    hi.areas['TM']={goals:[{id:tmG1,name:'（KGI 未設定）',type:'KGI'}],kpis:[
-        {id:hid(),name:'KPI1',target:5,actual:3,memo:'60% 達成 ／ DONE率 2/5',goalId:tmG1,tasks:[
-        tk('がんばろっ','',null,null,null,null,'DONE','戦術apple'),
-        tk('（タスク）','',null,null,null,null,'DONE','戦術apple'),
-        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
-        tk('（タスク）','',null,null,null,null,'NOT_STARTED','戦術bunny'),
-        ]},
-        {id:hid(),name:'KPI2',target:0,actual:2,memo:'DONE率 0.33',goalId:tmG1,tasks:[
-        tk('がんばろう','',null,null,null,null,'DONE',''),
-        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
-        tk('がんばろう','',null,null,null,null,'NOT_STARTED',''),
-        ]},
-        {id:hid(),name:'KPI3',target:0,actual:3,memo:'DONE率 0.2',goalId:tmG1,tasks:[
-        ...Array.from({length:2},()=>tk('ふぁいと','',null,null,null,null,'DONE','')),
-        ...Array.from({length:7},()=>tk('ふぁいと','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI4',target:0,actual:4,memo:'DONE率 0.2',goalId:tmG1,tasks:[
-        ...Array.from({length:2},()=>tk('応援してる','',null,null,null,null,'DONE','')),
-        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI5',target:0,actual:5,memo:'DONE率 0.4',goalId:tmG1,tasks:[
-        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI6（CF-KPI）',target:0,actual:4,memo:'DONE率 0.3 ／ CF-KPI',goalId:tmG1,tasks:[
-        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-    ]};
-
-    // ── BD ──
-    const bdG1=hid(),bdG2=hid();
-    hi.areas['BD']={goals:[
-        {id:bdG1,name:'アルムナイ接点数 ／ ネームバリュー = 認知拡大 x 信頼醸成 x 行動転換力',type:'KGI'},
-        {id:bdG2,name:'外部関係者数',type:'KGI'},
-    ],kpis:[
-        {id:hid(),name:'ネームバリュー = 認知拡大 x 信頼醸成 x 行動転換力',target:5,actual:3,memo:'60% 達成 ／ DONE率 0',goalId:bdG1,tasks:[
-        tk('ペルソナ決め（協働SH）','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
-        tk('アプローチ方法決定','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
-        tk('渉外','arisa, haruki',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
-        tk('契約','arisa',null,null,null,null,'NOT_STARTED','イベント 協働SH'),
-        tk('案出し（コンテンツ）','arisa, haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('GSS記入','haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('企画書作成','haruki, alliance mem',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('MC check','haruki',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('協働相手に打診','arisa, haruki',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('合意','arisa',null,null,null,null,'NOT_STARTED','コンテンツ'),
-        tk('ペルソナ決め（集客）','arisa, haruki',null,null,null,null,'NOT_STARTED','集客'),
-        tk('他LCヒアリング','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
-        tk('過去事例参照','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
-        tk('アプローチ方法決定（集客）','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
-        tk('実施','haruki, alliance mem',null,null,null,null,'NOT_STARTED','集客'),
-        ]},
-        {id:hid(),name:'外部リソースのHI内部への還元',target:0,actual:3,memo:'0% 達成',goalId:bdG2,tasks:[
-        tk('SRB講師（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
-        tk('事後研修（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
-        tk('過去渡航性ヒアリング（GV）','arisa, keisuke',null,null,null,null,'NOT_STARTED','事業成長 GV'),
-        tk('模擬渉外（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
-        tk('ビジコン（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
-        tk('企業セミナー（iGTa）','arisa, taiki',null,null,null,null,'NOT_STARTED','事業成長 iGTa'),
-        tk('高校生事業','arisa, koto',null,null,null,null,'NOT_STARTED','事業成長 高校生'),
-        tk('LCM登壇（アルムナイ）','arisa, aoi',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
-        tk('アルムナイ訪問','arisa, aoi',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
-        tk('若手アルムナイ総会','all eb',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
-        tk('アルムナイ総会','all eb',null,null,null,null,'NOT_STARTED','人材育成 アルムナイ接点'),
-        tk('若手アルムナイ総会（寄付金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 寄付金'),
-        tk('アルムナイ総会（寄付金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 寄付金'),
-        tk('LCM登壇（協賛金）','arisa, kazuto',null,null,null,null,'NOT_STARTED','集金 協賛金'),
-        tk('イベント（協賛金）','arisa, kazuto, haruki',null,null,null,null,'NOT_STARTED','集金 協賛金'),
-        tk('アルムナイ訪問（情報把握）','arisa, 会期設計 mem',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
-        tk('アルムナイ図鑑の更新','arisa, 会期設計 mem',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
-        tk('エリア需要把握 BD Ss','arisa',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
-        tk('エリアD 定例o2o（需要把握）','all eb',null,null,null,null,'NOT_STARTED','期待値調整 アルムナイ情報把握'),
-        tk('エリアD 定例o2o（進捗確認）','all eb',null,null,null,null,'NOT_STARTED','コミュ管理'),
-        tk('コミュ歴記録','arisa',null,null,null,null,'NOT_STARTED','蓄積'),
-        ]},
-        {id:hid(),name:'KPI3',target:0,actual:4,memo:'DONE率 0.2',goalId:bdG1,tasks:[
-        ...Array.from({length:2},()=>tk('応援してる','',null,null,null,null,'DONE','')),
-        ...Array.from({length:8},()=>tk('応援してる','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI4',target:0,actual:5,memo:'DONE率 0.4',goalId:bdG1,tasks:[
-        ...Array.from({length:4},()=>tk('Best of LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:6},()=>tk('Best of LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-        {id:hid(),name:'KPI5（CF-KPI）',target:0,actual:4,memo:'DONE率 0.33 ／ CF-KPI',goalId:bdG1,tasks:[
-        ...Array.from({length:3},()=>tk('GOOD LUCK','',null,null,null,null,'DONE','')),
-        ...Array.from({length:7},()=>tk('GOOD LUCK','',null,null,null,null,'NOT_STARTED','')),
-        ]},
-    ]};
-
-    // ── Finance (F) ──
-    const fG1=hid();
-    hi.areas['F']={goals:[{id:fG1,name:'年間支出200万円（金額仮）',type:'GI'}],kpis:[
-        {id:hid(),name:'KPI 1：予算履行率〇％',target:0,actual:1,memo:'0% 達成',goalId:fG1,tasks:[
-        tk('想定可能支出先/支出額一覧作成','kazuto',3,1,3,8,'NOT_STARTED','月次予実管理'),
-        tk('予算作成','kazuto',3,1,3,26,'NOT_STARTED','月次予実管理'),
-        tk('予実管理フォーマット作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','月次予実管理'),
-        tk('4月分予実管理','kazuto, 財務mem',5,1,5,7,'NOT_STARTED','月次予実管理'),
-        tk('5月分予実管理','kazuto, 財務mem',6,1,6,7,'NOT_STARTED','月次予実管理'),
-        tk('6月分予実管理','kazuto, 財務mem',7,1,7,7,'NOT_STARTED','月次予実管理'),
-        tk('7月分予実管理','kazuto, 財務mem',8,1,8,7,'NOT_STARTED','月次予実管理'),
-        tk('8月分予実管理','kazuto, 財務mem',9,1,9,7,'NOT_STARTED','月次予実管理'),
-        tk('財務マニュアルver.1作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','EB内財務報告'),
-        tk('報告フォーマット作成','kazuto, 財務mem',3,16,4,30,'NOT_STARTED','EB内財務報告'),
-        tk('4月分財務報告','kazuto',5,1,5,12,'NOT_STARTED','EB内財務報告'),
-        tk('5月分財務報告','kazuto',6,1,6,9,'NOT_STARTED','EB内財務報告'),
-        tk('6月分財務報告','kazuto',7,1,7,7,'NOT_STARTED','EB内財務報告'),
-        tk('7月分財務報告','kazuto',8,1,8,11,'NOT_STARTED','EB内財務報告'),
-        tk('8月分財務報告','kazuto',9,1,9,8,'NOT_STARTED','EB内財務報告'),
-        ]},
-        {id:hid(),name:'KPI 2：注力収益額〇円',target:0,actual:2,memo:'0% 達成',goalId:fG1,tasks:[
-        tk('若手アルムナイ総会財務報告','kazuto',6,13,7,3,'NOT_STARTED','アルムナイ寄附金'),
-        tk('月次口座残高管理表の作成','kazuto, 財務mem, 会計mem',5,1,5,30,'NOT_STARTED','アルムナイ寄附金'),
-        tk('想定支出先/支出額一覧作成','kazuto',3,1,3,4,'NOT_STARTED','アルムナイ寄附金'),
-        tk('口座残高安定マニュアル作成','kazuto',3,1,3,7,'NOT_STARTED','アルムナイ寄附金'),
-        ]},
-        {id:hid(),name:'KPI3：資格審査項目抵触数 #0',target:0,actual:3,memo:'0% 達成',goalId:fG1,tasks:[
-        tk('仕訳帳提出TL管理シートの作成','kazuto, nonomi',4,10,null,null,'WIP','月次仕訳帳提出不備#0'),
-        tk('4月分仕訳帳提出','kazuto, 会計mem',4,24,5,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
-        tk('5月分仕訳帳提出','kazuto, 会計mem',5,25,6,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
-        tk('6月分仕訳帳提出','kazuto, 会計mem',6,24,7,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
-        tk('7月分仕訳帳提出','kazuto, 会計mem',7,25,8,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
-        tk('8月分仕訳帳提出','kazuto, 会計mem',8,25,9,3,'NOT_STARTED','月次仕訳帳提出不備#0'),
-        tk('仕訳帳check（Q1局内監査）','kazuto, 会計mem',7,3,7,10,'NOT_STARTED','Q1局内監査'),
-        tk('書類（Q1局内監査）','kazuto, 会計mem',7,3,7,10,'NOT_STARTED','Q1局内監査'),
-        tk('立替金精算（Q1局内監査）','kazuto, 会計mem',7,10,7,31,'NOT_STARTED','Q1局内監査'),
-        tk('未払金精算（Q1局内監査）','kazuto',7,10,7,31,'NOT_STARTED','Q1局内監査'),
-        tk('仕訳帳check（中間決算前局内監査）','kazuto, 会計mem',9,3,9,10,'NOT_STARTED','中間決算前局内監査'),
-        tk('書類（中間決算前局内監査）','kazuto, 会計mem',9,3,9,10,'NOT_STARTED','中間決算前局内監査'),
-        tk('立替金精算（中間決算前局内監査）','kazuto, 会計mem',9,10,9,30,'NOT_STARTED','中間決算前局内監査'),
-        tk('未払金精算（中間決算前局内監査）','kazuto',9,10,9,30,'NOT_STARTED','中間決算前局内監査'),
-        tk('中間決算','kazuto',9,15,null,null,'NOT_STARTED','中間決算'),
-        tk('会計/監査マニュアル改訂・動画化','kazuto, 会計mem',4,1,7,31,'NOT_STARTED','会計/監査マニュアル'),
-        tk('Finance新メンバー組閣#4','kazuto',6,15,7,30,'NOT_STARTED','会計人材育成#5'),
-        tk('会計テスト合格者#5','kazuto, nonomi',8,1,10,31,'NOT_STARTED','会計人材育成#5'),
-        ]},
-        {id:hid(),name:'KPI4：対外部財務報告数 #3',target:3,actual:4,memo:'0% 達成',goalId:fG1,tasks:[
-        tk('若手アルムナイ総会財務報告','kazuto',6,13,7,3,'NOT_STARTED','若手アルムナイ総会'),
-        tk('アルムナイ総会財務報告','kazuto',null,null,null,null,'NOT_STARTED','アルムナイ総会'),
-        tk('LCP会議財務報告','kazuto',null,null,null,null,'NOT_STARTED','LCP会議'),
-        tk('過去資料まとめ','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
-        tk('良い財務報告について学習','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
-        tk('テンプレ作成','kazuto, 財務mem',6,1,6,15,'NOT_STARTED','財務報告マニュアル'),
-        ]},
-        {id:hid(),name:'KPI5：対内部財務報告数 #12',target:12,actual:5,memo:'0% 達成',goalId:fG1,tasks:[
-        tk('Fレポテンプレ作成','kazuto, momone',3,7,null,null,'WIP','LCM月次財務報告(Fレポ)'),
-        tk('3月分Fレポ','kazuto, 財務mem',4,8,4,24,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('4月分Fレポ','kazuto, 財務mem',5,8,5,29,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('5月分Fレポ','kazuto, 財務mem',6,8,6,26,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('6月分Fレポ','kazuto, 財務mem',7,8,7,31,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('7月分Fレポ','kazuto, 財務mem',8,8,8,28,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('8月分Fレポ','kazuto, 財務mem',9,8,9,25,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        tk('財務マニュアルver.2作成','kazuto, 財務mem',8,1,9,30,'NOT_STARTED','LCM月次財務報告(Fレポ)'),
-        ]},
-        {id:hid(),name:'KPI6：（中長期・投資判断基準系）（CF-KPI）',target:0,actual:4,memo:'0% 達成 ／ CF-KPI',goalId:fG1,tasks:[
-        tk('中長期財務方針の作成','',8,1,2,28,'NOT_STARTED','中長期財務方針'),
-        tk('LCM FinanceSs#5','',6,1,2,28,'NOT_STARTED','中長期財務方針'),
-        tk('MCのものを。（投資判断基準導入）','kazuto',10,1,2,28,'NOT_STARTED','投資判断基準導入'),
-        tk('支出','kazuto, 財務mem',4,1,3,31,'NOT_STARTED','投資判断基準導入'),
-        tk('判断','kazuto, 財務mem',10,1,12,31,'NOT_STARTED','投資判断基準導入'),
-        ]},
-    ]};
-
-    // ── Archive (extra area) ──
-    // Archive is not a default area - add as extra area
-    const archColor='#52565E';
-    if(!hi.extraAreas)hi.extraAreas=[];
-    if(!hi.extraAreas.find(x=>x.id==='Archive')){
-        hi.extraAreas.push({id:'Archive',name:'Archive',color:archColor});
-    }
-    if(!hi.areas['Archive'])hi.areas['Archive']={kpis:[]};
-    hi.areas['Archive']={goals:[],kpis:[
-        {id:hid(),name:'YP-FR集',target:0,actual:1,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'GEN',target:0,actual:2,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'OGX Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'ICX Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'Mkt Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'TM Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'BD Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-        {id:hid(),name:'F Archive',target:0,actual:3,memo:'0% 達成',goalId:null,tasks:[]},
-    ]};
-
-    D.hiSeeded=true;
-    save();
-    console.log('[HI Seed] Applied HI Action Tracker data successfully.');
-    }
-
     /* ── INIT ── */
     load();
+    initLogin();
     buildNav();
     document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
     rDash();
