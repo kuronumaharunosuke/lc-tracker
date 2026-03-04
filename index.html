@@ -556,31 +556,28 @@
     <!-- AREA MGMT MODAL -->
     <div class="overlay" id="ov-area">
     <div class="modal modal-wide">
-        <div class="mh">エリア管理</div>
+        <div class="mh">エリア管理（共通エリアの編集・削除）</div>
         <div class="mb">
-        <div style="margin-bottom:14px;">
-            <div class="fl2" style="margin-bottom:8px">現在のエリア（共通）</div>
-            <div id="area-list"></div>
-        </div>
-        <div style="border-top:1px solid var(--border);padding-top:14px;">
-            <div class="fl2" style="margin-bottom:8px">新しいエリアを追加</div>
-            <div class="fr2">
-            <div class="fg"><label class="fl2">エリア名</label><input class="fi" id="new-area-name" placeholder="例: HR, BD2..."></div>
-            <div class="fg"><label class="fl2">カラー</label><input class="fi" type="color" id="new-area-color" value="#037EF3" style="height:40px;padding:3px 6px;cursor:pointer;"></div>
-            </div>
-            <div class="fg">
-            <label class="fl2" style="margin-bottom:6px">追加するLC</label>
-            <div style="display:flex;gap:6px;margin-bottom:6px">
-                <button class="btn" style="font-size:10px;padding:4px 10px" onclick="toggleAllLcCheck(true)">全選択</button>
-                <button class="btn" style="font-size:10px;padding:4px 10px" onclick="toggleAllLcCheck(false)">全解除</button>
-            </div>
-            <div id="lc-checkboxes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:4px;max-height:160px;overflow-y:auto;border:1.5px solid var(--border);border-radius:5px;padding:8px;background:var(--bg)"></div>
-            </div>
-        </div>
+        <div class="fl2" style="margin-bottom:8px">共通エリア一覧</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px">※ エリアの追加は各LCページから行えます</div>
+        <div id="area-list"></div>
         </div>
         <div class="mf">
         <button class="btn" onclick="closeMArea()">閉じる</button>
-        <button class="btn btn-fill" onclick="addAreaType()">+ 追加</button>
+        </div>
+    </div>
+    </div>
+
+    <!-- PIN Modal -->
+    <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:var(--card);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px;">🔒 管理者認証</div>
+        <div style="font-size:13px;color:var(--dim);margin-bottom:16px;">この操作にはパスワードが必要です</div>
+        <input id="pinInput" type="password" class="fi" placeholder="パスワードを入力" style="width:100%;margin-bottom:8px;font-size:15px;letter-spacing:2px;" autocomplete="off">
+        <div id="pinError" style="display:none;font-size:12px;color:#e74c3c;margin-bottom:10px;">❌ パスワードが違います</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn" onclick="closePinModal()">キャンセル</button>
+        <button class="btn btn-fill" onclick="submitPin()">確認</button>
         </div>
     </div>
     </div>
@@ -652,12 +649,12 @@
     function seedHIIfEmpty(){
     const hi=D.lcs.find(x=>x.id==='HI');
     if(!hi)return;
-    const HI_SEED_VER=3;
+    const HI_SEED_VER=2;
+    // Detect if area has real named KPIs vs placeholders like 'KPI5'
     const _hasRealKPIs=(area)=>{
         if(!hi.areas[area]||!hi.areas[area].kpis||hi.areas[area].kpis.length===0)return false;
         if(hi._seedVer&&hi._seedVer>=HI_SEED_VER)return true;
-        if(area==='OGX'||area==='TM')return hi.areas[area].kpis.length>0;
-        return false;
+        return !hi.areas[area].kpis.some(k=>/^KPI[0-9]+$/.test(k.name));
     };
     const needOGX=!_hasRealKPIs('OGX');
     const needTM=!_hasRealKPIs('TM');
@@ -666,6 +663,12 @@
     const needBD=!_hasRealKPIs('BD');
     const needF=!_hasRealKPIs('F');
     if(!needOGX&&!needTM&&!needICX&&!needMkt&&!needBD&&!needF){hi._seedVer=HI_SEED_VER;return;}
+    // const needTM=!_hasRealKPIs('TM');
+    // const needICX=!_hasRealKPIs('ICX');
+    // const needMkt=!_hasRealKPIs('Mkt');
+    // const needBD=!_hasRealKPIs('BD');
+    // const needF=!_hasRealKPIs('F');
+    // if(!needOGX&&!needTM&&!needICX&&!needMkt&&!needBD&&!needF){hi._seedVer=HI_SEED_VER;return;}
     let _i=0;
     function sid(){return'hi'+(++_i);}
     function t(name,res,start,dead,status,children){
@@ -781,7 +784,7 @@
         t('ふぁいと 7','','','','Not Started',[]),t('ふぁいと 8','','','','Not Started',[]),
         t('ふぁいと 9','','','','Not Started',[]),
         ]},
-        {id:sid(),name:'TN研修後アンケート「弊団体のサービス/サポートを評価してください」で9以上100%',goalId:ic3.id,memo:'DONE率0.2',tasks:[
+        {id:sid(),name:'TN研修後アンケートの項目「海外インターンシップにおける弊団体のサービス/サポートを評価してください」で9以上100%',goalId:ic3.id,memo:'DONE率0.2',tasks:[
         t('応援してる 1','','','','DONE',[]),t('応援してる 2','','','','DONE',[]),
         t('応援してる 3','','','','Not Started',[]),t('応援してる 4','','','','Not Started',[]),
         t('応援してる 5','','','','Not Started',[]),t('応援してる 6','','','','Not Started',[]),
@@ -898,13 +901,13 @@
         {id:sid(),name:'to B SNS(Facebook)の閲覧数',goalId:mk1.id,memo:'実際値4',tasks:[
         t('HIFacebookアカウントのフォロワーを増やしてからの投稿開始','','','','Not Started',[
             t('最初の投稿（団体紹介・次年度の方針の共有）','','','','Not Started',[
-            t('LCPに内容・文面作成依頼','koto, harukazu',d(6,1),d(6,15),'Not Started',[]),
-            t('Mkt brandに投稿物作成依頼','koto',d(6,17),d(6,24),'Not Started',[]),
+            t('LCPに内容、文面作成依頼⇒作成','koto, harukazu',d(6,1),d(6,15),'Not Started',[]),
+            t('Mkt brandに投稿物作成依頼⇒作成','koto',d(6,17),d(6,24),'Not Started',[]),
             t('投稿','brand mem',d(6,24),d(7,1),'Not Started',[]),
             ]),
             t('アルムナイのアカウントをフォローする','','','','Not Started',[
             t('BDにSNS上でのマナーのインプットを協力依頼','koto',d(6,1),d(6,8),'Not Started',[]),
-            t('アルムナイをバイネームで挙げる','koto, arisa',d(6,1),d(6,8),'Not Started',[]),
+            t('メンバーとつながりのある、もしくはアルムナイ訪問などに協力的なアルムナイをバイネームで挙げる','koto, arisa',d(6,1),d(6,8),'Not Started',[]),
             t('アルムナイのアカウントをフォロー','koto, arisa',d(7,1),d(7,8),'Not Started',[]),
             ]),
         ]),
@@ -973,7 +976,9 @@
             t('アンケートを形骸化させない','','','','Not Started',[
             t('過去のアンケートフロー・回答コミュの方法の洗い出し','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
             t('コミュ方法の決定','koto, sarah',d(6,15),d(6,22),'Not Started',[]),
-            t('項目の案出しの際に聞く背景まで決める','sarah, koto',d(6,1),d(6,8),'Not Started',[]),
+            ]),
+            t('回答回収のその後の具体化','','','','Not Started',[
+            t('項目の案出しの際に、聞く背景まで決める','sarah, koto',d(6,1),d(6,8),'Not Started',[]),
             t('アンケートの目的明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
             t('メンバーの理想状態を明確化','koto, sarah',d(3,1,2027),d(3,8,2027),'Not Started',[]),
             t('分析する手順を決める','koto, sarah, analysis mem',d(6,15),d(6,22),'Not Started',[]),
@@ -1683,7 +1688,19 @@
         <button class="fb ${fil==='NOT_STARTED'?'active':''}" onclick="setF('NOT_STARTED')">Not Started</button>
     </div>`;
 
-    document.getElementById('ct').innerHTML=fbar+statusBar+areaBlocks;
+    document.getElementById('ct').innerHTML=fbar+statusBar+areaBlocks+`
+    <div style="padding:16px 0 8px">
+        <div id="add-area-panel-${id}" style="display:none;background:var(--card);border:1.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:8px">
+        <div class="fl2" style="margin-bottom:10px">このLCにエリアを追加</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input class="fi" id="new-area-name-${id}" placeholder="エリア名（例: HR, Archive...）" style="flex:1;min-width:150px">
+            <input type="color" id="new-area-color-${id}" value="#037EF3" style="width:36px;height:36px;border:none;background:none;cursor:pointer;padding:0;flex-shrink:0">
+            <button class="btn btn-fill" onclick="addAreaToLC('${id}')">追加</button>
+            <button class="btn" onclick="document.getElementById('add-area-panel-${id}').style.display='none'">キャンセル</button>
+        </div>
+        </div>
+        <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ エリアを追加</button>
+    </div>`;
     }
 
     function togK(id){
@@ -2306,37 +2323,29 @@
     else if(view==='area'&&areaId===aId)rArea(lcId,aId);
     }
     function addAreaType(){
-    const name=document.getElementById('new-area-name').value.trim();
-    if(!name){toast('エリア名を入力してください','err');return;}
-    const color=document.getElementById('new-area-color').value;
-    // Which LCs are checked?
-    const checkedLcs=D.lcs.filter(l=>{const el=document.getElementById('lc-chk-'+l.id);return el&&el.checked;});
-    if(checkedLcs.length===0){toast('追加するLCを選んでください','err');return;}
-    const allChecked=checkedLcs.length===D.lcs.length;
-    if(allChecked){
-        // Add as global area
-        if(D.areaTypes.find(x=>x.id===name)){toast('同名のエリアが既に存在します','err');return;}
-        D.areaTypes.push({id:name,name,color});
-        D.lcs.forEach(lc=>{if(!lc.areas[name])lc.areas[name]={kpis:[]};});
-        toast(`「${name}」を全LC共通エリアとして追加しました`);
-    } else {
-        // Add only to checked LCs — use a namespaced id to avoid clashing with global
-        checkedLcs.forEach(lc=>{
-        const lcATs=getLCAreaTypes(lc.id);
-        if(lcATs.find(x=>x.id===name)){return;} // skip if already exists for this LC
-        if(!lc.extraAreas)lc.extraAreas=[];
-        if(!lc.extraAreas.find(x=>x.id===name))lc.extraAreas.push({id:name,name,color});
-        if(!lc.areas[name])lc.areas[name]={kpis:[]};
-        });
-        const lcNames=checkedLcs.map(l=>l.id).join(', ');
-        toast(`「${name}」を ${lcNames} に追加しました`);
+    // Legacy: kept for compatibility but no longer called from UI
     }
-    save();buildNav();renderAreaMgmt();
-    document.getElementById('new-area-name').value='';
-    document.getElementById('new-area-color').value=COLOR_PALETTE[D.areaTypes.length%COLOR_PALETTE.length];
-    if(view==='lc'&&lcId)rLC(lcId);
+    function addAreaToLC(lId){
+    const name=document.getElementById('new-area-name-'+lId).value.trim();
+    if(!name){toast('エリア名を入力してください','err');return;}
+    const color=document.getElementById('new-area-color-'+lId).value;
+    const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
+    const existing=getLCAreaTypes(lId);
+    if(existing.find(x=>x.id===name||x.name===name)){toast('同名のエリアが既に存在します','err');return;}
+    if(!lc.extraAreas)lc.extraAreas=[];
+    lc.extraAreas.push({id:name,name,color});
+    if(!lc.areas[name])lc.areas[name]={kpis:[]};
+    save();buildNav();
+    toast(`「${name}」を ${lId} に追加しました`);
+    rLC(lId);
+    }
+    function _doAddAreaType(){
+    // no-op (legacy)
     }
     function deleteAreaType(aId){
+    requirePin(()=>_doDeleteAreaType(aId));
+    }
+    function _doDeleteAreaType(aId){
     const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[aId];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
     const msg=taskCount>0?`「${aId}」を削除すると ${taskCount}件のタスクが全LCから削除されます。続けますか？`:`「${aId}」を削除しますか？`;
     if(!confirm(msg))return;
@@ -2352,6 +2361,36 @@
     if(view==='lc'&&lcId)rLC(lcId);
     else if(view==='dashboard')rDash();
     }
+
+    /* ── PIN PROTECTION ── */
+    const ADMIN_PIN = 'sryo';
+    let _pinCallback = null;
+    function requirePin(callback){
+    _pinCallback = callback;
+    const mo = document.getElementById('pinModal');
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinError').style.display = 'none';
+    mo.style.display = 'flex';
+    setTimeout(()=>document.getElementById('pinInput').focus(), 80);
+    }
+    function submitPin(){
+    const val = document.getElementById('pinInput').value;
+    if(val === ADMIN_PIN){
+        document.getElementById('pinModal').style.display = 'none';
+        if(_pinCallback){ _pinCallback(); _pinCallback = null; }
+    } else {
+        document.getElementById('pinError').style.display = 'block';
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinInput').focus();
+    }
+    }
+    function closePinModal(){
+    document.getElementById('pinModal').style.display = 'none';
+    _pinCallback = null;
+    }
+    document.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && document.getElementById('pinModal').style.display === 'flex') submitPin();
+    });
 
     /* ── EXPORT / IMPORT ── */
     function exportD(){
