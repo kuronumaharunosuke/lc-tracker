@@ -975,6 +975,22 @@
             <button class="btn" onclick="document.getElementById('add-area-panel-${id}').style.display='none'">キャンセル</button>
             </div>
         </div>
+        ${(()=>{
+            const extras=(D.lcs.find(x=>x.id===id)?.extraAreas||[]).filter(e=>!D.areaTypes.find(g=>g.id===e.id));
+            if(extras.length===0) return '';
+            return `<div style="background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px">
+            <div class="fl2" style="margin-bottom:8px">${id} 専用エリア</div>
+            ${extras.map(at=>{
+                const taskCount=(D.lcs.find(x=>x.id===id)?.areas[at.id]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
+                return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+                <div style="width:10px;height:10px;border-radius:2px;background:${at.color};flex-shrink:0"></div>
+                <span style="font-size:12px;font-weight:700;color:var(--dark);flex:1">${h(at.name)}</span>
+                <span style="font-size:10px;color:var(--dim)">${taskCount} tasks</span>
+                <button class="ib del" style="font-size:10px" onclick="deleteExtraArea('${id}','${at.id}')">削除</button>
+                </div>`;
+            }).join('')}
+            </div>`;
+        })()}
         <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ エリアを追加（${id}専用）</button>
         </div>`;
     }
@@ -1507,7 +1523,8 @@
     function closeMArea(){document.getElementById('ov-area').classList.remove('open');}
 
     function renderAreaMgmt(){
-    document.getElementById('area-list').innerHTML=D.areaTypes.map((at,i)=>{
+    // ── グローバルエリア一覧 ──
+    const globalHtml = D.areaTypes.map((at)=>{
         const lcCount=D.lcs.filter(lc=>lc.areas[at.id]&&lc.areas[at.id].kpis.length>0).length;
         const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[at.id];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
         return `<div class="area-list-row">
@@ -1520,6 +1537,31 @@
         <button class="ib del" onclick="deleteAreaType('${at.id}')" style="font-size:10px" ${D.areaTypes.length<=1?'disabled':''}>削除</button>
         </div>`;
     }).join('');
+
+    // ── LC個別エリア一覧 ──
+    const lcExtraRows = D.lcs.map(lc=>{
+        const extras=(lc.extraAreas||[]).filter(e=>!D.areaTypes.find(g=>g.id===e.id));
+        if(extras.length===0) return '';
+        return extras.map(at=>{
+        const taskCount=(lc.areas[at.id]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
+        return `<div class="area-list-row">
+            <div class="area-color-swatch" style="background:${at.color}"></div>
+            <span style="font-size:11px;font-weight:700;color:var(--dark);flex:1">${h(at.name)}</span>
+            <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:${REGION_COLORS[lc.region]||'#037EF3'}22;color:${REGION_COLORS[lc.region]||'#037EF3'}">${lc.id}</span>
+            <span style="font-size:10px;color:var(--dim);min-width:70px;text-align:right">${taskCount} tasks</span>
+            <button class="ib del" onclick="deleteExtraArea('${lc.id}','${at.id}')" style="font-size:10px">削除</button>
+        </div>`;
+        }).join('');
+    }).join('');
+
+    const extraSection = lcExtraRows
+        ? `<div style="margin-top:16px;padding-top:14px;border-top:1.5px solid var(--border)">
+            <div class="fl2" style="margin-bottom:8px">LC個別エリア一覧</div>
+            ${lcExtraRows}
+        </div>`
+        : '';
+
+    document.getElementById('area-list').innerHTML = globalHtml + extraSection;
     }
 
     function addAreaTypeGlobal(){
@@ -1584,6 +1626,29 @@
     toast(`「${aId}」を削除しました`);
     if(view==='lc'&&lcId)rLC(lcId);
     else if(view==='dashboard')rDash();
+    }
+
+    /* LC個別エリアの削除（PIN保護） */
+    function deleteExtraArea(lId, aId){
+    requirePin(()=>_doDeleteExtraArea(lId, aId));
+    }
+
+    function _doDeleteExtraArea(lId, aId){
+    const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
+    const taskCount=(lc.areas[aId]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
+    const msg=taskCount>0
+        ?`「${aId}」（${lId}専用）を削除すると ${taskCount}件のタスクが削除されます。続けますか？`
+        :`「${aId}」（${lId}専用）を削除しますか？`;
+    if(!confirm(msg))return;
+    lc.extraAreas=(lc.extraAreas||[]).filter(x=>x.id!==aId);
+    delete lc.areas[aId];
+    save();buildNav();
+    if(document.getElementById('ov-area').classList.contains('open')) renderAreaMgmt();
+    if(afilter===aId)afilter='ALL';
+    if(areaId===aId&&lcId===lId){areaId=null;view='lc';}
+    toast(`「${aId}」を ${lId} から削除しました`);
+    if(view==='lc'&&lcId===lId)rLC(lId);
+    else if(view==='area'&&lcId===lId)swLC(lId,null);
     }
 
     /* ── PIN PROTECTION ── */
