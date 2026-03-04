@@ -1249,7 +1249,7 @@
             rowsHtml+=`
                 <div class="g-row">
                 <div class="g-name" style="cursor:pointer" onclick="swLC('${lc.id}',null)" title="${lc.id} · ${at.id}">
-                    <span class="chip ${sc(t.status)}" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="event.stopPropagation();cycTask('${lc.id}','${at.id}','${k.id}','${t.id}',event)">${si(t.status)||'·'}</span>
+                    <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${t.status==='DONE'?'var(--done)':t.status==='WIP'?'var(--wip)':'var(--faint)'}"></div>
                     <span style="font-size:9px;font-weight:900;color:${c};flex-shrink:0">${at.id}</span>
                     <span class="g-name-txt" title="${h(t.name)}">${h(t.name)}</span>
                     ${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">！</span>':''}
