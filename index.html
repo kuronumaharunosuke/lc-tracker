@@ -1885,7 +1885,6 @@ function _doDeleteExtraArea(lId,aId){
 }
 
 /* ── PIN PROTECTION ── */
-const ADMIN_PIN='0422'; // フォールバック（Firestoreに'ADMIN'のパスワードが設定されていれば上書き）
 let _pinCallback=null;
 
 function requirePin(callback){
@@ -1899,13 +1898,9 @@ function requirePin(callback){
 
 async function submitPin(){
   const val=document.getElementById('pinInput').value;
-  // Firestoreの'ADMIN'パスワードで照合（なければソースコードのフォールバック）
   let ok=false;
   if(window._fsCheckPassword){
     ok = await window._fsCheckPassword('ADMIN', val);
-    if(!ok) ok=(val===ADMIN_PIN); // フォールバック
-  } else {
-    ok=(val===ADMIN_PIN);
   }
   if(ok){
     document.getElementById('pinModal').style.display='none';
