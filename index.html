@@ -56,11 +56,21 @@
   };
 
   // ユーザーロール取得（Firestoreのusersコレクションから）
-  window._fsGetRole = async (email) => {
+  window._fsGetRole = async (email, displayName) => {
     try {
       const snap = await getDoc(doc(db, 'lc-tracker-users', email));
-      if (snap.exists()) return snap.data(); // { role: 'mc' } or { role: 'lc', lcId: 'HI' }
-      return { role: 'lc', lcId: null }; // 未登録 = 閲覧のみ
+      if (snap.exists()) {
+        // displayNameを更新
+        const data = snap.data();
+        if(displayName && data.displayName !== displayName){
+          await setDoc(doc(db, 'lc-tracker-users', email), {...data, displayName}, {merge:true});
+        }
+        return data;
+      }
+      // 未登録 → 自動登録（閲覧のみ）
+      const newUser = { role: 'lc', lcId: null, displayName: displayName||'' };
+      await setDoc(doc(db, 'lc-tracker-users', email), newUser);
+      return newUser;
     } catch(e) {
       return { role: 'lc', lcId: null };
     }
@@ -77,6 +87,12 @@
       const snap = await getDocs(collection(db, 'lc-tracker-users'));
       return snap.docs.map(d => ({ email: d.id, ...d.data() }));
     } catch(e) { return []; }
+  };
+
+  // ユーザー削除（MCのみ）
+  window._fsDeleteUser = async (email) => {
+    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    await deleteDoc(doc(db, 'lc-tracker-users', email));
   };
 
   // Firestore data load + realtime
@@ -102,7 +118,7 @@
         return;
       }
       // ロール取得してアプリ起動
-      const roleData = await window._fsGetRole(user.email);
+      const roleData = await window._fsGetRole(user.email, user.displayName);
       window._fsOnSignIn({ email: user.email, displayName: user.displayName, ...roleData });
       startDataSync();
     } else {
@@ -472,6 +488,7 @@ html{font-size:13px;}
       </div>
     </div>
     <button id="area-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none" onclick="openAreaMgmt()">エリア管理</button>
+    <button id="user-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none;background:#FFC845;color:#1B2C5E" onclick="openUserMgmt()">👥 ユーザー管理</button>
     <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ エクスポート</button>
     <label id="import-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer;display:none">
       ↑ Import
@@ -608,6 +625,20 @@ html{font-size:13px;}
   </div>
 </div>
 
+<!-- USER MGMT MODAL -->
+<div class="overlay" id="ov-user">
+  <div class="modal modal-wide">
+    <div class="mh">👥 ユーザー管理</div>
+    <div class="mb">
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6">@aiesec.jpでログインしたメンバーが「未割り当て」として表示されます。MCがロールとLCを設定してください。</div>
+      <div id="user-list-wrap"></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeOverlay('ov-user')">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- PIN MODAL -->
 <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--white);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
@@ -666,6 +697,7 @@ function applyUserUI(){
   document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'LCメンバー';
   document.getElementById('sb-id').textContent=u.role==='mc'?'MC — 全権限':(u.lcId||u.email||'---');
   document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
+  document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
 }
 
@@ -1687,6 +1719,75 @@ function delKpi(){
   save();buildNav();closeMKpi();
   if(view==='lc'&&lcId)rLC(lcId);
   toast('KPI deleted');
+}
+
+
+/* ── USER MANAGEMENT (MC only) ── */
+async function openUserMgmt(){
+  if(!isMC()){toast('MCのみ操作できます','err');return;}
+  document.getElementById('user-list-wrap').innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">読み込み中...</div>';
+  document.getElementById('ov-user').style.display='flex';
+  await renderUserList();
+}
+
+async function renderUserList(){
+  const users = window._fsGetAllUsers ? await window._fsGetAllUsers() : [];
+  const wrap = document.getElementById('user-list-wrap');
+  if(!users.length){
+    wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">まだユーザーがいません。<br>メンバーがGoogleログインすると自動的にここに表示されます。</div>';
+    return;
+  }
+  const unassigned = users.filter(u=>!u.lcId && u.role!=='mc');
+  const assigned = users.filter(u=>u.lcId || u.role==='mc');
+  let html='';
+  if(unassigned.length){
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">未割り当て（${unassigned.length}人）</div>`;
+    html+=unassigned.map(u=>userRow(u)).join('');
+    html+=`<div style="border-top:1.5px solid var(--border);margin:16px 0"></div>`;
+  }
+  if(assigned.length){
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">割り当て済み（${assigned.length}人）</div>`;
+    html+=assigned.map(u=>userRow(u)).join('');
+  }
+  wrap.innerHTML=html;
+}
+
+function userRow(u){
+  const lcOptions = LC_META.map(lc=>`<option value="${lc.id}" ${u.lcId===lc.id?'selected':''}>${lc.id} — ${lc.name}</option>`).join('');
+  const isMCUser = u.role==='mc';
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px;flex-wrap:wrap">
+    <div style="flex:1;min-width:180px">
+      <div style="font-size:12px;font-weight:700;color:var(--text)">${h(u.displayName||u.email)}</div>
+      <div style="font-size:10px;color:var(--dim)">${h(u.email)}</div>
+    </div>
+    <select onchange="updateUserRole('${u.email}',this.value,document.getElementById('lc-sel-${CSS.escape(u.email)}').value)"
+      style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer">
+      <option value="lc" ${!isMCUser?'selected':''}>LCメンバー</option>
+      <option value="mc" ${isMCUser?'selected':''}>MC</option>
+    </select>
+    <select id="lc-sel-${u.email}" ${isMCUser?'disabled':''} onchange="updateUserRole('${u.email}',document.querySelector('[onchange*=\\'${u.email}\\']').value,this.value)"
+      style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer;${isMCUser?'opacity:0.4':''}">
+      <option value="">LC未選択</option>
+      ${lcOptions}
+    </select>
+    <button onclick="removeUser('${u.email}')" style="font-size:10px;padding:3px 8px;border:1.5px solid var(--danger);border-radius:5px;color:var(--danger);background:transparent;cursor:pointer">削除</button>
+  </div>`;
+}
+
+async function updateUserRole(email, role, lcId){
+  if(!window._fsSaveRole) return;
+  const data = role==='mc' ? {role:'mc'} : {role:'lc', lcId: lcId||null};
+  await window._fsSaveRole(email, data);
+  toast('更新しました');
+  await renderUserList();
+}
+
+async function removeUser(email){
+  if(!confirm(`${email} を削除しますか？`)) return;
+  // Firestoreからドキュメント削除
+  if(window._fsDeleteUser) await window._fsDeleteUser(email);
+  toast('削除しました');
+  await renderUserList();
 }
 
 /* ── AREA MANAGEMENT (MC only) ── */
