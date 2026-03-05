@@ -7,8 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAHG9NPELCihzqKkhQEEUW9KU_Jv-bXbNA",
@@ -21,29 +20,33 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
-  const auth = getAuth(app);
   const REF = doc(db, 'lc-tracker-2627', 'main');
 
-  // Googleログイン（@aiesec.net限定）
-  window._fsSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ hd: 'aiesec.jp' });
+  // パスワード照合（Firestoreから取得）
+  window._fsCheckPassword = async (lcOrMC, pw) => {
     try {
-      const result = await signInWithPopup(auth, provider);
-      const email = result.user.email;
-      if (!email.endsWith('@aiesec.jp')) {
-        await signOut(auth);
-        window._fsOnAuthError('aiesec.jpのアカウントでログインしてください');
-        return;
-      }
-    } catch(e) {
-      window._fsOnAuthError('ログインに失敗しました');
-    }
+      const snap = await getDoc(doc(db, 'lc-tracker-passwords', lcOrMC));
+      if (!snap.exists()) return false;
+      return snap.data().pw === pw;
+    } catch(e) { return false; }
   };
 
-  // ログアウト
+  // パスワード保存（MCのみ）
+  window._fsSavePassword = async (lcOrMC, pw) => {
+    await setDoc(doc(db, 'lc-tracker-passwords', lcOrMC), { pw });
+  };
+
+  // 全パスワード取得（MCのみ）
+  window._fsGetPasswords = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'lc-tracker-passwords'));
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { return []; }
+  };
+
+  // ログアウト（セッションクリア）
   window._fsSignOut = async () => {
-    await signOut(auth);
+    window._fsOnSignOut();
   };
 
   // Firestore save
@@ -55,48 +58,8 @@
     }
   };
 
-  // ユーザーロール取得（Firestoreのusersコレクションから）
-  window._fsGetRole = async (email, displayName) => {
-    try {
-      const snap = await getDoc(doc(db, 'lc-tracker-users', email));
-      if (snap.exists()) {
-        // displayNameを更新
-        const data = snap.data();
-        if(displayName && data.displayName !== displayName){
-          await setDoc(doc(db, 'lc-tracker-users', email), {...data, displayName}, {merge:true});
-        }
-        return data;
-      }
-      // 未登録 → 自動登録（閲覧のみ）
-      const newUser = { role: 'lc', lcId: null, displayName: displayName||'' };
-      await setDoc(doc(db, 'lc-tracker-users', email), newUser);
-      return newUser;
-    } catch(e) {
-      return { role: 'lc', lcId: null };
-    }
-  };
-
-  // ユーザーロール保存（MCのみ）
-  window._fsSaveRole = async (email, roleData) => {
-    await setDoc(doc(db, 'lc-tracker-users', email), roleData);
-  };
-
-  // 全ユーザー一覧取得（MCのみ）
-  window._fsGetAllUsers = async () => {
-    try {
-      const snap = await getDocs(collection(db, 'lc-tracker-users'));
-      return snap.docs.map(d => ({ email: d.id, ...d.data() }));
-    } catch(e) { return []; }
-  };
-
-  // ユーザー削除（MCのみ）
-  window._fsDeleteUser = async (email) => {
-    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    await deleteDoc(doc(db, 'lc-tracker-users', email));
-  };
-
   // Firestore data load + realtime
-  const startDataSync = () => {
+  window._fsInit = async () => {
     getDoc(REF).then(snap => {
       if (snap.exists()) window._fsOnLoad(JSON.parse(snap.data().payload));
       else window._fsOnLoad(null);
@@ -109,23 +72,8 @@
     });
   };
 
-  // 認証状態の監視（核心部分）
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      if (!user.email.endsWith('@aiesec.jp')) {
-        await signOut(auth);
-        window._fsOnAuthError('aiesec.jpのアカウントでログインしてください');
-        return;
-      }
-      // ロール取得してアプリ起動
-      const roleData = await window._fsGetRole(user.email, user.displayName);
-      window._fsOnSignIn({ email: user.email, displayName: user.displayName, ...roleData });
-      startDataSync();
-    } else {
-      // 未ログイン → ログイン画面を表示
-      window._fsOnSignOut();
-    }
-  });
+  // モジュール準備完了フラグ
+  window._fsModuleReady = true;
 </script>
 <style>
 :root{
@@ -445,13 +393,21 @@ html{font-size:13px;}
     <div style="font-size:42px;font-weight:900;color:#fff;letter-spacing:0.04em;line-height:1.05">LC ACTION<br><span style="color:#FFC845">TRACKER</span></div>
     <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:10px;letter-spacing:0.14em;text-transform:uppercase">2627 · Internal Use Only</div>
   </div>
-  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:340px;max-width:calc(100vw - 32px);text-align:center">
-    <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:20px;line-height:1.6">@aiesec.jp のGoogleアカウントで<br>ログインしてください</div>
-    <button id="google-signin-btn" onclick="if(window._fsSignIn){window._fsSignIn();}else{document.getElementById('login-err').textContent='読み込み中です、少し待ってから再度押してください';document.getElementById('login-err').style.display='block';}" style="width:100%;background:#fff;color:#333;border:none;border-radius:7px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;display:flex;align-items:center;justify-content:center;gap:10px;box-sizing:border-box">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Googleでログイン
-    </button>
-    <div id="login-err" style="display:none;font-size:11px;color:#F85A40;margin-top:12px;font-weight:700"></div>
+  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:340px;max-width:calc(100vw - 32px)">
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px">LCを選択</div>
+      <select id="login-lc"
+        style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:14px;font-family:'Lato',sans-serif;padding:10px 12px;outline:none;border-radius:7px;cursor:pointer;box-sizing:border-box">
+        <!-- populated by JS -->
+      </select>
+    </div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px">パスワードを入力</div>
+    <input id="login-pw" type="password" placeholder="Password" autocomplete="off"
+      style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-family:'Lato',sans-serif;padding:10px 14px;outline:none;border-radius:7px;margin-bottom:8px;letter-spacing:2px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')checkLogin()">
+    <div id="login-err" style="display:none;font-size:11px;color:#F85A40;margin-bottom:8px;font-weight:700">パスワードが違います</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-bottom:12px;line-height:1.5">LC を選択するとそのLCのみ編集できます。MC は全体を編集できます。</div>
+    <button onclick="checkLogin()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">入る</button>
   </div>
 </div>
 
@@ -488,7 +444,7 @@ html{font-size:13px;}
       </div>
     </div>
     <button id="area-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none" onclick="openAreaMgmt()">エリア管理</button>
-    <button id="user-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none;background:#FFC845;color:#1B2C5E" onclick="openUserMgmt()">👥 ユーザー管理</button>
+    <button id="user-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none;background:#FFC845;color:#1B2C5E" onclick="openUserMgmt()">パスワード管理</button>
     <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ エクスポート</button>
     <label id="import-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer;display:none">
       ↑ Import
@@ -628,10 +584,10 @@ html{font-size:13px;}
 <!-- USER MGMT MODAL -->
 <div class="overlay" id="ov-user">
   <div class="modal modal-wide">
-    <div class="mh">👥 ユーザー管理</div>
+    <div class="mh">パスワード管理</div>
     <div class="mb">
-      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6">@aiesec.jpでログインしたメンバーが「未割り当て」として表示されます。MCがロールとLCを設定してください。</div>
-      <div id="user-list-wrap"></div>
+      <div style="font-size:11px;color:var(--dim);margin-bottom:16px;line-height:1.6">MCと各LCのパスワードを設定してください。ソースコードには保存されずFirestoreに安全に保管されます。</div>
+      <div id="pw-mgmt-wrap"></div>
     </div>
     <div class="mf">
       <button class="btn" onclick="closeOverlay('ov-user')">閉じる</button>
@@ -655,47 +611,78 @@ html{font-size:13px;}
 
 <script>
 const SK = 'aiesec_lc2627v1';
+const USER_SK = 'aiesec_lc2627_user';
 
-/* ── USER SESSION（メモリのみ・sessionStorageに秘密情報なし）── */
-let _currentUser = null; // { email, displayName, role, lcId }
-
-function getUser(){ return _currentUser || {role:'lc',lcId:null}; }
+/* ── USER SESSION ── */
+function getUser(){
+  try{const s=sessionStorage.getItem(USER_SK);if(s)return JSON.parse(s);}catch(e){}
+  return {role:'lc',lcId:null};
+}
+function setUser(u){ sessionStorage.setItem(USER_SK,JSON.stringify(u)); }
 function isMC(){ return getUser().role==='mc'; }
 function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId; }
 
-/* ── AUTH CALLBACKS（Firebaseモジュールから呼ばれる）── */
-window._fsOnSignIn = function(userData) {
-  _currentUser = userData;
-  document.getElementById('login-overlay').style.display='none';
-  applyUserUI();
-  // _fsInitが呼ばれていなければここで起動
-  if(!window._fsReady) window._fsInit && window._fsInit();
-};
+/* ── LOGIN（Firestoreのパスワードで照合）── */
+function populateLoginSelect(){
+  const sel=document.getElementById('login-lc');
+  sel.innerHTML=
+    `<option value="MC" style="background:#1B2C5E;color:#FFC845;font-weight:900">MC</option>`+
+    LC_META.map(lc=>`<option value="${lc.id}" style="background:#1B2C5E;color:#fff">${lc.id} — ${lc.name}</option>`).join('');
+}
 
-window._fsOnSignOut = function() {
-  _currentUser = null;
+async function checkLogin(){
+  const sel=document.getElementById('login-lc').value;
+  const pw=document.getElementById('login-pw').value;
+  const btn=document.querySelector('#login-overlay button[onclick*=checkLogin]');
+  if(btn){btn.textContent='確認中...';btn.disabled=true;}
+
+  let ok=false;
+  if(window._fsCheckPassword){
+    ok = await window._fsCheckPassword(sel, pw);
+  }
+
+  if(btn){btn.textContent='入る';btn.disabled=false;}
+
+  if(ok){
+    const u=sel==='MC'?{role:'mc',lcId:null}:{role:'lc',lcId:sel};
+    setUser(u);
+    document.getElementById('login-overlay').style.display='none';
+    document.getElementById('login-pw').value='';
+    document.getElementById('login-err').style.display='none';
+    applyUserUI();
+    if(!window._fsReady && window._fsInit) window._fsInit();
+  } else {
+    document.getElementById('login-err').style.display='block';
+    document.getElementById('login-pw').value='';
+    document.getElementById('login-pw').focus();
+  }
+}
+
+function initLogin(){
+  populateLoginSelect();
+  const u=getUser();
+  if(u && u.role && (u.role==='mc'||u.lcId)){
+    document.getElementById('login-overlay').style.display='none';
+    applyUserUI();
+  } else {
+    setTimeout(()=>document.getElementById('login-pw').focus(),100);
+  }
+}
+
+window._fsOnSignOut = function(){
+  sessionStorage.removeItem(USER_SK);
   document.getElementById('login-overlay').style.display='flex';
 };
 
-window._fsOnAuthError = function(msg) {
-  const el=document.getElementById('login-err');
-  el.textContent=msg;
-  el.style.display='block';
-};
-
-function initLogin(){
-  // 認証状態はFirebaseモジュールのonAuthStateChangedが管理するため何もしない
-  // ローディング中はオーバーレイを表示したままにする
-}
-
 function doLogout(){
-  if(window._fsSignOut) window._fsSignOut();
+  sessionStorage.removeItem(USER_SK);
+  location.reload();
 }
 
 function applyUserUI(){
   const u=getUser();
   document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'LCメンバー';
-  document.getElementById('sb-id').textContent=u.role==='mc'?'MC — 全権限':(u.lcId||u.email||'---');
+  document.getElementById('sb-id').textContent=u.role==='mc'?'MC — 全権限':(u.lcId||'---');
   document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
@@ -1722,72 +1709,36 @@ function delKpi(){
 }
 
 
-/* ── USER MANAGEMENT (MC only) ── */
+/* ── PASSWORD MANAGEMENT (MC only) ── */
 async function openUserMgmt(){
   if(!isMC()){toast('MCのみ操作できます','err');return;}
-  document.getElementById('user-list-wrap').innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">読み込み中...</div>';
+  document.getElementById('pw-mgmt-wrap').innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">読み込み中...</div>';
   document.getElementById('ov-user').style.display='flex';
-  await renderUserList();
+  await renderPwMgmt();
 }
 
-async function renderUserList(){
-  const users = window._fsGetAllUsers ? await window._fsGetAllUsers() : [];
-  const wrap = document.getElementById('user-list-wrap');
-  if(!users.length){
-    wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">まだユーザーがいません。<br>メンバーがGoogleログインすると自動的にここに表示されます。</div>';
-    return;
-  }
-  const unassigned = users.filter(u=>!u.lcId && u.role!=='mc');
-  const assigned = users.filter(u=>u.lcId || u.role==='mc');
-  let html='';
-  if(unassigned.length){
-    html+=`<div style="font-size:10px;font-weight:700;color:var(--danger);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">未割り当て（${unassigned.length}人）</div>`;
-    html+=unassigned.map(u=>userRow(u)).join('');
-    html+=`<div style="border-top:1.5px solid var(--border);margin:16px 0"></div>`;
-  }
-  if(assigned.length){
-    html+=`<div style="font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">割り当て済み（${assigned.length}人）</div>`;
-    html+=assigned.map(u=>userRow(u)).join('');
-  }
-  wrap.innerHTML=html;
+async function renderPwMgmt(){
+  const existing = window._fsGetPasswords ? await window._fsGetPasswords() : [];
+  const pwMap = {};
+  existing.forEach(p=>{ pwMap[p.id]=p.pw; });
+
+  const all = [{id:'MC', name:'MC（全権限）'}, ...LC_META.map(lc=>({id:lc.id, name:`${lc.id} — ${lc.name}`}))];
+  let html = all.map(item=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:7px;margin-bottom:5px;flex-wrap:wrap">
+      <div style="min-width:160px;font-size:12px;font-weight:700;color:${item.id==='MC'?'#FFC845':'var(--text)'};">${h(item.name)}</div>
+      <input type="text" id="pw-${item.id}" value="${h(pwMap[item.id]||'')}" placeholder="パスワードを入力"
+        style="flex:1;min-width:140px;font-size:12px;padding:5px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white)">
+      <button onclick="savePw('${item.id}')" style="font-size:11px;padding:4px 12px;background:#037EF3;color:#fff;border:none;border-radius:5px;cursor:pointer;font-weight:700">保存</button>
+    </div>`).join('');
+  document.getElementById('pw-mgmt-wrap').innerHTML=html;
 }
 
-function userRow(u){
-  const lcOptions = LC_META.map(lc=>`<option value="${lc.id}" ${u.lcId===lc.id?'selected':''}>${lc.id} — ${lc.name}</option>`).join('');
-  const isMCUser = u.role==='mc';
-  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px;flex-wrap:wrap">
-    <div style="flex:1;min-width:180px">
-      <div style="font-size:12px;font-weight:700;color:var(--text)">${h(u.displayName||u.email)}</div>
-      <div style="font-size:10px;color:var(--dim)">${h(u.email)}</div>
-    </div>
-    <select onchange="updateUserRole('${u.email}',this.value,document.getElementById('lc-sel-${CSS.escape(u.email)}').value)"
-      style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer">
-      <option value="lc" ${!isMCUser?'selected':''}>LCメンバー</option>
-      <option value="mc" ${isMCUser?'selected':''}>MC</option>
-    </select>
-    <select id="lc-sel-${u.email}" ${isMCUser?'disabled':''} onchange="updateUserRole('${u.email}',document.querySelector('[onchange*=\\'${u.email}\\']').value,this.value)"
-      style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer;${isMCUser?'opacity:0.4':''}">
-      <option value="">LC未選択</option>
-      ${lcOptions}
-    </select>
-    <button onclick="removeUser('${u.email}')" style="font-size:10px;padding:3px 8px;border:1.5px solid var(--danger);border-radius:5px;color:var(--danger);background:transparent;cursor:pointer">削除</button>
-  </div>`;
-}
-
-async function updateUserRole(email, role, lcId){
-  if(!window._fsSaveRole) return;
-  const data = role==='mc' ? {role:'mc'} : {role:'lc', lcId: lcId||null};
-  await window._fsSaveRole(email, data);
-  toast('更新しました');
-  await renderUserList();
-}
-
-async function removeUser(email){
-  if(!confirm(`${email} を削除しますか？`)) return;
-  // Firestoreからドキュメント削除
-  if(window._fsDeleteUser) await window._fsDeleteUser(email);
-  toast('削除しました');
-  await renderUserList();
+async function savePw(id){
+  const pw = document.getElementById('pw-'+id).value.trim();
+  if(!pw){toast('パスワードを入力してください','err');return;}
+  if(!window._fsSavePassword){toast('Firebase未接続','err');return;}
+  await window._fsSavePassword(id, pw);
+  toast(`${id} のパスワードを保存しました`);
 }
 
 /* ── AREA MANAGEMENT (MC only) ── */
@@ -2018,10 +1969,15 @@ window.addEventListener('popstate', e=>{
 });
 
 /* ── INIT ── */
-// 認証はFirebase Auth (onAuthStateChanged) が管理する
-// ここではローディング表示とナビだけ初期化
 document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:0.1em">LOADING...</div>';
 document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
+// モジュール読み込み後にログイン・データ取得を開始
+setTimeout(()=>{
+  initLogin();
+  if(getUser().role==='mc'||getUser().lcId){
+    if(!window._fsReady && window._fsInit) window._fsInit();
+  }
+},300);
 </script>
 </body>
 </html>
