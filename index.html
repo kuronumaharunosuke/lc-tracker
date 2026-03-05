@@ -1712,9 +1712,11 @@ function delKpi(){
 /* ── PASSWORD MANAGEMENT (MC only) ── */
 async function openUserMgmt(){
   if(!isMC()){toast('MCのみ操作できます','err');return;}
-  document.getElementById('pw-mgmt-wrap').innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">読み込み中...</div>';
-  document.getElementById('ov-user').style.display='flex';
-  await renderPwMgmt();
+  requirePin(async()=>{
+    document.getElementById('pw-mgmt-wrap').innerHTML='<div style="padding:20px;text-align:center;color:var(--dim);font-size:12px">読み込み中...</div>';
+    document.getElementById('ov-user').style.display='flex';
+    await renderPwMgmt();
+  });
 }
 
 async function renderPwMgmt(){
@@ -1883,7 +1885,7 @@ function _doDeleteExtraArea(lId,aId){
 }
 
 /* ── PIN PROTECTION ── */
-const ADMIN_PIN='0422';
+const ADMIN_PIN='0422'; // フォールバック（Firestoreに'ADMIN'のパスワードが設定されていれば上書き）
 let _pinCallback=null;
 
 function requirePin(callback){
@@ -1895,9 +1897,17 @@ function requirePin(callback){
   setTimeout(()=>document.getElementById('pinInput').focus(),80);
 }
 
-function submitPin(){
+async function submitPin(){
   const val=document.getElementById('pinInput').value;
-  if(val===ADMIN_PIN){
+  // Firestoreの'ADMIN'パスワードで照合（なければソースコードのフォールバック）
+  let ok=false;
+  if(window._fsCheckPassword){
+    ok = await window._fsCheckPassword('ADMIN', val);
+    if(!ok) ok=(val===ADMIN_PIN); // フォールバック
+  } else {
+    ok=(val===ADMIN_PIN);
+  }
+  if(ok){
     document.getElementById('pinModal').style.display='none';
     if(_pinCallback){_pinCallback();_pinCallback=null;}
   } else {
