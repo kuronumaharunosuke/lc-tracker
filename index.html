@@ -7,9 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F3F4F7;--bg2:#EAEBF0;--border:#CACCD1;--text:#52565E;--dim:#8A8E96;
-  --faint:#CACCD1;--white:#ffffff;--dark:#1B2C5E;--done:#00C16E;--done-bg:#E5F9F0;
-  --wip:#F48924;--wip-bg:#FEF3E8;--ns-bg:#F3F4F7;--danger:#F85A40;--primary:#037EF3;
+--bg:#F3F4F7;--bg2:#EAEBF0;--border:#CACCD1;--text:#52565E;--dim:#8A8E96;
+--faint:#CACCD1;--white:#ffffff;--dark:#1B2C5E;--done:#00C16E;--done-bg:#E5F9F0;
+--wip:#F48924;--wip-bg:#FEF3E8;--ns-bg:#F3F4F7;--danger:#F85A40;--primary:#037EF3;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:14px;}
@@ -134,8 +134,9 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .tnote-empty{color:var(--faint);font-size:10px;cursor:pointer;}
 .tnote-empty:hover{color:var(--text);}
 textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
-.chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;border-radius:4px;cursor:pointer;user-select:none;transition:opacity 0.1s;white-space:nowrap;border:none;}
-.chip:hover{opacity:0.78;}
+.chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;border-radius:4px;user-select:none;transition:opacity 0.1s;white-space:nowrap;border:none;}
+.chip.clickable{cursor:pointer;}
+.chip.clickable:hover{opacity:0.78;}
 .chip.done{color:var(--done);background:var(--done-bg);}
 .chip.wip{color:var(--wip);background:var(--wip-bg);}
 .chip.ns{color:var(--dim);background:var(--ns-bg);}
@@ -205,11 +206,6 @@ textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
 .g-bar:hover{opacity:0.8;}
 .g-row.g-child .g-chart .g-bar{height:11px;border-radius:2px;top:50%;transform:translateY(-50%);}
 .g-today{position:absolute;top:0;bottom:0;width:2px;z-index:5;pointer-events:none;background:#F85A40;opacity:0.7;}
-.area-list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
-.area-list-row:last-child{border-bottom:none;}
-.area-color-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0;}
-.area-list-name{flex:1;font-size:13px;font-weight:700;color:var(--dark);}
-.area-list-stats{font-size:10px;color:var(--dim);}
 .overlay{position:fixed;inset:0;background:rgba(27,44,94,0.48);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
 .overlay.open{display:flex;}
 .modal{background:var(--white);border:1px solid var(--border);border-radius:10px;width:460px;max-width:calc(100vw - 32px);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(27,44,94,0.2);animation:popIn 0.15s ease;}
@@ -225,7 +221,6 @@ textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
 option{background:var(--white);}
 .fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .mf{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end;background:var(--bg);border-radius:0 0 10px 10px;}
-.sub-banner{background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-size:11px;color:var(--wip);font-weight:700;}
 .toast{position:fixed;bottom:22px;right:22px;background:var(--dark);color:#fff;padding:9px 14px;font-size:12px;font-weight:700;z-index:2000;animation:slideUp 0.18s ease;border-radius:5px;box-shadow:0 4px 14px rgba(27,44,94,0.2);}
 @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .toast.err{background:var(--danger);}
@@ -237,211 +232,179 @@ option{background:var(--white);}
 .ham span+span{margin-top:4px;}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:99;backdrop-filter:blur(1px);}
 .sidebar-overlay.open{display:block;}
+.user-badge{display:flex;align-items:center;gap:6px;padding:7px 10px;border-radius:6px;background:rgba(255,255,255,0.07);margin-bottom:4px;}
+.user-badge-role{font-size:9px;font-weight:900;letter-spacing:0.1em;color:rgba(255,255,255,0.4);text-transform:uppercase;}
+.user-badge-id{font-size:13px;font-weight:900;color:#fff;}
+.readonly-notice{font-size:10px;font-weight:700;color:var(--wip);background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:6px 10px;margin-bottom:14px;letter-spacing:0.04em;}
 
-/* ── BUG FIX: 1024px media query now properly closed ── */
 @media(max-width:1024px){
-  .rank-tbl .bdn{display:none;}
-  .g-name{width:160px;min-width:160px;}
-  .g-res-hd,.g-res,.g-area-res{display:none;}
-  .g-name-hd{width:160px;min-width:160px;}
-  .g-area-hd{width:160px;min-width:160px;}
-  .gantt-inner{min-width:600px;}
-} /* ← 閉じ括弧を追加 */
+.rank-tbl .bdn{display:none;}
+.g-name{width:160px;min-width:160px;}
+.g-res-hd,.g-res,.g-area-res{display:none;}
+.g-name-hd{width:160px;min-width:160px;}
+.g-area-hd{width:160px;min-width:160px;}
+.gantt-inner{min-width:600px;}
+}
 
 @media(max-width:768px){
-  html{font-size:13px;}
-  .sidebar{transform:translateX(-100%);transition:transform 0.25s ease;z-index:200;width:240px;min-width:240px;}
-  .sidebar.open{transform:translateX(0);}
-  .sidebar-overlay{display:none;}
-  .sidebar-overlay.open{display:block;}
-  .main{margin-left:0;}
-  .topbar{padding:0 14px;height:52px;gap:8px;}
-  .ham{display:flex;}
-  .page-title{font-size:17px;}
-  .page-sub{display:none;}
-  .search-box{display:none;}
-  .topbar-r{gap:5px;}
-  #addbtn,#addkpibtn{font-size:10px;padding:5px 10px;}
-  .content{padding:14px;}
-  .dash-hero{flex-direction:column;align-items:flex-start;gap:10px;padding:16px 18px;}
-  .dh-right{text-align:left;}
-  .dh-title{font-size:32px;}
-  .dh-pct{font-size:44px;}
-  .stat-row{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
-  .stat-n{font-size:32px;}
-  .rank-tbl .rank-tbl-region,.rank-tbl th:nth-child(6),.rank-tbl td:nth-child(6){display:none;}
-  .lc-id-big{font-size:15px;}
-  .prog-track{width:60px;}
-  .prog-pct{font-size:14px;}
-  .fbar{gap:4px;}
-  .fb{padding:4px 8px;font-size:9px;}
-  .fr-right{font-size:16px;}
-  .area-section-hd{padding:8px 12px;}
-  .area-section-hd-title{font-size:16px;}
-  .area-section-pct{font-size:16px;}
-  .kpi-idx{width:42px;font-size:26px;}
-  .kpi-ttl{font-size:12px;}
-  .kpi-pct{font-size:20px;}
-  .kpi-bar{width:56px;}
-  .kpi-r{padding:8px 10px;}
-  .kpi-body{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .tt{min-width:520px;}
-  .tnote{max-width:110px;}
-  .group-cell{max-width:80px;}
-  .group-cell-label{max-width:72px;}
-  .area-hero{flex-direction:column;align-items:flex-start;gap:8px;padding:16px 18px;}
-  .ah-title{font-size:38px;}
-  .ah-pct{font-size:40px;}
-  .ah-right{text-align:left;}
-  .gantt-toolbar{gap:6px;padding:8px 10px;}
-  .gantt-legend{flex-wrap:wrap;gap:8px;font-size:10px;}
-  .g-name-hd,.g-name{width:120px;min-width:120px;}
-  .g-area-hd{width:120px;min-width:120px;}
-  .g-res-hd,.g-res,.g-area-res{display:none;}
-  .gantt-inner{min-width:460px;}
-  .modal,.modal-wide{width:100%;max-width:100%;max-height:100dvh;border-radius:16px 16px 0 0;margin-top:auto;}
-  .overlay{align-items:flex-end;}
-  .toast{bottom:14px;right:14px;left:14px;text-align:center;}
-  .breadcrumb{font-size:9px;}
-  .nav-sub-item{padding:7px 14px 7px 28px;}
+html{font-size:13px;}
+.sidebar{transform:translateX(-100%);transition:transform 0.25s ease;z-index:200;width:240px;min-width:240px;}
+.sidebar.open{transform:translateX(0);}
+.sidebar-overlay{display:none;}
+.sidebar-overlay.open{display:block;}
+.main{margin-left:0;}
+.topbar{padding:0 14px;height:52px;gap:8px;}
+.ham{display:flex;}
+.page-title{font-size:17px;}
+.page-sub{display:none;}
+.search-box{display:none;}
+.topbar-r{gap:5px;}
+#addbtn,#addkpibtn{font-size:10px;padding:5px 10px;}
+.content{padding:14px;}
+.dash-hero{flex-direction:column;align-items:flex-start;gap:10px;padding:16px 18px;}
+.dh-right{text-align:left;}
+.dh-title{font-size:32px;}
+.dh-pct{font-size:44px;}
+.stat-row{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.stat-n{font-size:32px;}
+.rank-tbl .rank-tbl-region,.rank-tbl th:nth-child(6),.rank-tbl td:nth-child(6){display:none;}
+.lc-id-big{font-size:15px;}
+.prog-track{width:60px;}
+.prog-pct{font-size:14px;}
+.fbar{gap:4px;}
+.fb{padding:4px 8px;font-size:9px;}
+.fr-right{font-size:16px;}
+.area-section-hd{padding:8px 12px;}
+.area-section-hd-title{font-size:16px;}
+.area-section-pct{font-size:16px;}
+.kpi-idx{width:42px;font-size:26px;}
+.kpi-ttl{font-size:12px;}
+.kpi-pct{font-size:20px;}
+.kpi-bar{width:56px;}
+.kpi-r{padding:8px 10px;}
+.kpi-body{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tt{min-width:520px;}
+.tnote{max-width:110px;}
+.group-cell{max-width:80px;}
+.group-cell-label{max-width:72px;}
+.area-hero{flex-direction:column;align-items:flex-start;gap:8px;padding:16px 18px;}
+.ah-title{font-size:38px;}
+.ah-pct{font-size:40px;}
+.ah-right{text-align:left;}
+.gantt-toolbar{gap:6px;padding:8px 10px;}
+.gantt-legend{flex-wrap:wrap;gap:8px;font-size:10px;}
+.g-name-hd,.g-name{width:120px;min-width:120px;}
+.g-area-hd{width:120px;min-width:120px;}
+.g-res-hd,.g-res,.g-area-res{display:none;}
+.gantt-inner{min-width:460px;}
+.modal,.modal-wide{width:100%;max-width:100%;max-height:100dvh;border-radius:16px 16px 0 0;margin-top:auto;}
+.overlay{align-items:flex-end;}
+.toast{bottom:14px;right:14px;left:14px;text-align:center;}
+.breadcrumb{font-size:9px;}
+.nav-sub-item{padding:7px 14px 7px 28px;}
 }
 
 @media(max-width:400px){
-  .stat-row{grid-template-columns:1fr 1fr;}
-  .stat-n{font-size:28px;}
-  .dash-hero{padding:14px;}
-  .dh-title{font-size:26px;}
-  #addbtn{display:none!important;}
-  .fr2{grid-template-columns:1fr;}
+.stat-row{grid-template-columns:1fr 1fr;}
+.stat-n{font-size:28px;}
+.dash-hero{padding:14px;}
+.dh-title{font-size:26px;}
+#addbtn{display:none!important;}
+.fr2{grid-template-columns:1fr;}
 }
 </style>
 </head>
 <body>
 
 <!-- ===== LOGIN OVERLAY ===== -->
-<div id="login-overlay" style="position:fixed;inset:0;background:#1B2C5E;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;overflow-y:auto;padding:24px 0">
-  <div style="text-align:center;margin-bottom:28px">
+<div id="login-overlay" style="position:fixed;inset:0;background:#1B2C5E;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;margin-bottom:32px">
     <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px">AIESEC in Japan</div>
     <div style="font-size:42px;font-weight:900;color:#fff;letter-spacing:0.04em;line-height:1.05">LC ACTION<br><span style="color:#FFC845">TRACKER</span></div>
     <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:10px;letter-spacing:0.14em;text-transform:uppercase">2627 · Internal Use Only</div>
   </div>
-  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:360px;max-width:calc(100vw - 32px)">
-    <!-- Step 1: LC/MC 選択 -->
-    <div id="login-step1">
-      <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px">あなたのLC / ロールを選択</div>
-      <select id="login-lc" style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:14px;font-family:'Lato',sans-serif;padding:10px 14px;outline:none;border-radius:7px;margin-bottom:12px;box-sizing:border-box;cursor:pointer">
-        <option value="" style="background:#1B2C5E">-- 選択してください --</option>
-        <option value="MC" style="background:#1B2C5E;font-weight:700">MC（全LC編集可）</option>
-        <optgroup label="── East ──" style="background:#1B2C5E">
-          <option value="HD" style="background:#1B2C5E">HD · 北海道</option>
-          <option value="AG" style="background:#1B2C5E">AG · 青山学院</option>
-          <option value="CH" style="background:#1B2C5E">CH · 中央大学</option>
-          <option value="HI" style="background:#1B2C5E">HI · 一橋大学</option>
-          <option value="JO" style="background:#1B2C5E">JO · 上智大学</option>
-          <option value="KO" style="background:#1B2C5E">KO · 慶應義塾</option>
-          <option value="MJ" style="background:#1B2C5E">MJ · 明治大学</option>
-          <option value="SFC" style="background:#1B2C5E">SFC · 湘南藤沢</option>
-          <option value="SP" style="background:#1B2C5E">SP · 立教大学</option>
-          <option value="TKB" style="background:#1B2C5E">TKB · 筑波大学</option>
-          <option value="TO" style="background:#1B2C5E">TO · 東京大学</option>
-          <option value="WA" style="background:#1B2C5E">WA · 早稲田大学</option>
-        </optgroup>
-        <optgroup label="── Central ──" style="background:#1B2C5E">
-          <option value="NA" style="background:#1B2C5E">NA · 名古屋大学</option>
-          <option value="NI" style="background:#1B2C5E">NI · 名古屋市立</option>
-          <option value="NZ" style="background:#1B2C5E">NZ · 南山大学</option>
-        </optgroup>
-        <optgroup label="── West ──" style="background:#1B2C5E">
-          <option value="DO" style="background:#1B2C5E">DO · 同志社大学</option>
-          <option value="KB" style="background:#1B2C5E">KB · 神戸大学</option>
-          <option value="KG" style="background:#1B2C5E">KG · 関西学院</option>
-          <option value="KT" style="background:#1B2C5E">KT · 京都大学</option>
-          <option value="OI" style="background:#1B2C5E">OI · 大阪市立</option>
-          <option value="OS" style="background:#1B2C5E">OS · 大阪大学</option>
-          <option value="SG" style="background:#1B2C5E">SG · 滋賀大学</option>
-          <option value="HU" style="background:#1B2C5E">HU · 広島</option>
-          <option value="APU" style="background:#1B2C5E">APU · 立命館APU</option>
-          <option value="FK" style="background:#1B2C5E">FK · 福岡</option>
-        </optgroup>
+  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:340px;max-width:calc(100vw - 32px)">
+    <div style="margin-bottom:14px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px">LCを選択</div>
+      <select id="login-lc"
+        style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:14px;font-family:'Lato',sans-serif;padding:10px 12px;outline:none;border-radius:7px;cursor:pointer;box-sizing:border-box">
+        <!-- populated by JS -->
       </select>
-      <button onclick="goLoginStep2()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">次へ →</button>
-      <div id="login-err-step1" style="display:none;font-size:11px;color:#F85A40;margin-top:8px;font-weight:700">❌ LCを選択してください</div>
     </div>
-    <!-- Step 2: パスワード -->
-    <div id="login-step2" style="display:none">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-        <button onclick="backLoginStep1()" style="background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:'Lato',sans-serif">← 戻る</button>
-        <div id="login-role-badge" style="font-size:13px;font-weight:900;color:#FFC845;letter-spacing:0.06em"></div>
-      </div>
-      <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:10px">パスワードを入力</div>
-      <input id="login-pw" type="password" placeholder="Password" autocomplete="off"
-        style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-family:'Lato',sans-serif;padding:10px 14px;outline:none;border-radius:7px;margin-bottom:8px;letter-spacing:2px;box-sizing:border-box"
-        onkeydown="if(event.key==='Enter')checkLogin()">
-      <div id="login-err" style="display:none;font-size:11px;color:#F85A40;margin-bottom:8px;font-weight:700">❌ パスワードが違います</div>
-      <button onclick="checkLogin()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">入る →</button>
-    </div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:8px">パスワードを入力</div>
+    <input id="login-pw" type="password" placeholder="Password" autocomplete="off"
+      style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:16px;font-family:'Lato',sans-serif;padding:10px 14px;outline:none;border-radius:7px;margin-bottom:8px;letter-spacing:2px;box-sizing:border-box"
+      onkeydown="if(event.key==='Enter')checkLogin()">
+    <div id="login-err" style="display:none;font-size:11px;color:#F85A40;margin-bottom:8px;font-weight:700">パスワードが違います</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.28);margin-bottom:12px;line-height:1.5">LC を選択するとそのLCのみ編集できます。MC は全体を編集できます。</div>
+    <button onclick="checkLogin()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">入る</button>
   </div>
 </div>
 
 <div class="app">
 
-  <!-- SIDEBAR -->
-  <nav class="sidebar">
-    <div class="logo">
-      <div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:0.1em;margin-bottom:4px">AIESEC</div>
-      <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.32)">in Japan · LC Tracker · 2627</div>
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:0.1em;margin-bottom:4px">AIESEC</div>
+    <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.32)">in Japan · LC Tracker · 2627</div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">ビュー</div>
+    <div class="nav-item" data-view="dashboard" onclick="sw('dashboard',this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      ダッシュボード
     </div>
-    <div class="nav">
-      <div class="nav-label">View</div>
-      <div class="nav-item" data-view="dashboard" onclick="sw('dashboard',this)">
-        <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
-        ダッシュボード
+    <div class="nav-item" data-view="gantt" onclick="sw('gantt',this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      ガントチャート
+    </div>
+    <div class="nav-label" style="margin-top:8px">東日本</div>
+    <div id="nav-east"></div>
+    <div class="nav-label" style="margin-top:4px">中部</div>
+    <div id="nav-central"></div>
+    <div class="nav-label" style="margin-top:4px">西日本</div>
+    <div id="nav-west"></div>
+  </div>
+  <div class="sidebar-foot">
+    <div id="user-badge-wrap" class="user-badge">
+      <div>
+        <div class="user-badge-role" id="sb-role">---</div>
+        <div class="user-badge-id" id="sb-id">---</div>
       </div>
-      <div class="nav-item" data-view="gantt" onclick="sw('gantt',this)">
-        <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
-        ガントチャート
-      </div>
-      <div class="nav-label" style="margin-top:8px">East</div>
-      <div id="nav-east"></div>
-      <div class="nav-label" style="margin-top:4px">Central</div>
-      <div id="nav-central"></div>
-      <div class="nav-label" style="margin-top:4px">West</div>
-      <div id="nav-west"></div>
     </div>
-    <div class="sidebar-foot">
-      <div id="sb-user-badge" style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);padding:4px 2px;text-align:center;letter-spacing:0.08em"></div>
-      <button id="sb-area-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none" onclick="openAreaMgmt()">⚙ エリア管理</button>
-      <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ Export JSON</button>
-      <label class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer">
-        ↑ Import
-        <input type="file" accept=".json" style="display:none" onchange="importD(event)">
-      </label>
-      <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.35);margin-top:4px" onclick="logoutUser()">↩ ログアウト</button>
-    </div>
-  </nav>
+    <button id="area-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none" onclick="openAreaMgmt()">エリア管理</button>
+    <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ エクスポート</button>
+    <label id="import-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer;display:none">
+      ↑ Import
+      <input type="file" accept=".json" style="display:none" onchange="importD(event)">
+    </label>
+    <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="doLogout()">ログアウト</button>
+  </div>
+</nav>
 
-  <main class="main">
-    <div class="topbar">
-      <div class="topbar-l">
-        <button class="ham" onclick="toggleSidebar()" aria-label="メニュー">
-          <span></span><span></span><span></span>
-        </button>
-        <div>
-          <div class="page-title" id="ptitle">DASHBOARD</div>
-          <div class="page-sub" id="psub"></div>
-        </div>
-      </div>
-      <div class="topbar-r">
-        <div class="search-box">
-          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--faint);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input type="text" placeholder="タスク検索 (⌘K)" id="si" oninput="applyF()">
-        </div>
-        <button class="btn btn-fill" id="addbtn" style="display:none" onclick="openAdd()">+ タスク追加</button>
-        <button class="btn btn-primary" id="addkpibtn" style="display:none" onclick="openAddKpi()">+ KPI 追加</button>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-l">
+      <button class="ham" onclick="toggleSidebar()" aria-label="メニュー">
+        <span></span><span></span><span></span>
+      </button>
+      <div>
+        <div class="page-title" id="ptitle">DASHBOARD</div>
+        <div class="page-sub" id="psub"></div>
       </div>
     </div>
-    <div class="content" id="ct"></div>
-  </main>
+    <div class="topbar-r">
+      <div class="search-box">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--faint);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input type="text" placeholder="タスク検索 (⌘K)" id="si" oninput="applyF()">
+      </div>
+      <button class="btn btn-fill" id="addbtn" style="display:none" onclick="openAdd()">+ タスク追加</button>
+      <button class="btn btn-primary" id="addkpibtn" style="display:none" onclick="openAddKpi()">+ KPI 追加</button>
+    </div>
+  </div>
+  <div class="content" id="ct"></div>
+</main>
 </div>
 
 <!-- SIDEBAR OVERLAY -->
@@ -452,7 +415,6 @@ option{background:var(--white);}
   <div class="modal">
     <div class="mh" id="mttl">タスク追加</div>
     <div class="mb">
-      <div id="sub-banner" style="display:none" class="sub-banner">📎 サブタスクとして追加</div>
       <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="fn" placeholder="タスクを入力..."></div>
       <div class="fr2">
         <div class="fg"><label class="fl2">エリア</label><select class="fs" id="fa" onchange="updK()"></select></div>
@@ -528,10 +490,10 @@ option{background:var(--white);}
 <!-- AREA MGMT MODAL -->
 <div class="overlay" id="ov-area">
   <div class="modal modal-wide">
-    <div class="mh">⚙ エリア管理</div>
+    <div class="mh">エリア管理</div>
     <div class="mb">
       <div class="fl2" style="margin-bottom:6px">共通エリア一覧（全LC共有）</div>
-      <div style="font-size:11px;color:var(--wip);background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-weight:700">⚠ エリア削除はパスワード保護されています。削除するとそのエリアの全タスクが失われます。</div>
+      <div style="font-size:11px;color:var(--wip);background:var(--wip-bg);border:1px solid #F4832444;border-radius:5px;padding:7px 10px;margin-bottom:12px;font-weight:700">エリア削除はパスワード保護されています。削除するとそのエリアの全タスクが失われます。</div>
       <div id="area-list"></div>
       <div style="margin-top:16px;padding-top:14px;border-top:1.5px solid var(--border)">
         <div class="fl2" style="margin-bottom:8px">新しい共通エリアを追加（全LCに追加されます）</div>
@@ -539,10 +501,6 @@ option{background:var(--white);}
           <input class="fi" id="new-area-name" placeholder="エリア名（例: HR, Archive...）" style="flex:1;min-width:150px">
           <input type="color" id="new-area-color" value="#037EF3" style="width:36px;height:36px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:5px">
           <button class="btn btn-fill" onclick="addAreaTypeGlobal()">追加</button>
-        </div>
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
-          <div class="fl2" style="margin-bottom:6px">LC個別エリアを追加（特定LCのみ）</div>
-          <div style="font-size:11px;color:var(--dim);margin-bottom:8px">特定のLCにだけエリアを追加したい場合は、そのLCのページ下部からも追加できます。</div>
         </div>
       </div>
     </div>
@@ -555,10 +513,10 @@ option{background:var(--white);}
 <!-- PIN MODAL -->
 <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--white);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
-    <div style="font-size:16px;font-weight:700;margin-bottom:6px;">🔒 管理者認証</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px;">管理者認証</div>
     <div style="font-size:13px;color:var(--dim);margin-bottom:16px;">この操作にはパスワードが必要です</div>
     <input id="pinInput" type="password" class="fi" placeholder="パスワードを入力" style="width:100%;margin-bottom:8px;font-size:15px;letter-spacing:2px;" autocomplete="off">
-    <div id="pinError" style="display:none;font-size:12px;color:#e74c3c;margin-bottom:10px;">❌ パスワードが違います</div>
+    <div id="pinError" style="display:none;font-size:12px;color:#e74c3c;margin-bottom:10px;">パスワードが違います</div>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="btn" onclick="closePinModal()">キャンセル</button>
       <button class="btn btn-fill" onclick="submitPin()">確認</button>
@@ -568,100 +526,69 @@ option{background:var(--white);}
 
 <script>
 const SK = 'aiesec_lc2627v1';
-const LOGIN_PW = 'aiesec';
+const LOGIN_PW_LC = 'aiesec';
 const LOGIN_PW_MC = '0422';
 const LOGIN_SK = 'aiesec_lc2627_auth';
-const LOGIN_ROLE_SK = 'aiesec_lc2627_role'; // 'MC' or LC id e.g. 'HI'
+const USER_SK  = 'aiesec_lc2627_user';
 
-/* ── ログイン ── */
-let _loginSelectedRole = '';
-
-function goLoginStep2(){
-  const sel = document.getElementById('login-lc').value;
-  if(!sel){ document.getElementById('login-err-step1').style.display='block'; return; }
-  _loginSelectedRole = sel;
-  document.getElementById('login-err-step1').style.display='none';
-  document.getElementById('login-step1').style.display='none';
-  document.getElementById('login-step2').style.display='block';
-  document.getElementById('login-role-badge').textContent = sel==='MC' ? 'MC' : sel;
-  setTimeout(()=>document.getElementById('login-pw').focus(), 80);
+/* ── USER SESSION ── */
+function getUser(){
+  try{const s=sessionStorage.getItem(USER_SK);if(s)return JSON.parse(s);}catch(e){}
+  return {role:'lc',lcId:null};
 }
+function setUser(u){ sessionStorage.setItem(USER_SK,JSON.stringify(u)); }
+function isMC(){ return getUser().role==='mc'; }
+function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId; }
 
-function backLoginStep1(){
-  document.getElementById('login-step2').style.display='none';
-  document.getElementById('login-step1').style.display='block';
-  document.getElementById('login-pw').value='';
-  document.getElementById('login-err').style.display='none';
+/* ── LOGIN ── */
+function populateLoginSelect(){
+  const sel=document.getElementById('login-lc');
+  sel.innerHTML=
+    `<option value="MC" style="background:#1B2C5E;color:#FFC845;font-weight:900">MC</option>`+
+    LC_META.map(lc=>`<option value="${lc.id}" style="background:#1B2C5E;color:#fff">${lc.id} — ${lc.name}</option>`).join('');
 }
 
 function checkLogin(){
-  const val = document.getElementById('login-pw').value;
-  const correctPw = _loginSelectedRole === 'MC' ? LOGIN_PW_MC : LOGIN_PW;
-  if(val === correctPw){
-    sessionStorage.setItem(LOGIN_SK, '1');
-    sessionStorage.setItem(LOGIN_ROLE_SK, _loginSelectedRole);
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('login-pw').value = '';
-    document.getElementById('login-err').style.display = 'none';
-    applyUserRole(_loginSelectedRole);
+  const sel=document.getElementById('login-lc').value;
+  const pw=document.getElementById('login-pw').value;
+  const expected=sel==='MC'?LOGIN_PW_MC:LOGIN_PW_LC;
+  if(pw===expected){
+    const u=sel==='MC'?{role:'mc',lcId:null}:{role:'lc',lcId:sel};
+    setUser(u);
+    sessionStorage.setItem(LOGIN_SK,'1');
+    document.getElementById('login-overlay').style.display='none';
+    document.getElementById('login-pw').value='';
+    document.getElementById('login-err').style.display='none';
+    applyUserUI();
   } else {
-    document.getElementById('login-err').style.display = 'block';
-    document.getElementById('login-pw').value = '';
+    document.getElementById('login-err').style.display='block';
+    document.getElementById('login-pw').value='';
     document.getElementById('login-pw').focus();
   }
 }
 
 function initLogin(){
+  populateLoginSelect();
   if(sessionStorage.getItem(LOGIN_SK)==='1'){
-    const role = sessionStorage.getItem(LOGIN_ROLE_SK)||'MC';
-    _loginSelectedRole = role;
     document.getElementById('login-overlay').style.display='none';
-    applyUserRole(role);
+    applyUserUI();
   } else {
-    setTimeout(()=>{}, 100);
+    setTimeout(()=>document.getElementById('login-pw').focus(),100);
   }
 }
 
-function logoutUser(){
+function doLogout(){
   sessionStorage.removeItem(LOGIN_SK);
-  sessionStorage.removeItem(LOGIN_ROLE_SK);
-  // ステップ1に戻す
-  document.getElementById('login-step1').style.display='block';
-  document.getElementById('login-step2').style.display='none';
-  document.getElementById('login-pw').value='';
-  document.getElementById('login-lc').value='';
-  document.getElementById('login-overlay').style.display='flex';
+  sessionStorage.removeItem(USER_SK);
+  location.reload();
 }
 
-/* ── 権限管理 ── */
-// currentRole: 'MC' or LC id string
-let currentRole = 'MC';
-
-function applyUserRole(role){
-  currentRole = role;
-  // サイドバーのユーザーバッジ更新
-  const badge = document.getElementById('sb-user-badge');
-  if(badge){
-    badge.textContent = role==='MC' ? 'MC ログイン中' : `🔒 ${role} ログイン中`;
-    badge.style.color = role==='MC' ? '#FFC845' : 'rgba(255,255,255,0.55)';
-  }
-  // エリア管理ボタン: MCのみ表示
-  const areaMgmtBtn = document.getElementById('sb-area-mgmt-btn');
-  if(areaMgmtBtn) areaMgmtBtn.style.display = role==='MC' ? '' : 'none';
-}
-
-// lIdのデータを編集できるか
-function canEdit(lId){
-  if(currentRole==='MC') return true;
-  return currentRole === lId;
-}
-
-// 読み取り専用バナー
-function readonlyBanner(lId){
-  if(canEdit(lId)) return '';
-  return `<div style="background:#1B2C5E11;border:1.5px solid #1B2C5E33;border-radius:6px;padding:8px 12px;margin-bottom:14px;font-size:11px;color:var(--dark);font-weight:700;display:flex;align-items:center;gap:7px">
-    🔒 <span>${lId} は閲覧のみ可能です。</span>
-  </div>`;
+function applyUserUI(){
+  const u=getUser();
+  document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'LCメンバー';
+  document.getElementById('sb-id').textContent=u.role==='mc'?'MC — 全権限':u.lcId||'---';
+  document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
+  document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
 }
 
 const LC_META = [
@@ -722,7 +649,6 @@ function load(){
   D=makeSeed();
 }
 
-/* ── BUG FIX: ensureAreas — if(lc.areaTypes) block now properly closed ── */
 function ensureAreas(){
   if(!D.areaTypes) D.areaTypes=JSON.parse(JSON.stringify(DEFAULT_AREA_TYPES));
   if(!D.lcs) D.lcs=makeSeed().lcs;
@@ -734,14 +660,13 @@ function ensureAreas(){
   D.lcs.forEach(lc=>{
     if(!lc.areas) lc.areas={};
     if(!lc.extraAreas) lc.extraAreas=[];
-    /* BUG FIX: if block now properly closed with } before getLCAreaTypes call */
     if(lc.areaTypes){
       lc.areaTypes.forEach(at=>{
         if(!D.areaTypes.find(x=>x.id===at.id)&&!lc.extraAreas.find(x=>x.id===at.id))
           lc.extraAreas.push(at);
       });
       delete lc.areaTypes;
-    } /* ← この } が元々なかった */
+    }
     getLCAreaTypes(lc.id).forEach(at=>{
       if(!lc.areas[at.id]) lc.areas[at.id]={kpis:[]};
     });
@@ -762,7 +687,7 @@ function fd(s){if(!s)return'—';const d=new Date(s);if(isNaN(d))return s;return
 function isOver(dl){if(!dl)return false;const d=new Date(dl);return !isNaN(d)&&d<new Date();}
 function sl(s){return s==='DONE'?'Done':s==='WIP'?'WIP':'Not Started';}
 function sc(s){return s==='DONE'?'done':s==='WIP'?'wip':'ns';}
-function si(s){return s==='DONE'?'✓':s==='WIP'?'◑':'';}
+function si(s){return s==='DONE'?'Done':s==='WIP'?'WIP':'';}
 
 function getLCArea(lId,aId){
   const lc=D.lcs.find(x=>x.id===lId);if(!lc)return null;
@@ -823,9 +748,9 @@ function buildNav(){
               <div style="width:6px;height:6px;border-radius:1px;flex-shrink:0;background:${at.color}"></div>
               <span style="flex:1">${at.id}</span>
               <span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.3)">${as.pct}%</span>
-            </div>`;
+              </div>`;
           }).join('')}
-        </div>`:'';
+          </div>`:'';
         return `<div>
           <div class="nav-item${lcActive?' active':''}" data-lc="${lc.id}" onclick="swLC('${lc.id}',this)"
             style="border-left-color:${lcActive?rc:'transparent'}">
@@ -834,7 +759,7 @@ function buildNav(){
             <span class="nb">${s.pct}%</span>
           </div>
           ${subItems}
-        </div>`;
+          </div>`;
       }).join('');
   });
   document.querySelectorAll('.nav-item[data-view]').forEach(n=>{
@@ -842,7 +767,7 @@ function buildNav(){
   });
 }
 
-function sw(v,el){
+function sw(v,el,skipHistory){
   view=v;lcId=null;areaId=null;fil='ALL';
   document.getElementById('addbtn').style.display='none';
   document.getElementById('addkpibtn').style.display='none';
@@ -850,25 +775,29 @@ function sw(v,el){
   if(v==='dashboard'){
     document.getElementById('ptitle').textContent='DASHBOARD';
     document.getElementById('psub').textContent='';
+    if(!skipHistory) try{history.pushState({view:'dashboard'},'',location.pathname+'#dashboard');}catch(e){}
     rDash();closeSidebar();
   } else if(v==='gantt'){
     document.getElementById('ptitle').textContent='GANTT';
-    document.getElementById('psub').textContent='Feb → Sep 2026';
+    document.getElementById('psub').textContent='Feb - Sep 2026';
+    if(!skipHistory) try{history.pushState({view:'gantt'},'',location.pathname+'#gantt');}catch(e){}
     rGantt();closeSidebar();
   }
 }
 
-function swLC(id,el){
+function swLC(id,el,skipHistory){
   view='lc';lcId=id;areaId=null;fil='ALL';afilter='ALL';
   const lc=D.lcs.find(x=>x.id===id);
   document.getElementById('ptitle').textContent=lc.id;
   document.getElementById('psub').textContent=lc.name;
-  document.getElementById('addbtn').style.display=canEdit(id)?'':'none';
-  document.getElementById('addkpibtn').style.display=canEdit(id)?'':'none';
+  const cw=canWrite(id);
+  document.getElementById('addbtn').style.display=cw?'':'none';
+  document.getElementById('addkpibtn').style.display=cw?'':'none';
+  if(!skipHistory) try{history.pushState({view:'lc',lcId:id},'',location.pathname+'#lc-'+id);}catch(e){}
   buildNav();rLC(id);closeSidebar();
 }
 
-function swArea(lId,aId){
+function swArea(lId,aId,skipHistory){
   view='area';lcId=lId;areaId=aId;fil='ALL';
   const lc=D.lcs.find(x=>x.id===lId);
   const at=getLCAreaTypes(lId).find(x=>x.id===aId)||{color:'#037EF3'};
@@ -879,8 +808,10 @@ function swArea(lId,aId){
       <span style="color:${at.color}">${aId}</span>
     </span>`;
   document.getElementById('psub').textContent=lc.name;
-  document.getElementById('addbtn').style.display=canEdit(lId)?'':'none';
-  document.getElementById('addkpibtn').style.display=canEdit(lId)?'':'none';
+  const cw=canWrite(lId);
+  document.getElementById('addbtn').style.display=cw?'':'none';
+  document.getElementById('addkpibtn').style.display=cw?'':'none';
+  if(!skipHistory) try{history.pushState({view:'area',lcId:lId,areaId:aId},'',location.pathname+'#area-'+lId+'-'+aId);}catch(e){}
   buildNav();rArea(lId,aId);closeSidebar();
 }
 
@@ -904,8 +835,8 @@ function rDash(){
         </div>
       </td>
       <td class="bdn">
-        <span class="gn">✓ ${lc.done}</span>
-        <span style="margin-left:6px" class="an2">◑ ${lc.wip}</span>
+        <span class="gn">Done ${lc.done}</span>
+        <span style="margin-left:6px" class="an2">WIP ${lc.wip}</span>
         <span style="margin-left:6px;color:var(--faint)">${lc.ns}</span>
       </td>
       <td>
@@ -917,7 +848,7 @@ function rDash(){
           </span>`;
         }).join('')}
       </td>
-    </tr>`;
+      </tr>`;
   }).join('');
 
   document.getElementById('ct').innerHTML=`
@@ -927,18 +858,18 @@ function rDash(){
         <div class="dh-sub">AIESEC in Japan · 2627 · ${D.lcs.length} LCs</div>
       </div>
       <div class="dh-right">
-        <div class="dh-pct-lbl">Overall Progress</div>
+        <div class="dh-pct-lbl">達成率</div>
         <div class="dh-pct">${s.pct}%</div>
-        <div class="dh-total">${s.done} / ${s.total} tasks done</div>
+        <div class="dh-total">${s.done} / ${s.total} タスク完了</div>
       </div>
     </div>
     <div class="stat-row">
       <div class="stat-card"><div class="stat-l">LCs</div><div class="stat-n p">${D.lcs.length}</div></div>
-      <div class="stat-card"><div class="stat-l">完了 Done</div><div class="stat-n g">${s.done}</div></div>
-      <div class="stat-card"><div class="stat-l">進行中 WIP</div><div class="stat-n a">${s.wip}</div></div>
-      <div class="stat-card"><div class="stat-l">未着手</div><div class="stat-n d">${s.ns}</div></div>
+      <div class="stat-card"><div class="stat-l">Done</div><div class="stat-n g">${s.done}</div></div>
+      <div class="stat-card"><div class="stat-l">WIP</div><div class="stat-n a">${s.wip}</div></div>
+      <div class="stat-card"><div class="stat-l">Not Started</div><div class="stat-n d">${s.ns}</div></div>
     </div>
-    <div class="section-label">Done率ランキング（全${D.lcs.length}LC）</div>
+    <div class="section-label">達成率ランキング（${D.lcs.length} LC）</div>
     <table class="rank-tbl">
       <thead><tr>
         <th style="width:40px">#</th>
@@ -946,14 +877,14 @@ function rDash(){
         <th>Region</th>
         <th style="width:160px">Progress</th>
         <th>Breakdown</th>
-        <th>エリア別</th>
+        <th>Areas</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
-function buildTaskRowsInner(tasks, lId, aId, kId, c){
-  const editable = canEdit(lId);
+/* Build task table rows — cw = canWrite for this LC */
+function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
   let rows='';
   let ri=0;
   while(ri<tasks.length){
@@ -964,18 +895,8 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c){
       while(ri+span<tasks.length && tasks[ri+span].group===grp) span++;
     }
     const over=isOver(t.deadline)&&t.status!=='DONE';
-    const noteCell = editable
-      ? (t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ メモ</span>`)
-      : (t.note?h(t.note).replace(/\n/g,'<br>'):'');
-    const statusCell = editable
-      ? `<span class="chip ${sc(t.status)}" onclick="cycTask('${lId}','${aId}','${kId}','${t.id}',event)">${si(t.status)?si(t.status)+' ':''}${sl(t.status)}</span>`
-      : `<span class="chip ${sc(t.status)}" style="cursor:default">${si(t.status)?si(t.status)+' ':''}${sl(t.status)}</span>`;
-    const actionCell = editable
-      ? `<td><div class="ta">
-          <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
-          <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
-        </div></td>`
-      : '<td></td>';
+    const chipClass=`chip ${sc(t.status)}${cw?' clickable':''}`;
+    const chipOnClick=cw?`onclick="cycTask('${lId}','${aId}','${kId}','${t.id}',event)"`:'';
     rows+=`<tr class="tr" id="row-${t.id}">
       <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
         ${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>`:''}
@@ -983,34 +904,32 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c){
       <td class="tn">${h(t.name)}</td>
       <td class="tres">${h(t.res||'—')}</td>
       <td class="tdt">${fd(t.start)}</td>
-      <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
-      <td>${statusCell}</td>
-      <td class="tnote">${noteCell}</td>
-      ${actionCell}
+      <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' !':''}</td>
+      <td><span class="${chipClass}" ${chipOnClick}>${sl(t.status)}</span></td>
+      <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
+      <td>${cw?`<div class="ta">
+        <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
+        <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
+      </div>`:''}
+      </td>
     </tr>`;
     for(let j=1;j<span;j++){
       const tj=tasks[ri+j];
       const overj=isOver(tj.deadline)&&tj.status!=='DONE';
-      const noteCellJ = editable
-        ? (tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ メモ</span>`)
-        : (tj.note?h(tj.note).replace(/\n/g,'<br>'):'');
-      const statusCellJ = editable
-        ? `<span class="chip ${sc(tj.status)}" onclick="cycTask('${lId}','${aId}','${kId}','${tj.id}',event)">${si(tj.status)?si(tj.status)+' ':''}${sl(tj.status)}</span>`
-        : `<span class="chip ${sc(tj.status)}" style="cursor:default">${si(tj.status)?si(tj.status)+' ':''}${sl(tj.status)}</span>`;
-      const actionCellJ = editable
-        ? `<td><div class="ta">
-            <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
-            <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
-          </div></td>`
-        : '<td></td>';
+      const chipClassJ=`chip ${sc(tj.status)}${cw?' clickable':''}`;
+      const chipOnClickJ=cw?`onclick="cycTask('${lId}','${aId}','${kId}','${tj.id}',event)"`:'';
       rows+=`<tr class="tr" id="row-${tj.id}">
         <td class="tn">${h(tj.name)}</td>
         <td class="tres">${h(tj.res||'—')}</td>
         <td class="tdt">${fd(tj.start)}</td>
-        <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
-        <td>${statusCellJ}</td>
-        <td class="tnote">${noteCellJ}</td>
-        ${actionCellJ}
+        <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' !':''}</td>
+        <td><span class="${chipClassJ}" ${chipOnClickJ}>${sl(tj.status)}</span></td>
+        <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
+        <td>${cw?`<div class="ta">
+          <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
+          <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
+        </div>`:''}
+        </td>
       </tr>`;
     }
     ri+=span;
@@ -1022,6 +941,10 @@ function rLC(id){
   const lc=D.lcs.find(x=>x.id===id);if(!lc)return;
   const s=lcStats(id);const rc=REGION_COLORS[lc.region]||'#037EF3';
   const q=document.getElementById('si').value.toLowerCase();
+  const cw=canWrite(id);
+
+  const readonlyNotice=cw?'':
+    `<div class="readonly-notice">${id} は閲覧のみ可能です。</div>`;
 
   const fbar=`<div class="fbar">
     <span class="fl">エリア</span>
@@ -1046,7 +969,7 @@ function rLC(id){
         return true;
       });
 
-      const rows=buildTaskRowsInner(tasks, id, at.id, k.id, c);
+      const rows=buildTaskRowsInner(tasks, id, at.id, k.id, c, cw);
 
       return `<div class="kpi-block">
         <div class="kpi-head" onclick="togK('${id}_${at.id}_${k.id}')">
@@ -1055,14 +978,14 @@ function rLC(id){
             <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}${(()=>{const goals=area.goals||[];const g=goals.find(x=>x.id===k.goalId);return g?` · <span class="goal-type-chip" style="background:${g.type==='KGI'?'#037EF322':'#7552CC22'};color:${g.type==='KGI'?'#037EF3':'#7552CC'};border:1px solid ${g.type==='KGI'?'#037EF344':'#7552CC44'};font-size:9px;padding:1px 5px;border-radius:3px">${g.type}</span> ${h(g.name)}`:'';})()}</div>
             <div class="kpi-ttl">${h(k.name)}</div>
             ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
-            ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">📝 ${h(k.memo)}</div>`:''}
+            ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">${h(k.memo)}</div>`:''}
           </div>
           <div class="kpi-r">
             <div class="kpi-pct" style="color:${c}">${pct}%</div>
             <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
             <div class="kpi-cnt">${dn}/${tot2} done</div>
           </div>
-          ${canEdit(id)?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
+          ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
             <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${id}','${at.id}','${k.id}')">編集</button>
           </div>`:''}
           <div class="kpi-chev open" id="cv-${id}_${at.id}_${k.id}">›</div>
@@ -1073,21 +996,19 @@ function rLC(id){
               <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th></th>
             </tr></thead>
             <tbody id="tb-${id}_${at.id}_${k.id}">${rows}</tbody>
-            ${canEdit(id)?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${id}','${at.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
+            ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${id}','${at.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
           </table>
         </div>
       </div>`;
     }).join('');
 
-    const addKpiBtn=canEdit(id)
-      ? `<div style="padding:10px 0 4px"><button class="add-btn" style="font-size:12px" onclick="openAddKpi('${id}','${at.id}')">+ KPI を追加...</button></div>`
-      : '';
+    const addKpiBtn=cw?`<div style="padding:10px 0 4px"><button class="add-btn" style="font-size:12px" onclick="openAddKpi('${id}','${at.id}')">+ KPI を追加...</button></div>`:'';
 
     return `<div class="area-section">
-      <div class="area-section-hd" style="border-bottom-color:${c};cursor:pointer" onclick="swArea('${id}','${at.id}')">
+      <div class="area-section-hd" style="border-bottom-color:${c}">
         <div class="area-section-hd-title" style="color:${c}">${h(at.name)}</div>
         <span style="font-size:11px;color:var(--dim);margin-left:8px">${as.total} tasks · ${area.kpis.length} KPIs</span>
-        <span style="margin-left:8px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border)">詳細 ›</span>
+        <button onclick="swArea('${id}','${at.id}')" style="margin-left:8px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif">詳細 ›</button>
         <div class="area-section-pct" style="color:${c}">${as.pct}%</div>
       </div>
       <div class="area-section-body">
@@ -1097,17 +1018,17 @@ function rLC(id){
   }).join('');
 
   const statusBar=`<div style="margin-bottom:16px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-    <span class="fl">ステータス</span>
+    <span class="fl">Status</span>
     <button class="fb ${fil==='ALL'?'active':''}" onclick="setF('ALL')">All</button>
     <button class="fb ${fil==='DONE'?'active':''}" onclick="setF('DONE')">Done</button>
     <button class="fb ${fil==='WIP'?'active':''}" onclick="setF('WIP')">WIP</button>
-    <button class="fb ${fil==='NOT_STARTED'?'active':''}" onclick="setF('NOT_STARTED')">Not Started</button>
+    <button class="fb ${fil==='NOT_STARTED'?'active':''}" onclick="setF('NOT_STARTED')">未着手</button>
   </div>`;
 
-  document.getElementById('ct').innerHTML=fbar+readonlyBanner(id)+statusBar+areaBlocks+`
+  const areaAddSection=cw?`
     <div style="padding:16px 0 8px">
       <div id="add-area-panel-${id}" style="display:none;background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:16px;margin-bottom:8px">
-        <div class="fl2" style="margin-bottom:10px">このLCにエリアを追加（${id}専用）</div>
+        <div class="fl2" style="margin-bottom:10px">Add area to this LC (${id} only)</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <input class="fi" id="new-area-name-${id}" placeholder="エリア名（例: IM, PDなど）" style="flex:1;min-width:150px">
           <input type="color" id="new-area-color-${id}" value="#037EF3" style="width:36px;height:36px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:5px">
@@ -1119,7 +1040,7 @@ function rLC(id){
         const extras=(D.lcs.find(x=>x.id===id)?.extraAreas||[]).filter(e=>!D.areaTypes.find(g=>g.id===e.id));
         if(extras.length===0) return '';
         return `<div style="background:var(--white);border:1.5px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px">
-          <div class="fl2" style="margin-bottom:8px">${id} 専用エリア</div>
+          <div class="fl2" style="margin-bottom:8px">${id} Private Areas</div>
           ${extras.map(at=>{
             const taskCount=(D.lcs.find(x=>x.id===id)?.areas[at.id]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
             return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
@@ -1131,8 +1052,10 @@ function rLC(id){
           }).join('')}
         </div>`;
       })()}
-      <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ エリアを追加（${id}専用）</button>
-    </div>`;
+      <button class="add-btn" style="font-size:12px;width:100%" onclick="document.getElementById('add-area-panel-${id}').style.display='block';document.getElementById('new-area-name-${id}').focus()">+ Add area (${id} only)</button>
+    </div>`:'';
+
+  document.getElementById('ct').innerHTML=readonlyNotice+fbar+statusBar+areaBlocks+areaAddSection;
 }
 
 function togK(id){
@@ -1146,17 +1069,18 @@ function togGoal(id){
 }
 
 function deleteGoal(lId,aId,gId){
+  if(!canWrite(lId)){toast('You do not have write access to this LC','err');return;}
   const area=getLCArea(lId,aId);if(!area)return;
   const g=area.goals?.find(x=>x.id===gId);if(!g)return;
   const kpiCount=area.kpis.filter(k=>k.goalId===gId).length;
-  const msg=kpiCount?`「${g.name}」を削除すると ${kpiCount}件のKPIの紐づけが解除されます。続けますか？`:`「${g.name}」を削除しますか？`;
+  const msg=kpiCount?`Deleting "${g.name}" will unlink ${kpiCount} KPI(s). Continue?`:`Delete "${g.name}"?`;
   if(!confirm(msg))return;
   area.goals=area.goals.filter(x=>x.id!==gId);
   area.kpis.forEach(k=>{if(k.goalId===gId)k.goalId=null;});
   save();buildNav();
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
   else if(view==='lc'&&lcId)rLC(lcId);
-  toast(`「${g.name}」を削除しました`);
+  toast(`"${g.name}" deleted`);
 }
 
 function setF(s){fil=s;if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);else if(view==='lc'&&lcId)rLC(lcId);}
@@ -1174,12 +1098,16 @@ function rArea(lId,aId){
   const area=getLCArea(lId,aId);const c=at.color;
   const as=lcAreaStats(lId,aId);
   const q=document.getElementById('si').value.toLowerCase();
+  const cw=canWrite(lId);
+
+  const readonlyNotice=cw?'':
+    `<div class="readonly-notice">${lId} は閲覧のみ可能です。</div>`;
 
   const stats=`<div class="stat-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
     <div class="stat-card"><div class="stat-l">KPIs</div><div class="stat-n p" style="color:${c}">${area.kpis.length}</div></div>
-    <div class="stat-card"><div class="stat-l">完了 Done</div><div class="stat-n g">${as.done}</div></div>
-    <div class="stat-card"><div class="stat-l">進行中 WIP</div><div class="stat-n a">${as.wip}</div></div>
-    <div class="stat-card"><div class="stat-l">未着手</div><div class="stat-n d">${as.ns}</div></div>
+    <div class="stat-card"><div class="stat-l">Done</div><div class="stat-n g">${as.done}</div></div>
+    <div class="stat-card"><div class="stat-l">WIP</div><div class="stat-n a">${as.wip}</div></div>
+    <div class="stat-card"><div class="stat-l">Not Started</div><div class="stat-n d">${as.ns}</div></div>
   </div>`;
 
   const fbar=`<div class="fbar" style="margin-bottom:16px">
@@ -1191,14 +1119,13 @@ function rArea(lId,aId){
     <div class="fr-right" style="color:${c}">${as.done}/${as.total}</div>
   </div>`;
 
-  /* BUG FIX: buildTaskRows also uses the shared buildTaskRowsInner (ri+=span outside for loop) */
   function buildTaskRows(k){
     let tasks=k.tasks.filter(t=>{
       if(fil!=='ALL'&&t.status!==fil)return false;
       if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q)&&!(t.group||'').toLowerCase().includes(q))return false;
       return true;
     });
-    return buildTaskRowsInner(tasks, lId, aId, k.id, c);
+    return buildTaskRowsInner(tasks, lId, aId, k.id, c, cw);
   }
 
   const goals=area.goals||[];
@@ -1211,16 +1138,16 @@ function rArea(lId,aId){
           <div class="kpi-lbl">KPI ${i+1} / ${totalKpis}</div>
           <div class="kpi-ttl">${h(k.name)}</div>
           ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
-          ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">📝 ${h(k.memo)}</div>`:''}
+          ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">${h(k.memo)}</div>`:''}
         </div>
         <div class="kpi-r">
           <div class="kpi-pct" style="color:${c}">${pct}%</div>
           <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
           <div class="kpi-cnt">${ks.done}/${ks.total} done</div>
         </div>
-        <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
-          ${canEdit(lId)?`<button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${lId}','${aId}','${k.id}')">編集</button>`:''}
-        </div>
+        ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
+          <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${lId}','${aId}','${k.id}')">Edit</button>
+        </div>`:''}
         <div class="kpi-chev open" id="cv-area_${aId}_${k.id}">›</div>
       </div>
       <div class="kpi-body open" id="kb-area_${aId}_${k.id}">
@@ -1229,7 +1156,7 @@ function rArea(lId,aId){
             <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th></th>
           </tr></thead>
           <tbody>${buildTaskRows(k)}</tbody>
-          ${canEdit(lId)?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${lId}','${aId}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
+          ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${lId}','${aId}','${k.id}')">+ Add task...</button></td></tr></tfoot>`:''}
         </table>
       </div>
     </div>`;
@@ -1249,7 +1176,7 @@ function rArea(lId,aId){
         <span class="goal-name">${h(g.name)}</span>
         <span class="goal-stats">${gKpis.length} KPI · ${gStats.done}/${gStats.total} done · ${gPct}%</span>
         <div class="goal-bar-mini"><div style="width:${gPct}%;background:${typeColor};height:100%;border-radius:2px"></div></div>
-        ${canEdit(lId)?`<button class="ib del" style="font-size:10px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();deleteGoal('${lId}','${aId}','${g.id}')">削除</button>`:''}
+        ${cw?`<button class="ib del" style="font-size:10px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();deleteGoal('${lId}','${aId}','${g.id}')">Delete</button>`:''}
         <div class="kpi-chev open" id="cv-gg_${aId}_${g.id}" style="margin-left:6px">›</div>
       </div>
       <div class="goal-group-body open" id="kb-gg_${aId}_${g.id}">
@@ -1258,11 +1185,11 @@ function rArea(lId,aId){
     </div>`;
   });
   if(ungrouped.length>0){
-    if(goals.length>0) kpisHtml+=`<div class="goal-group-hd" style="cursor:default;color:var(--dim);font-size:11px;margin-top:8px">未分類のKPI</div>`;
+    if(goals.length>0) kpisHtml+=`<div class="goal-group-hd" style="cursor:default;color:var(--dim);font-size:11px;margin-top:8px">Ungrouped KPIs</div>`;
     kpisHtml+=ungrouped.map((k)=>buildKpiBlock(k,area.kpis.indexOf(k),area.kpis.length)).join('');
   }
 
-  const addKpiBtn=canEdit(lId)?`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="openAddKpi('${lId}','${aId}')">+ KPI を追加...</button></div>`:'';
+  const addKpiBtn=cw?`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="openAddKpi('${lId}','${aId}')">+ KPI を追加...</button></div>`:'';
 
   document.getElementById('ct').innerHTML=`
     <div class="area-hero" style="background:${c}">
@@ -1276,12 +1203,12 @@ function rArea(lId,aId){
         <div class="ah-total">${as.done} / ${as.total} tasks · ${area.kpis.length} KPIs</div>
       </div>
     </div>
-    ${stats}${fbar}${readonlyBanner(lId)}${kpisHtml}${addKpiBtn}`;
+    ${readonlyNotice}${stats}${fbar}${kpisHtml}${addKpiBtn}`;
 }
 
 function cycTask(lId,aId,kId,tId,e){
   if(e)e.stopPropagation();
-  if(!canEdit(lId)){toast('🔒 編集権限がありません','err');return;}
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
   let t=k.tasks.find(x=>x.id===tId);
@@ -1291,14 +1218,14 @@ function cycTask(lId,aId,kId,tId,e){
   t.status=ord[(ord.indexOf(t.status)+1)%3];
   save();buildNav();
   const row=document.getElementById('row-'+tId);
-  if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(si(t.status)?si(t.status)+' ':'')+sl(t.status);}
-  toast(sl(t.status)+'に変更');
+  if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)} clickable`;chip.textContent=sl(t.status);}
+  toast('Status: '+sl(t.status));
   if(view==='dashboard')rDash();
 }
 
 function delT(lId,aId,kId,tId,parentId){
-  if(!canEdit(lId)){toast('🔒 編集権限がありません','err');return;}
-  if(!confirm('削除しますか？'))return;
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  if(!confirm('Delete this task?'))return;
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
   if(parentId&&parentId!=='null'){
@@ -1311,16 +1238,16 @@ function delT(lId,aId,kId,tId,parentId){
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
   else if(view==='lc'&&lcId)rLC(lcId);
   else if(view==='dashboard')rDash();
-  toast('削除しました');
+  toast('Deleted');
 }
 
 const G_START=new Date(2026,1,1);
 const G_END=new Date(2026,8,30);
 const G_MS=G_END-G_START;
 const MONTH_DATA=[
-  {name:'2月',days:28,mi:2},{name:'3月',days:31,mi:3},{name:'4月',days:30,mi:4},
-  {name:'5月',days:31,mi:5},{name:'6月',days:30,mi:6},{name:'7月',days:31,mi:7},
-  {name:'8月',days:31,mi:8},{name:'9月',days:30,mi:9},
+  {name:'Feb',days:28,mi:2},{name:'Mar',days:31,mi:3},{name:'Apr',days:30,mi:4},
+  {name:'May',days:31,mi:5},{name:'Jun',days:30,mi:6},{name:'Jul',days:31,mi:7},
+  {name:'Aug',days:31,mi:8},{name:'Sep',days:30,mi:9},
 ];
 function gPct(dateStr){if(!dateStr)return null;const d=new Date(dateStr);if(isNaN(d))return null;return Math.max(0,Math.min(100,(d-G_START)/G_MS*100));}
 
@@ -1344,7 +1271,7 @@ function rGantt(){
   const lcsToShow=filtLC?D.lcs.filter(x=>x.id===filtLC):D.lcs;
 
   const lcBtns=`<div class="gantt-filter" style="flex-wrap:wrap;max-width:600px">
-    <button class="gfb ${gfil==='ALL'?'active':''}" onclick="setGF('ALL')">全LC</button>
+    <button class="gfb ${gfil==='ALL'?'active':''}" onclick="setGF('ALL')">All LCs</button>
     ${D.lcs.map(lc=>`<button class="gfb ${gfil===lc.id?'active':''}" onclick="setGF('${lc.id}')">${lc.id}</button>`).join('')}
   </div>`;
 
@@ -1357,15 +1284,15 @@ function rGantt(){
     if(isDone){
       const l=gPct(t.start||t.deadline);const left=l!==null?l:r;
       const width=Math.max(0.4,r-left);const h2=isChild?8:12;
-      return `<div class="g-bar done" style="left:${left}%;width:${width}%;background:#00C16E;opacity:0.7;top:50%;transform:translateY(-50%);height:${h2}px" title="${h(t.name)} 完了"></div>`;
+      return `<div class="g-bar done" style="left:${left}%;width:${width}%;background:#00C16E;opacity:0.7;top:50%;transform:translateY(-50%);height:${h2}px" title="${h(t.name)} - Done"></div>`;
     }
     const isOverdue=r<todP;const h2=isChild?8:14;
     if(isOverdue){
-      return `<div class="g-bar ns" style="left:${r-0.5}%;width:3px;background:#F85A40;opacity:0.9;top:50%;transform:translateY(-50%);height:${h2+2}px;border-radius:2px" title="${h(t.name)} 期限切れ"></div>`;
+      return `<div class="g-bar ns" style="left:${r-0.5}%;width:3px;background:#F85A40;opacity:0.9;top:50%;transform:translateY(-50%);height:${h2+2}px;border-radius:2px" title="${h(t.name)} - Overdue"></div>`;
     }
     const width=Math.max(0.4,r-todP);
     const barColor=t.status==='WIP'?c:'#CACCD1';const barOpacity=t.status==='NOT_STARTED'?'0.5':'1';
-    return `<div class="g-bar ${sc(t.status)}" style="left:${todP}%;width:${width}%;background:${barColor};opacity:${barOpacity};top:50%;transform:translateY(-50%);height:${h2}px" title="${h(t.name)} 〜${fd(t.deadline)}"></div>`;
+    return `<div class="g-bar ${sc(t.status)}" style="left:${todP}%;width:${width}%;background:${barColor};opacity:${barOpacity};top:50%;transform:translateY(-50%);height:${h2}px" title="${h(t.name)} - ${fd(t.deadline)}"></div>`;
   }
 
   let rowsHtml='';
@@ -1394,7 +1321,7 @@ function rGantt(){
                 <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${t.status==='DONE'?'var(--done)':t.status==='WIP'?'var(--wip)':'var(--faint)'}"></div>
                 <span style="font-size:9px;font-weight:900;color:${c};flex-shrink:0">${at.id}</span>
                 <span class="g-name-txt" title="${h(t.name)}">${h(t.name)}</span>
-                ${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">！</span>':''}
+                ${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">!</span>':''}
               </div>
               <div class="g-res">${h(t.res||'—')}</div>
               <div class="g-chart">
@@ -1415,15 +1342,15 @@ function rGantt(){
           <div class="gl-item"><div class="gl-dot" style="background:#00C16E"></div><span style="color:var(--done)">Done</span></div>
           <div class="gl-item"><div class="gl-dot" style="background:#F48924"></div><span style="color:var(--wip)">WIP</span></div>
           <div class="gl-item"><div class="gl-dot" style="background:#CACCD1"></div><span style="color:var(--dim)">Not Started</span></div>
-          <div class="gl-item"><div class="gl-dot" style="background:#F85A40;width:3px;height:16px;border-radius:1px"></div><span style="color:var(--danger)">今日</span></div>
+          <div class="gl-item"><div class="gl-dot" style="background:#F85A40;width:3px;height:16px;border-radius:1px"></div><span style="color:var(--danger)">Today</span></div>
         </div>
         ${lcBtns}
       </div>
       <div class="gantt-scroll">
         <div class="gantt-inner">
           <div class="gantt-head">
-            <div class="g-name-hd">タスク名（LC · エリア）</div>
-            <div class="g-res-hd">担当者</div>
+            <div class="g-name-hd">Task (LC · Area)</div>
+            <div class="g-res-hd">Assignee</div>
             <div class="g-timeline-hd">
               <div class="g-month-row">${MONTH_DATA.map(m=>`<div class="g-month-hd" style="flex:${m.days}">${m.name}</div>`).join('')}</div>
               <div class="g-day-row">${buildDayTicks()}<div class="g-today" style="left:${todayPct}%;height:100%;opacity:0.5"></div></div>
@@ -1438,10 +1365,10 @@ function setGF(id){gfil=id;rGantt();}
 
 /* ── TASK MODAL ── */
 function openAdd(lId,aId,kId){
-  if(!canEdit(lId||lcId)){toast('🔒 編集権限がありません','err');return;}
+  const targetLC=lId||lcId;
+  if(!canWrite(targetLC)){toast('閲覧のみ可能','err');return;}
   editing=null;editingParent=null;
   document.getElementById('mttl').textContent='タスク追加';
-  document.getElementById('sub-banner').style.display='none';
   document.getElementById('fn').value='';document.getElementById('fg-input').value='';
   document.getElementById('fnote').value='';document.getElementById('fr').value='';
   document.getElementById('fs2').value='';document.getElementById('fd').value='';
@@ -1453,7 +1380,7 @@ function openAdd(lId,aId,kId){
 }
 
 function openEdit(lId,aId,kId,tId){
-  if(!canEdit(lId)){toast('🔒 編集権限がありません','err');return;}
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   editingParent=null;
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
@@ -1462,7 +1389,6 @@ function openEdit(lId,aId,kId,tId){
   if(!t)return;
   editing={lId,aId,kId,tId};
   document.getElementById('mttl').textContent='タスク編集';
-  document.getElementById('sub-banner').style.display='none';
   document.getElementById('fn').value=t.name;
   document.getElementById('fg-input').value=t.group||'';
   document.getElementById('fnote').value=t.note||'';
@@ -1507,7 +1433,7 @@ function closeM(){
 
 function saveT(){
   const name=document.getElementById('fn').value.trim();
-  if(!name){toast('タスク名を入力してください','err');return;}
+  if(!name){toast('Please enter a task name','err');return;}
   const obj={
     name,
     group:(document.getElementById('fg-input')?.value||'').trim(),
@@ -1521,6 +1447,7 @@ function saveT(){
   const cAId=document.getElementById('fa').value;
   const cKId=document.getElementById('fk').value;
   const cLcId=editing?editing.lId:lcId;
+  if(!canWrite(cLcId)){toast('閲覧のみ可能','err');return;}
 
   if(editing){
     const{lId,aId,kId,tId}=editing;
@@ -1533,11 +1460,11 @@ function saveT(){
       const ti=k.tasks.findIndex(x=>x.id===tId);
       if(ti>=0)k.tasks[ti]={...k.tasks[ti],...obj};
     }
-    toast('更新しました');
+    toast('Updated');
   } else {
     const area=getLCArea(cLcId,cAId);const k=area.kpis.find(x=>x.id===cKId);
-    if(k){k.tasks.push({id:gid(),...obj});toast('追加しました');}
-    else{toast('KPIが見つかりません','err');return;}
+    if(k){k.tasks.push({id:gid(),...obj});toast('Added');}
+    else{toast('KPI not found','err');return;}
   }
   save();buildNav();closeM();
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
@@ -1547,7 +1474,9 @@ function saveT(){
 
 /* ── KPI MODAL ── */
 function openAddKpi(lId,aId){
-  if(!canEdit(lId||lcId)){toast('🔒 編集権限がありません','err');return;}
+  const targetLC=lId||lcId;
+  if(!canWrite(targetLC)){toast('閲覧のみ可能','err');return;}
+  editingKpi=null;
   document.getElementById('kpi-mttl').textContent='KPI 追加';
   document.getElementById('kn').value='';
   document.getElementById('kt').value='';document.getElementById('kac').value='0';
@@ -1565,7 +1494,7 @@ function openAddKpi(lId,aId){
 }
 
 function openEditKpi(lId,aId,kId){
-  if(!canEdit(lId)){toast('🔒 編集権限がありません','err');return;}
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
   editingKpi={mode:'edit',lId,aId,kId};
@@ -1587,7 +1516,7 @@ function updKpiGoals(lId,aId,selGoalId){
   const area=getLCArea(cLcId,cAId);
   const goals=area?(area.goals||[]):[];
   const el=document.getElementById('kg');
-  el.innerHTML=`<option value="">${goals.length?'目標なし（未分類）':'— 目標未設定 —'}</option>`+
+  el.innerHTML=`<option value="">${goals.length?'No goal (ungrouped)':'— No goals defined —'}</option>`+
     goals.map(g=>`<option value="${g.id}"${g.id===selGoalId?' selected':''}>[${g.type}] ${h(g.name)}</option>`).join('');
 }
 
@@ -1602,43 +1531,43 @@ function hideAddGoalInline(){
 
 function commitAddGoal(){
   const name=document.getElementById('new-goal-name').value.trim();
-  if(!name){toast('目標名を入力してください','err');return;}
+  if(!name){toast('Please enter a goal name','err');return;}
   const type=document.getElementById('new-goal-type').value;
   const cLcId=editingKpi?editingKpi.lId:lcId;
   const cAId=document.getElementById('ka').value;
   const area=getLCArea(cLcId,cAId);
-  if(!area){toast('エリアが見つかりません','err');return;}
+  if(!area){toast('Area not found','err');return;}
   if(!area.goals)area.goals=[];
   const newGoal={id:gid(),name,type};
   area.goals.push(newGoal);
   save();
   updKpiGoals(cLcId,cAId,newGoal.id);
   hideAddGoalInline();
-  toast(`[${type}] 「${name}」を追加しました`);
+  toast(`[${type}] "${name}" added`);
 }
 
 function closeMKpi(){document.getElementById('ov-kpi').classList.remove('open');editingKpi=null;}
 
 function saveKpi(){
   const name=document.getElementById('kn').value.trim();
-  if(!name){toast('KPI名を入力してください','err');return;}
-  const cLcId=editingKpi.lId||lcId;
-  if(!canEdit(cLcId)){toast('🔒 編集権限がありません','err');return;}
+  if(!name){toast('Please enter a KPI name','err');return;}
   const aId=document.getElementById('ka').value;
   const target=parseInt(document.getElementById('kt').value)||0;
   const actual=parseInt(document.getElementById('kac').value)||0;
   const memo=document.getElementById('kmemo').value.trim();
   const goalId=document.getElementById('kg').value||null;
+  const cLcId=editingKpi.lId||lcId;
+  if(!canWrite(cLcId)){toast('閲覧のみ可能','err');return;}
   if(editingKpi.mode==='edit'){
     const{lId,aId:oAId,kId}=editingKpi;
     const area=getLCArea(lId,oAId);const ki=area.kpis.findIndex(x=>x.id===kId);
     if(oAId!==aId){
       const[kObj]=area.kpis.splice(ki,1);const nArea=getLCArea(lId,aId);nArea.kpis.push({...kObj,name,target,actual,memo,goalId});
     } else {area.kpis[ki]={...area.kpis[ki],name,target,actual,memo,goalId};}
-    toast('KPIを更新しました');
+    toast('KPI updated');
   } else {
     const area=getLCArea(cLcId,aId);area.kpis.push({id:gid(),name,target,actual,memo,goalId,tasks:[]});
-    toast('KPIを追加しました');
+    toast('KPI added');
   }
   save();buildNav();closeMKpi();
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
@@ -1648,16 +1577,18 @@ function saveKpi(){
 function delKpi(){
   if(!editingKpi||editingKpi.mode!=='edit')return;
   const{lId,aId,kId}=editingKpi;
-  if(!canEdit(lId)){toast('🔒 編集権限がありません','err');return;}const k=area.kpis.find(x=>x.id===kId);
-  if(!confirm(`「${k.name}」を削除しますか？`))return;
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);const k=area.kpis.find(x=>x.id===kId);
+  if(!confirm(`Delete "${k.name}"?`))return;
   area.kpis=area.kpis.filter(x=>x.id!==kId);
   save();buildNav();closeMKpi();
   if(view==='lc'&&lcId)rLC(lcId);
-  toast('KPIを削除しました');
+  toast('KPI deleted');
 }
 
-/* ── AREA MANAGEMENT ── */
+/* ── AREA MANAGEMENT (MC only) ── */
 function openAreaMgmt(){
+  if(!isMC()){toast('MC access required','err');return;}
   renderAreaMgmt();
   const nameEl=document.getElementById('new-area-name');
   const colorEl=document.getElementById('new-area-color');
@@ -1669,76 +1600,75 @@ function openAreaMgmt(){
 function closeMArea(){document.getElementById('ov-area').classList.remove('open');}
 
 function renderAreaMgmt(){
-  // ── グローバルエリア一覧 ──
-  const globalHtml = D.areaTypes.map((at)=>{
+  const globalHtml=D.areaTypes.map((at)=>{
     const lcCount=D.lcs.filter(lc=>lc.areas[at.id]&&lc.areas[at.id].kpis.length>0).length;
     const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[at.id];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
-    return `<div class="area-list-row">
-      <div class="area-color-swatch" style="background:${at.color}"></div>
+    return `<div class="area-list-row" style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:14px;height:14px;border-radius:3px;flex-shrink:0;background:${at.color}"></div>
       <input class="fi" style="flex:1;font-size:13px;font-weight:700;padding:4px 7px" value="${h(at.name)}"
         onchange="renameAreaType('${at.id}',this.value)">
       <input type="color" value="${at.color}" style="width:28px;height:28px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;padding:2px;flex-shrink:0;border-radius:4px"
         onchange="recolorAreaType('${at.id}',this.value)">
       <span style="font-size:10px;color:var(--dim);min-width:90px;text-align:right">${lcCount} LC / ${taskCount} tasks</span>
-      <button class="ib del" onclick="deleteAreaType('${at.id}')" style="font-size:10px" ${D.areaTypes.length<=1?'disabled':''}>削除</button>
+      <button class="ib del" onclick="deleteAreaType('${at.id}')" style="font-size:10px" ${D.areaTypes.length<=1?'disabled':''}>Delete</button>
     </div>`;
   }).join('');
 
-  // ── LC個別エリア一覧 ──
-  const lcExtraRows = D.lcs.map(lc=>{
+  const lcExtraRows=D.lcs.map(lc=>{
     const extras=(lc.extraAreas||[]).filter(e=>!D.areaTypes.find(g=>g.id===e.id));
     if(extras.length===0) return '';
     return extras.map(at=>{
       const taskCount=(lc.areas[at.id]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
-      return `<div class="area-list-row">
-        <div class="area-color-swatch" style="background:${at.color}"></div>
+      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="width:10px;height:10px;border-radius:2px;flex-shrink:0;background:${at.color}"></div>
         <span style="font-size:11px;font-weight:700;color:var(--dark);flex:1">${h(at.name)}</span>
         <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;background:${REGION_COLORS[lc.region]||'#037EF3'}22;color:${REGION_COLORS[lc.region]||'#037EF3'}">${lc.id}</span>
         <span style="font-size:10px;color:var(--dim);min-width:70px;text-align:right">${taskCount} tasks</span>
-        <button class="ib del" onclick="deleteExtraArea('${lc.id}','${at.id}')" style="font-size:10px">削除</button>
+        <button class="ib del" onclick="deleteExtraArea('${lc.id}','${at.id}')" style="font-size:10px">Delete</button>
       </div>`;
     }).join('');
   }).join('');
 
-  const extraSection = lcExtraRows
-    ? `<div style="margin-top:16px;padding-top:14px;border-top:1.5px solid var(--border)">
-        <div class="fl2" style="margin-bottom:8px">LC個別エリア一覧</div>
+  const extraSection=lcExtraRows
+    ?`<div style="margin-top:16px;padding-top:14px;border-top:1.5px solid var(--border)">
+        <div class="fl2" style="margin-bottom:8px">LC Private Areas</div>
         ${lcExtraRows}
-      </div>`
-    : '';
+      </div>`:'' ;
 
-  document.getElementById('area-list').innerHTML = globalHtml + extraSection;
+  document.getElementById('area-list').innerHTML=globalHtml+extraSection;
 }
 
 function addAreaTypeGlobal(){
   const name=(document.getElementById('new-area-name').value||'').trim();
-  if(!name){toast('エリア名を入力してください','err');return;}
+  if(!name){toast('Enter an area name','err');return;}
   const color=document.getElementById('new-area-color').value;
-  if(D.areaTypes.find(x=>x.id===name)){toast('同名のエリアが既に存在します','err');return;}
+  if(D.areaTypes.find(x=>x.id===name)){toast('Area with this name already exists','err');return;}
   D.areaTypes.push({id:name,name,color});
   D.lcs.forEach(lc=>{if(!lc.areas[name])lc.areas[name]={kpis:[]};});
   save();buildNav();renderAreaMgmt();
   document.getElementById('new-area-name').value='';
-  toast(`「${name}」を全LCに追加しました`);
+  toast(`"${name}" added to all LCs`);
   if(view==='lc'&&lcId)rLC(lcId);
 }
 
 function addAreaToLC(lId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   const name=(document.getElementById('new-area-name-'+lId)?.value||'').trim();
-  if(!name){toast('エリア名を入力してください','err');return;}
+  if(!name){toast('Enter an area name','err');return;}
   const color=document.getElementById('new-area-color-'+lId)?.value||'#037EF3';
   const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
   const existing=getLCAreaTypes(lId);
-  if(existing.find(x=>x.id===name||x.name===name)){toast('同名のエリアが既に存在します','err');return;}
+  if(existing.find(x=>x.id===name||x.name===name)){toast('Area with this name already exists','err');return;}
   if(!lc.extraAreas)lc.extraAreas=[];
   lc.extraAreas.push({id:name,name,color});
   if(!lc.areas[name])lc.areas[name]={kpis:[]};
   save();buildNav();
-  toast(`「${name}」を ${lId} に追加しました`);
+  toast(`"${name}" added to ${lId}`);
   rLC(lId);
 }
 
 function renameAreaType(aId,newName){
+  if(!isMC()){toast('MC access required','err');return;}
   const at=D.areaTypes.find(x=>x.id===aId);
   if(at)at.name=newName.trim()||aId;
   save();buildNav();
@@ -1747,6 +1677,7 @@ function renameAreaType(aId,newName){
 }
 
 function recolorAreaType(aId,color){
+  if(!isMC()){toast('MC access required','err');return;}
   const at=D.areaTypes.find(x=>x.id===aId);
   if(at){at.color=color;save();buildNav();}
   if(view==='lc'&&lcId)rLC(lcId);
@@ -1759,7 +1690,7 @@ function deleteAreaType(aId){
 
 function _doDeleteAreaType(aId){
   const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[aId];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
-  const msg=taskCount>0?`「${aId}」を削除すると ${taskCount}件のタスクが全LCから削除されます。続けますか？`:`「${aId}」を削除しますか？`;
+  const msg=taskCount>0?`Deleting "${aId}" will remove ${taskCount} task(s) from all LCs. Continue?`:`Delete "${aId}"?`;
   if(!confirm(msg))return;
   D.areaTypes=D.areaTypes.filter(x=>x.id!==aId);
   D.lcs.forEach(lc=>{
@@ -1769,22 +1700,21 @@ function _doDeleteAreaType(aId){
   save();buildNav();renderAreaMgmt();
   if(afilter===aId)afilter='ALL';
   if(areaId===aId){areaId=null;view='lc';}
-  toast(`「${aId}」を削除しました`);
+  toast(`"${aId}" deleted`);
   if(view==='lc'&&lcId)rLC(lcId);
   else if(view==='dashboard')rDash();
 }
 
-/* LC個別エリアの削除（PIN保護） */
-function deleteExtraArea(lId, aId){
-  requirePin(()=>_doDeleteExtraArea(lId, aId));
+function deleteExtraArea(lId,aId){
+  requirePin(()=>_doDeleteExtraArea(lId,aId));
 }
 
-function _doDeleteExtraArea(lId, aId){
+function _doDeleteExtraArea(lId,aId){
   const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
   const taskCount=(lc.areas[aId]?.kpis||[]).reduce((s,k)=>s+k.tasks.length,0);
   const msg=taskCount>0
-    ?`「${aId}」（${lId}専用）を削除すると ${taskCount}件のタスクが削除されます。続けますか？`
-    :`「${aId}」（${lId}専用）を削除しますか？`;
+    ?`Deleting "${aId}" (${lId} only) will remove ${taskCount} task(s). Continue?`
+    :`Delete "${aId}" from ${lId}?`;
   if(!confirm(msg))return;
   lc.extraAreas=(lc.extraAreas||[]).filter(x=>x.id!==aId);
   delete lc.areas[aId];
@@ -1792,52 +1722,53 @@ function _doDeleteExtraArea(lId, aId){
   if(document.getElementById('ov-area').classList.contains('open')) renderAreaMgmt();
   if(afilter===aId)afilter='ALL';
   if(areaId===aId&&lcId===lId){areaId=null;view='lc';}
-  toast(`「${aId}」を ${lId} から削除しました`);
+  toast(`"${aId}" removed from ${lId}`);
   if(view==='lc'&&lcId===lId)rLC(lId);
   else if(view==='area'&&lcId===lId)swLC(lId,null);
 }
 
 /* ── PIN PROTECTION ── */
-const ADMIN_PIN = '0422';
-let _pinCallback = null;
+const ADMIN_PIN='0422';
+let _pinCallback=null;
 
 function requirePin(callback){
-  _pinCallback = callback;
-  const mo = document.getElementById('pinModal');
-  document.getElementById('pinInput').value = '';
-  document.getElementById('pinError').style.display = 'none';
-  mo.style.display = 'flex';
-  setTimeout(()=>document.getElementById('pinInput').focus(), 80);
+  _pinCallback=callback;
+  const mo=document.getElementById('pinModal');
+  document.getElementById('pinInput').value='';
+  document.getElementById('pinError').style.display='none';
+  mo.style.display='flex';
+  setTimeout(()=>document.getElementById('pinInput').focus(),80);
 }
 
 function submitPin(){
-  const val = document.getElementById('pinInput').value;
-  if(val === ADMIN_PIN){
-    document.getElementById('pinModal').style.display = 'none';
-    if(_pinCallback){ _pinCallback(); _pinCallback = null; }
+  const val=document.getElementById('pinInput').value;
+  if(val===ADMIN_PIN){
+    document.getElementById('pinModal').style.display='none';
+    if(_pinCallback){_pinCallback();_pinCallback=null;}
   } else {
-    document.getElementById('pinError').style.display = 'block';
-    document.getElementById('pinInput').value = '';
+    document.getElementById('pinError').style.display='block';
+    document.getElementById('pinInput').value='';
     document.getElementById('pinInput').focus();
   }
 }
 
 function closePinModal(){
-  document.getElementById('pinModal').style.display = 'none';
-  _pinCallback = null;
+  document.getElementById('pinModal').style.display='none';
+  _pinCallback=null;
 }
 
 /* ── EXPORT / IMPORT ── */
 function exportD(){
   const b=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
   const u=URL.createObjectURL(b);const a=document.createElement('a');
-  a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('エクスポートしました');
+  a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('Exported');
 }
 
 function importD(e){
+  if(!isMC()){toast('MC access required','err');return;}
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=ev=>{try{D=JSON.parse(ev.target.result);ensureAreas();save();buildNav();sw('dashboard',null);toast('インポートしました');}catch(err){toast('ファイルエラー','err');}};
+  r.onload=ev=>{try{D=JSON.parse(ev.target.result);ensureAreas();save();buildNav();sw('dashboard',null);toast('Imported');}catch(err){toast('File error','err');}};
   r.readAsText(f);e.target.value='';
 }
 
@@ -1851,8 +1782,8 @@ function toast(msg,t=''){
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeM();closeMKpi();closeMArea();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
-  if(e.key==='Enter' && document.getElementById('pinModal').style.display==='flex') submitPin();
-  if(e.key==='Enter' && document.getElementById('login-overlay').style.display!=='none') checkLogin();
+  if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
+  if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
 });
 document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)closeM();});
 document.getElementById('ov-kpi').addEventListener('click',function(e){if(e.target===this)closeMKpi();});
@@ -1872,11 +1803,23 @@ function closeSidebar(){
   document.body.style.overflow='';
 }
 
+/* ── HISTORY (back button) ── */
+window.addEventListener('popstate', e=>{
+  const s=e.state;
+  if(!s){sw('dashboard',null,true);return;}
+  if(s.view==='dashboard') sw('dashboard',null,true);
+  else if(s.view==='gantt') sw('gantt',null,true);
+  else if(s.view==='lc') swLC(s.lcId,null,true);
+  else if(s.view==='area') swArea(s.lcId,s.areaId,true);
+});
+
 /* ── INIT ── */
 load();
 initLogin();
 buildNav();
 document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
+// seed initial history entry so first back-press doesn't leave the site
+try{history.replaceState({view:'dashboard'},'',location.pathname+'#dashboard');}catch(e){}
 rDash();
 </script>
 </body>
