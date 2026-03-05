@@ -5,6 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LC Action Tracker 2627 | AIESEC Japan</title>
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // =============================================
+  // TODO: ここにFirebaseコンソールの設定を貼る
+  // =============================================
+  const firebaseConfig = {
+    apiKey: "AIzaSyAHG9NPELCihzqKkhQEEUW9KU_Jv-bXbNA",
+    authDomain: "action-tracker-d0337.firebaseapp.com",
+    projectId: "action-tracker-d0337",
+    storageBucket: "action-tracker-d0337.firebasestorage.app",
+    messagingSenderId: "1004248641218",
+    appId: "1:1004248641218:web:72494fe60e45c8a836d55b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const REF = doc(db, 'lc-tracker-2627', 'main');
+
+  // Firestore save
+  window._fsSave = async (data) => {
+    try {
+      await setDoc(REF, { payload: JSON.stringify(data) });
+    } catch(e) {
+      console.error('Firestore save error:', e);
+    }
+  };
+
+  // Firestore initial load + real-time listener
+  window._fsInit = async () => {
+    // 初回ロード
+    try {
+      const snap = await getDoc(REF);
+      if (snap.exists()) {
+        const parsed = JSON.parse(snap.data().payload);
+        window._fsOnLoad(parsed);
+      } else {
+        window._fsOnLoad(null); // 初回：シードデータで初期化
+      }
+    } catch(e) {
+      console.error('Firestore load error:', e);
+      window._fsOnLoad(null);
+    }
+
+    // リアルタイム監視（他ユーザーの変更を即反映）
+    onSnapshot(REF, (snap) => {
+      if (snap.exists() && window._fsReady) {
+        const parsed = JSON.parse(snap.data().payload);
+        window._fsOnRemoteUpdate(parsed);
+      }
+    });
+  };
+
+  // moduleはDOMより後に実行されるが、INITより確実に後になるよう保証
+  // INITブロックが_fsInitをチェックするので、ここで呼び出しをトリガー
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // INITがすでに走っていれば_fsInitが呼ばれている
+    // まだなら（moduleが先に読まれた場合）ここで呼ぶ
+    if (!window._fsReady) window._fsInit();
+  } else {
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window._fsReady) window._fsInit();
+    });
+  }
+</script>
 <style>
 :root{
 --bg:#F3F4F7;--bg2:#EAEBF0;--border:#CACCD1;--text:#52565E;--dim:#8A8E96;
@@ -359,11 +425,11 @@ html{font-size:13px;}
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ガントチャート
     </div>
-    <div class="nav-label" style="margin-top:8px">東日本</div>
+    <div class="nav-label" style="margin-top:8px">East</div>
     <div id="nav-east"></div>
-    <div class="nav-label" style="margin-top:4px">中部</div>
+    <div class="nav-label" style="margin-top:4px">Central</div>
     <div id="nav-central"></div>
-    <div class="nav-label" style="margin-top:4px">西日本</div>
+    <div class="nav-label" style="margin-top:4px">West</div>
     <div id="nav-west"></div>
   </div>
   <div class="sidebar-foot">
@@ -644,9 +710,35 @@ function makeSeed(){
 let D, view='dashboard', lcId=null, areaId=null, afilter='ALL', fil='ALL', gfil='ALL';
 let editing=null, editingKpi=null, editingParent=null;
 
+/* ── FIRESTORE BRIDGE ── */
+window._fsOnLoad = function(data) {
+  if(data){ D=data; ensureAreas(); }
+  else { D=makeSeed(); }
+  window._fsReady=true;
+  initLogin();
+  buildNav();
+  try{history.replaceState({view:'dashboard'},'',location.pathname+'#dashboard');}catch(e){}
+  rDash();
+};
+
+window._fsOnRemoteUpdate = function(data) {
+  D=data; ensureAreas();
+  if(view==='dashboard') rDash();
+  else if(view==='gantt') rGantt();
+  else if(view==='lc'&&lcId) rLC(lcId);
+  else if(view==='area'&&lcId&&areaId) rArea(lcId,areaId);
+  toast('データが更新されました');
+};
+
 function load(){
+  // Firestoreが未設定の場合はlocalStorageにフォールバック
   try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();return;}}catch(e){}
   D=makeSeed();
+}
+
+function save(){
+  try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}
+  if(window._fsSave) window._fsSave(D);
 }
 
 function ensureAreas(){
@@ -680,7 +772,7 @@ function getLCAreaTypes(lId){
 }
 
 function getAreaColor(lId,aId){const at=getLCAreaTypes(lId).find(x=>x.id===aId);return at?at.color:'#52565E';}
-function save(){try{localStorage.setItem(SK,JSON.stringify(D));}catch(e){}}
+
 function gid(){return 'x'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
 function h(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd(s){if(!s)return'—';const d=new Date(s);if(isNaN(d))return s;return(d.getMonth()+1)+'/'+(d.getDate());}
@@ -1814,13 +1906,21 @@ window.addEventListener('popstate', e=>{
 });
 
 /* ── INIT ── */
-load();
-initLogin();
-buildNav();
+// ローディング表示（Firestoreのmoduleが後から_fsInitを呼ぶ）
+document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:0.1em">LOADING...</div>';
 document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
-// seed initial history entry so first back-press doesn't leave the site
-try{history.replaceState({view:'dashboard'},'',location.pathname+'#dashboard');}catch(e){}
-rDash();
+// Firebaseモジュールが設定されていない場合のフォールバック（300ms後にチェック）
+setTimeout(()=>{
+  if(!window._fsReady){
+    // Firebase未設定 → localStorageで起動
+    load();
+    initLogin();
+    buildNav();
+    document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
+    try{history.replaceState({view:'dashboard'},'',location.pathname+'#dashboard');}catch(e){}
+    rDash();
+  }
+}, 300);
 </script>
 </body>
 </html>
