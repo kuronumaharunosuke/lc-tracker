@@ -24,6 +24,20 @@
   const auth = getAuth(app);
   const REF = doc(db, 'lc-tracker-2627', 'main');
 
+  // 管理者PIN照合
+  window._fsCheckPassword = async (key, pw) => {
+    try {
+      const snap = await getDoc(doc(db, 'lc-tracker-passwords', key));
+      if (!snap.exists()) return false;
+      return snap.data().pw === pw;
+    } catch(e) { return false; }
+  };
+
+  // 管理者PIN保存
+  window._fsSavePassword = async (key, pw) => {
+    await setDoc(doc(db, 'lc-tracker-passwords', key), { pw });
+  };
+
   // Googleログイン（@aiesec.jp限定）
   window._fsSignIn = async () => {
     const provider = new GoogleAuthProvider();
