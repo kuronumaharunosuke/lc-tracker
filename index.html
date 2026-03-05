@@ -669,7 +669,7 @@ let _currentUser = null;
 
 function getUser(){ return _currentUser || {role:'lc',lcId:null}; }
 function isMC(){ return getUser().role==='mc'; }
-function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId; }
+function canWrite(lId){ return !!_currentUser; } // @aiesec.jp全員編集可
 
 /* ── AUTH CALLBACKS ── */
 window._fsOnSignIn = function(userData) {
@@ -697,8 +697,8 @@ function doLogout(){
 
 function applyUserUI(){
   const u=getUser();
-  document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'LCメンバー';
-  document.getElementById('sb-id').textContent=u.role==='mc'?'MC — 全権限':(u.lcId||u.email||'---');
+  document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'メンバー';
+  document.getElementById('sb-id').textContent=u.displayName||u.email||'---';
   document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
