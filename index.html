@@ -1808,6 +1808,12 @@ function openAreaMgmt(){
 }
 
 function closeMArea(){document.getElementById('ov-area').classList.remove('open');}
+function closeOverlay(id){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('open');
+  el.style.display='none';
+}
 
 function renderAreaMgmt(){
   const globalHtml=D.areaTypes.map((at)=>{
