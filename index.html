@@ -647,6 +647,22 @@ html{font-size:13px;}
   </div>
 </div>
 
+<!-- LC SELECT MODAL -->
+<div id="lc-select-overlay" style="display:none;position:fixed;inset:0;background:#1B2C5E;z-index:9998;align-items:center;justify-content:center;flex-direction:column">
+  <div style="text-align:center;margin-bottom:24px">
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px">AIESEC in Japan</div>
+    <div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:0.04em">あなたのLCを選択してください</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px">次回からは自動でログインされます</div>
+  </div>
+  <div style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;width:380px;max-width:calc(100vw - 32px)">
+    <select id="lc-select-input" style="width:100%;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);color:#fff;font-size:14px;font-family:'Lato',sans-serif;padding:10px 12px;outline:none;border-radius:7px;cursor:pointer;box-sizing:border-box;margin-bottom:16px">
+      <option value="">選択してください</option>
+    </select>
+    <button onclick="confirmLcSelect()" style="width:100%;background:#037EF3;color:#fff;border:none;border-radius:7px;padding:11px;font-size:12px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;font-family:'Lato',sans-serif">決定</button>
+    <div id="lc-select-err" style="display:none;font-size:11px;color:#F85A40;margin-top:10px;font-weight:700;text-align:center">LCを選択してください</div>
+  </div>
+</div>
+
 <!-- PIN MODAL -->
 <div id="pinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:var(--white);border-radius:12px;padding:28px 32px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.3);">
@@ -669,13 +685,18 @@ let _currentUser = null;
 
 function getUser(){ return _currentUser || {role:'lc',lcId:null}; }
 function isMC(){ return getUser().role==='mc'; }
-function canWrite(lId){ return !!_currentUser; } // @aiesec.jp全員編集可
+function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId; }
 
 /* ── AUTH CALLBACKS ── */
 window._fsOnSignIn = function(userData) {
   _currentUser = userData;
   document.getElementById('login-overlay').style.display='none';
-  applyUserUI();
+  // LC未設定かつMCでもない場合はLC選択画面を表示
+  if(!userData.lcId && userData.role !== 'mc'){
+    showLcSelect();
+  } else {
+    applyUserUI();
+  }
 };
 
 window._fsOnSignOut = function() {
@@ -1724,6 +1745,30 @@ function delKpi(){
   toast('KPI deleted');
 }
 
+
+function showLcSelect(){
+  const sel = document.getElementById('lc-select-input');
+  sel.innerHTML = '<option value="">選択してください</option>' +
+    LC_META.map(lc=>`<option value="${lc.id}" style="background:#1B2C5E;color:#fff">${lc.id} — ${lc.name}</option>`).join('');
+  document.getElementById('lc-select-overlay').style.display='flex';
+}
+
+async function confirmLcSelect(){
+  const val = document.getElementById('lc-select-input').value;
+  if(!val){
+    document.getElementById('lc-select-err').style.display='block';
+    return;
+  }
+  document.getElementById('lc-select-err').style.display='none';
+  // Firestoreに保存
+  if(window._fsSaveRole && _currentUser){
+    await window._fsSaveRole(_currentUser.email, { role:'lc', lcId: val, displayName: _currentUser.displayName||'' });
+    _currentUser.lcId = val;
+    _currentUser.role = 'lc';
+  }
+  document.getElementById('lc-select-overlay').style.display='none';
+  applyUserUI();
+}
 
 /* ── USER MANAGEMENT (MC only) ── */
 async function openUserMgmt(){
