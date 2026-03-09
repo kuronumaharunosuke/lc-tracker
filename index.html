@@ -249,7 +249,10 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .group-cell{font-size:11px;font-weight:700;color:var(--dark);background:var(--bg);border-right:1px solid var(--border);padding:9px 10px;vertical-align:middle;max-width:110px;}
 .group-cell-label{text-align:center;background:var(--bg2);border-radius:4px;padding:3px 7px;font-size:10px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;}
 .group-cell.empty{background:transparent;}
-.tnote{font-size:11px;color:var(--dim);line-height:1.4;max-width:160px;word-break:break-all;}
+.tnote{font-size:11px;color:var(--dim);line-height:1.4;word-break:break-all;}
+.col-resizer{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:col-resize;user-select:none;z-index:2;}
+.col-resizer:hover,.col-resizer.dragging{background:var(--primary);opacity:0.5;}
+.tt th{position:relative;}
 .tnote-empty{color:var(--faint);font-size:10px;cursor:pointer;}
 .tnote-empty:hover{color:var(--text);}
 textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
@@ -1186,7 +1189,7 @@ function rLC(id){
         <div class="kpi-body open" id="kb-${id}_${at.id}_${k.id}">
           <table class="tt">
             <thead><tr>
-              <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th></th>
+              <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th class="th-note" style="width:150px;min-width:80px">備考<div class="col-resizer" onmousedown="initColResize(event,this)"></div></th><th></th>
             </tr></thead>
             <tbody id="tb-${id}_${at.id}_${k.id}">${rows}</tbody>
             ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${id}','${at.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
@@ -1418,7 +1421,7 @@ function rArea(lId,aId){
       <div class="kpi-body open" id="kb-area_${aId}_${k.id}">
         <table class="tt">
           <thead><tr>
-            <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th></th>
+            <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th class="th-note" style="width:150px;min-width:80px">備考<div class="col-resizer" onmousedown="initColResize(event,this)"></div></th><th></th>
           </tr></thead>
           <tbody>${buildTaskRows(k)}</tbody>
           ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${lId}','${aId}','${k.id}')">+ Add task...</button></td></tr></tfoot>`:''}
@@ -2142,6 +2145,37 @@ function importD(e){
   const r=new FileReader();
   r.onload=ev=>{try{D=JSON.parse(ev.target.result);ensureAreas();save();buildNav();sw('dashboard',null);toast('Imported');}catch(err){toast('File error','err');}};
   r.readAsText(f);e.target.value='';
+}
+
+/* ── COLUMN RESIZE ── */
+function initColResize(e, handle){
+  e.preventDefault();
+  e.stopPropagation();
+  const th = handle.parentElement;
+  const startX = e.clientX;
+  const startW = th.offsetWidth;
+  handle.classList.add('dragging');
+
+  function onMove(e){
+    const newW = Math.max(80, startW + e.clientX - startX);
+    th.style.width = newW + 'px';
+    // Apply to all .tnote tds in the same table
+    const table = th.closest('table');
+    if(table){
+      const idx = Array.from(th.parentElement.children).indexOf(th);
+      table.querySelectorAll('tbody tr').forEach(tr=>{
+        const td = tr.children[idx];
+        if(td){ td.style.maxWidth = newW + 'px'; td.style.width = newW + 'px'; }
+      });
+    }
+  }
+  function onUp(){
+    handle.classList.remove('dragging');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 }
 
 /* ── TOAST ── */
