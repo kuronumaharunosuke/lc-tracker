@@ -494,6 +494,8 @@ html{font-size:13px;}
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ガントチャート
     </div>
+    <div class="nav-label" style="margin-top:8px">エリア横断</div>
+    <div id="nav-cross"></div>
     <div class="nav-label" style="margin-top:8px">East</div>
     <div id="nav-east"></div>
     <div class="nav-label" style="margin-top:4px">Central</div>
@@ -750,6 +752,7 @@ window._fsOnSignIn = function(userData) {
     showLcSelect();
   } else {
     applyUserUI();
+    buildNav();
   }
 };
 
@@ -943,6 +946,24 @@ function totals(){
 }
 
 function buildNav(){
+  // エリア横断ナビ
+  const crossNav = document.getElementById('nav-cross');
+  if(crossNav){
+    const areaTypes = (D&&D.areaTypes) ? D.areaTypes : DEFAULT_AREA_TYPES;
+    crossNav.innerHTML = areaTypes.map(at=>{
+      let d=0,t=0;
+      if(D&&D.lcs) D.lcs.forEach(lc=>{const s=lcAreaStats(lc.id,at.id);d+=s.done;t+=s.total;});
+      const pct=t?Math.round(d/t*100):0;
+      const active=view==='cross'&&areaId===at.id;
+      return `<div class="nav-item${active?' active':''}" onclick="swCross('${at.id}')"
+        style="border-left-color:${active?at.color:'transparent'}">
+        <div class="ndot" style="background:${at.color}"></div>
+        <span style="flex:1">${at.name}</span>
+        <span class="nb">${t?pct+'%':''}</span>
+      </div>`;
+    }).join('');
+  }
+
   ['East','Central','West'].forEach(region=>{
     const suffix=region.toLowerCase();
     document.getElementById('nav-'+suffix).innerHTML=
@@ -996,6 +1017,183 @@ function sw(v,el,skipHistory){
     rGantt();closeSidebar();
   }
 }
+
+function swCross(aId, skipHistory){
+  view='cross'; lcId=null; areaId=aId; fil='ALL';
+  const at = D.areaTypes.find(x=>x.id===aId)||{color:'#037EF3',name:aId};
+  document.getElementById('ptitle').innerHTML=
+    `<span style="color:${at.color};font-weight:900">${h(at.name)}</span>
+     <span style="font-size:13px;font-weight:700;color:var(--dim);margin-left:8px">全LC横断</span>`;
+  document.getElementById('psub').textContent='Cross-LC View';
+  document.getElementById('addbtn').style.display='none';
+  document.getElementById('addkpibtn').style.display='none';
+  if(!skipHistory) try{history.pushState({view:'cross',areaId:aId},'',location.pathname+'#cross-'+aId);}catch(e){}
+  buildNav(); rCross(aId); closeSidebar();
+}
+
+function rCross(aId){
+  const at = D.areaTypes.find(x=>x.id===aId)||{color:'#037EF3',name:aId};
+  const c = at.color;
+
+  // 全体stats
+  let totD=0,totW=0,totN=0,totT=0;
+  D.lcs.forEach(lc=>{const s=lcAreaStats(lc.id,aId);totD+=s.done;totW+=s.wip;totN+=s.ns;totT+=s.total;});
+  const totPct=totT?Math.round(totD/totT*100):0;
+
+  // LCランキング（このエリアのみ）
+  const ranked=[...D.lcs]
+    .map(lc=>({lc,s:lcAreaStats(lc.id,aId)}))
+    .filter(x=>x.s.total>0)
+    .sort((a,b)=>b.s.pct-a.s.pct);
+
+  const rankRows = ranked.map(({lc,s},i)=>{
+    const rc=REGION_COLORS[lc.region];
+    const rbg=lc.region==='East'?'rgba(3,126,243,0.1)':lc.region==='Central'?'rgba(244,137,36,0.1)':'rgba(117,82,204,0.1)';
+    return `<tr style="cursor:pointer" onclick="swArea('${lc.id}','${aId}')">
+      <td><span class="rank-num ${i<3?'top3':''}">${i+1}</span></td>
+      <td>
+        <div class="lc-id-big" style="color:${rc}">${lc.id}</div>
+        <div class="lc-fname">${h(lc.name)}</div>
+      </td>
+      <td><span class="region-badge" style="background:${rbg};color:${rc}">${lc.region}</span></td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" style="width:${s.pct}%;background:${c}"></div></div>
+          <span class="prog-pct" style="color:${c}">${s.pct}%</span>
+        </div>
+      </td>
+      <td class="bdn">
+        <span class="gn">Done ${s.done}</span>
+        <span style="margin-left:6px" class="an2">WIP ${s.wip}</span>
+        <span style="margin-left:6px;color:var(--faint)">${s.ns}</span>
+      </td>
+      <td style="font-size:11px;color:var(--dim)">${getLCArea(lc.id,aId)?.kpis?.length||0} KPI</td>
+    </tr>`;
+  }).join('');
+
+  // 全LCのKPIを横断表示（goal別グループ）
+  // まずgoal種別なしでKPI一覧をフラットに集める
+  const allKpiRows = ranked.map(({lc,s})=>{
+    const area = getLCArea(lc.id, aId);
+    if(!area||area.kpis.length===0) return '';
+    const rc = REGION_COLORS[lc.region];
+
+    const kpiItems = area.kpis.map((k,i)=>{
+      const ks=kpiStats(k);
+      const pct=ks.total?Math.round(ks.done/ks.total*100):0;
+      const goals=area.goals||[];
+      const g=goals.find(x=>x.id===k.goalId);
+      const typeColor=g?.type==='KGI'?'#037EF3':g?.type==='GI'?'#7552CC':'#8A8E96';
+
+      // タスク一覧（フィルタ適用）
+      const q=document.getElementById('si').value.toLowerCase();
+      const tasks=k.tasks.filter(t=>{
+        if(fil!=='ALL'&&t.status!==fil)return false;
+        if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q))return false;
+        return true;
+      });
+
+      const taskRows=tasks.map(t=>{
+        const over=isOver(t.deadline)&&t.status!=='DONE';
+        return `<tr class="tr">
+          <td class="tn" style="padding-left:20px">${h(t.name)}</td>
+          <td class="tres">${h(t.res||'—')}</td>
+          <td class="tdt">${fd(t.start)}</td>
+          <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' !':''}</td>
+          <td><span class="chip ${sc(t.status)}">${sl(t.status)}</span></td>
+          <td class="tnote" style="font-size:10px">${t.note?h(t.note).replace(/\n/g,'<br>'):'—'}</td>
+        </tr>`;
+      }).join('');
+
+      return `<div class="kpi-block" style="margin-bottom:6px">
+        <div class="kpi-head" onclick="togK('cross_${lc.id}_${aId}_${k.id}')">
+          <div class="kpi-idx" style="color:${c};width:42px;font-size:22px">${String(i+1).padStart(2,'0')}</div>
+          <div class="kpi-info">
+            <div class="kpi-lbl" style="display:flex;align-items:center;gap:6px">
+              ${g?`<span style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44;font-size:9px;font-weight:900;padding:1px 5px;border-radius:3px">${g.type}</span><span style="color:${typeColor}">${h(g.name)}</span>`:'<span>Ungrouped</span>'}
+            </div>
+            <div class="kpi-ttl">${h(k.name)}</div>
+            ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual||0}</div>`:''}
+            ${k.memo?`<div class="kpi-target" style="color:var(--text)">${h(k.memo)}</div>`:''}
+          </div>
+          <div class="kpi-r">
+            <div class="kpi-pct" style="color:${c}">${pct}%</div>
+            <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
+            <div class="kpi-cnt">${ks.done}/${ks.total} done</div>
+          </div>
+          <div class="kpi-chev open" id="cv-cross_${lc.id}_${aId}_${k.id}">›</div>
+        </div>
+        <div class="kpi-body open" id="kb-cross_${lc.id}_${aId}_${k.id}">
+          ${tasks.length>0?`<table class="tt">
+            <thead><tr>
+              <th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th>備考</th>
+            </tr></thead>
+            <tbody>${taskRows}</tbody>
+          </table>`:`<div style="padding:10px 14px;font-size:11px;color:var(--faint)">タスクなし</div>`}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--white);border:1.5px solid ${rc}44;border-left:4px solid ${rc};border-radius:8px 8px 0 0;cursor:pointer" onclick="swArea('${lc.id}','${aId}')">
+        <div style="font-size:20px;font-weight:900;color:${rc};min-width:44px">${lc.id}</div>
+        <div style="font-size:11px;color:var(--dim);flex:1">${h(lc.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="prog-track" style="width:60px"><div class="prog-fill" style="width:${s.pct}%;background:${c}"></div></div>
+          <span style="font-size:16px;font-weight:900;color:${c}">${s.pct}%</span>
+        </div>
+        <span style="font-size:10px;color:var(--dim)">${s.done}/${s.total}</span>
+        <span style="font-size:10px;color:var(--dim)">${area.kpis.length} KPI ›</span>
+      </div>
+      <div style="border:1.5px solid ${rc}22;border-top:none;border-radius:0 0 8px 8px;padding:8px">
+        ${kpiItems}
+      </div>
+    </div>`;
+  }).join('');
+
+  // ステータスフィルタ
+  const fbar=`<div class="fbar" style="margin-bottom:16px">
+    <span class="fl">Filter</span>
+    <button class="fb ${fil==='ALL'?'active':''}" onclick="setCrossF('ALL')">All (${totT})</button>
+    <button class="fb ${fil==='DONE'?'active':''}" onclick="setCrossF('DONE')">Done (${totD})</button>
+    <button class="fb ${fil==='WIP'?'active':''}" onclick="setCrossF('WIP')">WIP (${totW})</button>
+    <button class="fb ${fil==='NOT_STARTED'?'active':''}" onclick="setCrossF('NOT_STARTED')">Not Started (${totN})</button>
+    <div class="fr-right" style="color:${c}">${totD}/${totT}</div>
+  </div>`;
+
+  document.getElementById('ct').innerHTML=`
+    <div class="area-hero" style="background:${c}">
+      <div>
+        <div class="ah-title">${h(at.name)}</div>
+        <div class="ah-lc" style="color:rgba(255,255,255,0.6)">${ranked.length} LC · 全LC横断ビュー</div>
+      </div>
+      <div class="ah-right">
+        <div class="ah-lbl">全体達成率</div>
+        <div class="ah-pct">${totPct}%</div>
+        <div class="ah-total">${totD} / ${totT} tasks</div>
+      </div>
+    </div>
+    <div class="stat-row" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-l">参加LC</div><div class="stat-n p" style="color:${c}">${ranked.length}</div></div>
+      <div class="stat-card"><div class="stat-l">Done</div><div class="stat-n g">${totD}</div></div>
+      <div class="stat-card"><div class="stat-l">WIP</div><div class="stat-n a">${totW}</div></div>
+      <div class="stat-card"><div class="stat-l">Not Started</div><div class="stat-n d">${totN}</div></div>
+    </div>
+    <div class="section-label" style="margin-bottom:8px">LC別達成率</div>
+    <table class="rank-tbl" style="margin-bottom:24px">
+      <thead><tr>
+        <th style="width:40px">#</th><th>LC</th><th>Region</th>
+        <th style="width:160px">Progress</th><th>Breakdown</th><th>KPI数</th>
+      </tr></thead>
+      <tbody>${rankRows}</tbody>
+    </table>
+    <div class="section-label" style="margin-bottom:12px">KPI・タスク一覧</div>
+    ${fbar}
+    ${allKpiRows||`<div style="padding:24px;text-align:center;color:var(--faint);font-size:12px">タスクが登録されているLCがありません</div>`}`;
+  applyNoteColW(getNoteColW());
+}
+
+function setCrossF(s){ fil=s; if(view==='cross'&&areaId) rCross(areaId); }
 
 function swLC(id,el,skipHistory){
   view='lc';lcId=id;areaId=null;fil='ALL';afilter='ALL';
