@@ -24,7 +24,6 @@
   const auth = getAuth(app);
   const REF = doc(db, 'lc-tracker-2627', 'main');
 
-  // 管理者PIN照合
   window._fsCheckPassword = async (key, pw) => {
     try {
       const snap = await getDoc(doc(db, 'lc-tracker-passwords', key));
@@ -33,12 +32,10 @@
     } catch(e) { return false; }
   };
 
-  // 管理者PIN保存
   window._fsSavePassword = async (key, pw) => {
     await setDoc(doc(db, 'lc-tracker-passwords', key), { pw });
   };
 
-  // Googleログイン（@aiesec.jp限定）
   window._fsSignIn = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ hd: 'aiesec.jp' });
@@ -54,12 +51,10 @@
     }
   };
 
-  // ログアウト
   window._fsSignOut = async () => {
     await signOut(auth);
   };
 
-  // Firestore save
   window._fsSave = async (data) => {
     try {
       await setDoc(REF, { payload: JSON.stringify(data) });
@@ -68,7 +63,6 @@
     }
   };
 
-  // ユーザーロール取得・自動登録
   window._fsGetRole = async (email, displayName) => {
     try {
       const snap = await getDoc(doc(db, 'lc-tracker-users', email));
@@ -87,12 +81,10 @@
     }
   };
 
-  // ユーザーロール保存（MCのみ）
   window._fsSaveRole = async (email, roleData) => {
     await setDoc(doc(db, 'lc-tracker-users', email), roleData);
   };
 
-  // 全ユーザー一覧取得（MCのみ）
   window._fsGetAllUsers = async () => {
     try {
       const snap = await getDocs(collection(db, 'lc-tracker-users'));
@@ -100,12 +92,10 @@
     } catch(e) { return []; }
   };
 
-  // ユーザー削除（MCのみ）
   window._fsDeleteUser = async (email) => {
     await deleteDoc(doc(db, 'lc-tracker-users', email));
   };
 
-  // Firestore data load + realtime
   const startDataSync = () => {
     getDoc(REF).then(snap => {
       if (snap.exists()) window._fsOnLoad(JSON.parse(snap.data().payload));
@@ -119,7 +109,6 @@
     });
   };
 
-  // 認証状態の監視
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       if (!user.email.endsWith('@aiesec.jp')) {
@@ -610,6 +599,31 @@ html{font-size:13px;}
   </div>
 </div>
 
+<!-- GOAL EDIT MODAL -->
+<div class="overlay" id="ov-goal">
+  <div class="modal">
+    <div class="mh">目標を編集</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2">目標名</label>
+        <input class="fi" id="goal-edit-name" placeholder="例：GV派遣20名達成">
+      </div>
+      <div class="fg">
+        <label class="fl2">種別</label>
+        <select class="fs" id="goal-edit-type">
+          <option value="KGI">KGI</option>
+          <option value="GI">GI</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeGoalModal()">キャンセル</button>
+      <button class="btn btn-fill" onclick="saveGoal()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- AREA MGMT MODAL -->
 <div class="overlay" id="ov-area">
   <div class="modal modal-wide">
@@ -691,7 +705,6 @@ function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId;
 window._fsOnSignIn = function(userData) {
   _currentUser = userData;
   document.getElementById('login-overlay').style.display='none';
-  // LC未設定かつMCでもない場合はLC選択画面を表示
   if(!userData.lcId && userData.role !== 'mc'){
     showLcSelect();
   } else {
@@ -776,7 +789,7 @@ function makeSeed(){
 }
 
 let D, view='dashboard', lcId=null, areaId=null, afilter='ALL', fil='ALL', gfil='ALL';
-let editing=null, editingKpi=null, editingParent=null;
+let editing=null, editingKpi=null, editingParent=null, editingGoal=null;
 
 /* ── FIRESTORE BRIDGE ── */
 window._fsOnLoad = function(data) {
@@ -798,7 +811,6 @@ window._fsOnRemoteUpdate = function(data) {
 };
 
 function load(){
-  // Firestoreが未設定の場合はlocalStorageにフォールバック
   try{const s=localStorage.getItem(SK);if(s){D=JSON.parse(s);ensureAreas();return;}}catch(e){}
   D=makeSeed();
 }
@@ -1042,7 +1054,7 @@ function rDash(){
     </table>`;
 }
 
-/* Build task table rows — cw = canWrite for this LC */
+/* Build task table rows */
 function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
   let rows='';
   let ri=0;
@@ -1227,6 +1239,41 @@ function togGoal(id){
   const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
 }
 
+/* ── GOAL EDIT ── */
+function openEditGoal(lId, aId, gId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);if(!area)return;
+  const g=(area.goals||[]).find(x=>x.id===gId);if(!g)return;
+  editingGoal={lId,aId,gId};
+  document.getElementById('goal-edit-name').value=g.name;
+  document.getElementById('goal-edit-type').value=g.type||'KGI';
+  document.getElementById('ov-goal').classList.add('open');
+  setTimeout(()=>document.getElementById('goal-edit-name').focus(),80);
+}
+
+function saveGoal(){
+  if(!editingGoal)return;
+  const name=document.getElementById('goal-edit-name').value.trim();
+  if(!name){toast('目標名を入力してください','err');return;}
+  const type=document.getElementById('goal-edit-type').value;
+  const{lId,aId,gId}=editingGoal;
+  const area=getLCArea(lId,aId);if(!area)return;
+  const g=(area.goals||[]).find(x=>x.id===gId);if(!g)return;
+  g.name=name;
+  g.type=type;
+  save();
+  closeGoalModal();
+  buildNav();
+  if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
+  else if(view==='lc'&&lcId)rLC(lcId);
+  toast(`"${name}" を更新しました`);
+}
+
+function closeGoalModal(){
+  document.getElementById('ov-goal').classList.remove('open');
+  editingGoal=null;
+}
+
 function deleteGoal(lId,aId,gId){
   if(!canWrite(lId)){toast('You do not have write access to this LC','err');return;}
   const area=getLCArea(lId,aId);if(!area)return;
@@ -1335,7 +1382,10 @@ function rArea(lId,aId){
         <span class="goal-name">${h(g.name)}</span>
         <span class="goal-stats">${gKpis.length} KPI · ${gStats.done}/${gStats.total} done · ${gPct}%</span>
         <div class="goal-bar-mini"><div style="width:${gPct}%;background:${typeColor};height:100%;border-radius:2px"></div></div>
-        ${cw?`<button class="ib del" style="font-size:10px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation();deleteGoal('${lId}','${aId}','${g.id}')">Delete</button>`:''}
+        ${cw?`<div style="display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0">
+          <button class="ib" style="font-size:10px" onclick="event.stopPropagation();openEditGoal('${lId}','${aId}','${g.id}')">編集</button>
+          <button class="ib del" style="font-size:10px" onclick="event.stopPropagation();deleteGoal('${lId}','${aId}','${g.id}')">削除</button>
+        </div>`:''}
         <div class="kpi-chev open" id="cv-gg_${aId}_${g.id}" style="margin-left:6px">›</div>
       </div>
       <div class="goal-group-body open" id="kb-gg_${aId}_${g.id}">
@@ -1760,7 +1810,6 @@ async function confirmLcSelect(){
     return;
   }
   document.getElementById('lc-select-err').style.display='none';
-  // Firestoreに保存
   if(window._fsSaveRole && _currentUser){
     await window._fsSaveRole(_currentUser.email, { role:'lc', lcId: val, displayName: _currentUser.displayName||'' });
     _currentUser.lcId = val;
@@ -2044,7 +2093,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
@@ -2052,6 +2101,7 @@ document.addEventListener('keydown',e=>{
 document.getElementById('ov').addEventListener('click',function(e){if(e.target===this)closeM();});
 document.getElementById('ov-kpi').addEventListener('click',function(e){if(e.target===this)closeMKpi();});
 document.getElementById('ov-area').addEventListener('click',function(e){if(e.target===this)closeMArea();});
+document.getElementById('ov-goal').addEventListener('click',function(e){if(e.target===this)closeGoalModal();});
 
 /* ── SIDEBAR TOGGLE (mobile) ── */
 function toggleSidebar(){
@@ -2080,7 +2130,6 @@ window.addEventListener('popstate', e=>{
 /* ── INIT ── */
 document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:0.1em">LOADING...</div>';
 document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
-// 認証はonAuthStateChangedが管理するため何もしない
 </script>
 </body>
 </html>
