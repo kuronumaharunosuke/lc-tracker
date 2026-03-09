@@ -752,7 +752,6 @@ window._fsOnSignIn = function(userData) {
     showLcSelect();
   } else {
     applyUserUI();
-    buildNav();
   }
 };
 
@@ -966,7 +965,10 @@ function buildNav(){
 
   ['East','Central','West'].forEach(region=>{
     const suffix=region.toLowerCase();
-    document.getElementById('nav-'+suffix).innerHTML=
+    const el=document.getElementById('nav-'+suffix);
+    if(!el) return;
+    if(!D||!D.lcs){ el.innerHTML=''; return; }
+    el.innerHTML=
       D.lcs.filter(lc=>lc.region===region).map(lc=>{
         const s=lcStats(lc.id);const rc=REGION_COLORS[region];
         const lcActive=(view==='lc'||view==='area')&&lcId===lc.id;
