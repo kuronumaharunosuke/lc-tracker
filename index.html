@@ -624,6 +624,23 @@ html{font-size:13px;}
   </div>
 </div>
 
+<!-- GROUP NOTE MODAL -->
+<div class="overlay" id="ov-gnote">
+  <div class="modal">
+    <div class="mh" id="gnote-mttl">大タスク備考</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2" id="gnote-label">備考</label>
+        <textarea class="fi" id="gnote-input" rows="4" placeholder="メモ、リンク、補足など…" style="resize:vertical;font-size:13px;line-height:1.6"></textarea>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeGroupNoteModal()">キャンセル</button>
+      <button class="btn btn-fill" onclick="saveGroupNote()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- AREA MGMT MODAL -->
 <div class="overlay" id="ov-area">
   <div class="modal modal-wide">
@@ -1068,9 +1085,14 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
     const over=isOver(t.deadline)&&t.status!=='DONE';
     const chipClass=`chip ${sc(t.status)}${cw?' clickable':''}`;
     const chipOnClick=cw?`onclick="cycTask('${lId}','${aId}','${kId}','${t.id}',event)"`:'';
+    const grpNote=grp?(getLCArea(lId,aId)?.kpis?.find(x=>x.id===kId)?.groupNotes?.[grp]||''):'';
     rows+=`<tr class="tr" id="row-${t.id}">
       <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
-        ${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>`:''}
+        ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
+          <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
+          ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
+          ${cw?`<button class="ib" style="font-size:9px;padding:2px 6px;margin-top:2px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button>`:''}
+        </div>`:''}
       </td>
       <td class="tn">${h(t.name)}</td>
       <td class="tres">${h(t.res||'—')}</td>
@@ -1237,6 +1259,43 @@ function togK(id){
 function togGoal(id){
   document.getElementById('kb-'+id)?.classList.toggle('open');
   const cv=document.getElementById('cv-'+id);if(cv)cv.classList.toggle('open');
+}
+
+/* ── GROUP NOTE ── */
+let _editingGroupNote = null;
+
+function openGroupNote(lId, aId, kId, grpName){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const k = getLCArea(lId,aId)?.kpis?.find(x=>x.id===kId);
+  if(!k) return;
+  _editingGroupNote = {lId, aId, kId, grpName};
+  const existing = k.groupNotes?.[grpName] || '';
+  document.getElementById('gnote-mttl').textContent = `「${grpName}」備考`;
+  document.getElementById('gnote-label').textContent = grpName;
+  document.getElementById('gnote-input').value = existing;
+  document.getElementById('ov-gnote').classList.add('open');
+  setTimeout(()=>document.getElementById('gnote-input').focus(),80);
+}
+
+function saveGroupNote(){
+  if(!_editingGroupNote) return;
+  const {lId, aId, kId, grpName} = _editingGroupNote;
+  const k = getLCArea(lId,aId)?.kpis?.find(x=>x.id===kId);
+  if(!k) return;
+  if(!k.groupNotes) k.groupNotes = {};
+  const val = document.getElementById('gnote-input').value.trim();
+  if(val) k.groupNotes[grpName] = val;
+  else delete k.groupNotes[grpName];
+  save();
+  closeGroupNoteModal();
+  if(view==='area'&&lcId&&areaId) rArea(lcId,areaId);
+  else if(view==='lc'&&lcId) rLC(lcId);
+  toast(val ? '備考を保存しました' : '備考を削除しました');
+}
+
+function closeGroupNoteModal(){
+  document.getElementById('ov-gnote').classList.remove('open');
+  _editingGroupNote = null;
 }
 
 /* ── GOAL EDIT ── */
@@ -2093,7 +2152,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
@@ -2102,6 +2161,7 @@ document.getElementById('ov').addEventListener('click',function(e){if(e.target==
 document.getElementById('ov-kpi').addEventListener('click',function(e){if(e.target===this)closeMKpi();});
 document.getElementById('ov-area').addEventListener('click',function(e){if(e.target===this)closeMArea();});
 document.getElementById('ov-goal').addEventListener('click',function(e){if(e.target===this)closeGoalModal();});
+document.getElementById('ov-gnote').addEventListener('click',function(e){if(e.target===this)closeGroupNoteModal();});
 
 /* ── SIDEBAR TOGGLE (mobile) ── */
 function toggleSidebar(){
