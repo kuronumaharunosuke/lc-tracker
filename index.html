@@ -115,6 +115,16 @@
         window._fsOnRemoteUpdate(JSON.parse(snap.data().payload));
       }
     });
+
+    // UI設定（列幅など）のリアルタイム同期
+    onSnapshot(doc(db, 'lc-tracker-settings', 'ui'), (snap) => {
+      if(!snap.exists()) return;
+      const data = snap.data();
+      if(data.noteColW){
+        try{ localStorage.setItem('aiesec_note_col_w', data.noteColW); }catch(e){}
+        if(typeof applyNoteColW === 'function') applyNoteColW(data.noteColW);
+      }
+    });
   };
 
   onAuthStateChanged(auth, async (user) => {
@@ -259,10 +269,11 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .group-cell.empty{background:transparent;}
 .tnote{font-size:11px;color:var(--dim);line-height:1.4;word-break:break-all;}
 .group-cell .gc-actions{opacity:0;transition:opacity 0.08s;}
-.group-cell:hover .gc-actions{opacity:1;}cursor:col-resize;user-select:none;z-index:2;display:flex;align-items:center;justify-content:center;}
+.group-cell:hover .gc-actions{opacity:1;}
+.col-resizer{position:absolute;right:-4px;top:0;bottom:0;width:12px;cursor:col-resize;user-select:none;z-index:10;display:flex;align-items:center;justify-content:center;}
 .col-resizer::after{content:'';display:block;width:3px;height:16px;border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);border-radius:2px;opacity:0.6;transition:opacity 0.1s;}
 .col-resizer:hover::after,.col-resizer.dragging::after{border-color:var(--primary);opacity:1;}
-.tt th{position:relative;}
+.tt th{position:relative;overflow:visible;}
 .tnote-empty{color:var(--faint);font-size:10px;cursor:pointer;}
 .tnote-empty:hover{color:var(--text);}
 textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
