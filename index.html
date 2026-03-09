@@ -250,7 +250,8 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .group-cell-label{text-align:center;background:var(--bg2);border-radius:4px;padding:3px 7px;font-size:10px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;}
 .group-cell.empty{background:transparent;}
 .tnote{font-size:11px;color:var(--dim);line-height:1.4;word-break:break-all;}
-.col-resizer{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;user-select:none;z-index:2;display:flex;align-items:center;justify-content:center;}
+.group-cell .gc-actions{opacity:0;transition:opacity 0.08s;}
+.group-cell:hover .gc-actions{opacity:1;}cursor:col-resize;user-select:none;z-index:2;display:flex;align-items:center;justify-content:center;}
 .col-resizer::after{content:'';display:block;width:3px;height:16px;border-left:1.5px solid var(--border);border-right:1.5px solid var(--border);border-radius:2px;opacity:0.6;transition:opacity 0.1s;}
 .col-resizer:hover::after,.col-resizer.dragging::after{border-color:var(--primary);opacity:1;}
 .tt th{position:relative;}
@@ -1095,7 +1096,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
-          ${cw?`<button class="ib" style="font-size:9px;padding:2px 6px;margin-top:2px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button>`:''}
+          ${cw?`<div class="gc-actions"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button></div>`:''}
         </div>`:''}
       </td>
       <td class="tn">${h(t.name)}</td>
