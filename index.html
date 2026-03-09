@@ -96,6 +96,14 @@
     await deleteDoc(doc(db, 'lc-tracker-users', email));
   };
 
+  // 共有UI設定の保存
+  window._fsSaveUISetting = async (key, value) => {
+    try {
+      await setDoc(doc(db, 'lc-tracker-settings', 'ui'), { [key]: value }, { merge: true });
+    } catch(e) { console.error('UI setting save error:', e); }
+  };
+
+  // 共有UI設定のリアルタイム同期
   const startDataSync = () => {
     getDoc(REF).then(snap => {
       if (snap.exists()) window._fsOnLoad(JSON.parse(snap.data().payload));
@@ -1254,6 +1262,7 @@ function rLC(id){
     </div>`:'';
 
   document.getElementById('ct').innerHTML=readonlyNotice+fbar+statusBar+areaBlocks+areaAddSection;
+  applyNoteColW(getNoteColW());
 }
 
 function togK(id){
@@ -1477,6 +1486,7 @@ function rArea(lId,aId){
       </div>
     </div>
     ${readonlyNotice}${stats}${fbar}${kpisHtml}${addKpiBtn}`;
+  applyNoteColW(getNoteColW());
 }
 
 function cycTask(lId,aId,kId,tId,e){
@@ -2150,6 +2160,35 @@ function importD(e){
 }
 
 /* ── COLUMN RESIZE ── */
+const NOTE_COL_KEY = 'aiesec_note_col_w';
+
+function getNoteColW(){
+  try{ return parseInt(localStorage.getItem(NOTE_COL_KEY))||150; }catch(e){ return 150; }
+}
+
+function applyNoteColW(w){
+  document.querySelectorAll('.th-note').forEach(th=>{
+    th.style.width = w + 'px';
+  });
+  document.querySelectorAll('.tt tbody tr').forEach(tr=>{
+    const th = tr.closest('table')?.querySelector('.th-note');
+    if(!th) return;
+    const idx = Array.from(th.parentElement.children).indexOf(th);
+    const td = tr.children[idx];
+    if(td){ td.style.width = w + 'px'; td.style.maxWidth = w + 'px'; }
+  });
+}
+
+let _noteColSaveTimer = null;
+function saveNoteColW(w){
+  try{ localStorage.setItem(NOTE_COL_KEY, w); }catch(e){}
+  // 全員共有のFirestoreドキュメントに保存
+  clearTimeout(_noteColSaveTimer);
+  _noteColSaveTimer = setTimeout(()=>{
+    if(window._fsSaveUISetting) window._fsSaveUISetting('noteColW', w);
+  }, 800);
+}
+
 function initColResize(e, handle){
   e.preventDefault();
   e.stopPropagation();
@@ -2160,16 +2199,8 @@ function initColResize(e, handle){
 
   function onMove(e){
     const newW = Math.max(80, startW + e.clientX - startX);
-    th.style.width = newW + 'px';
-    // Apply to all .tnote tds in the same table
-    const table = th.closest('table');
-    if(table){
-      const idx = Array.from(th.parentElement.children).indexOf(th);
-      table.querySelectorAll('tbody tr').forEach(tr=>{
-        const td = tr.children[idx];
-        if(td){ td.style.maxWidth = newW + 'px'; td.style.width = newW + 'px'; }
-      });
-    }
+    applyNoteColW(newW);
+    saveNoteColW(newW);
   }
   function onUp(){
     handle.classList.remove('dragging');
