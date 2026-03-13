@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -21,6 +21,9 @@
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
+  window._db = db;
+  window._fsGetDoc = (ref) => getDoc(ref);
+  window._fsDoc = (path, id) => doc(db, path, id);
   const auth = getAuth(app);
   const REF = doc(db, 'lc-tracker-2627', 'main');
 
@@ -55,9 +58,28 @@
     await signOut(auth);
   };
 
+  // バックアップ保存（直近5世代）
+  window._fsBackup = async (data) => {
+    try {
+      const ts = Date.now();
+      const backupCol = collection(db, 'lc-tracker-backups');
+      // 古いバックアップ一覧取得して6件超えたら削除
+      const snaps = await getDocs(query(backupCol, orderBy('savedAt','desc')));
+      if(snaps.docs.length >= 5){
+        for(let i=4; i<snaps.docs.length; i++) await deleteDoc(snaps.docs[i].ref);
+      }
+      await setDoc(doc(backupCol, String(ts)), {
+        payload: JSON.stringify(data),
+        savedAt: ts,
+        savedBy: window._currentUserEmail||'unknown'
+      });
+    } catch(e){ console.warn('Backup error:', e); }
+  };
+
   window._fsSave = async (data) => {
     try {
       await setDoc(REF, { payload: JSON.stringify(data) });
+      window._fsBackup(data);
     } catch(e) {
       console.error('Firestore save error:', e);
     }
@@ -517,6 +539,7 @@ html{font-size:13px;}
       ↑ Import
       <input type="file" accept=".json" style="display:none" onchange="importD(event)">
     </label>
+    <button id="backup-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);display:none" onclick="openBackupModal()">↩ バックアップ復元</button>
     <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="doLogout()">ログアウト</button>
   </div>
 </nav>
@@ -621,6 +644,20 @@ html{font-size:13px;}
       <button class="btn" id="kpi-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="delKpi()">削除</button>
       <button class="btn" onclick="closeMKpi()">キャンセル</button>
       <button class="btn btn-fill" onclick="saveKpi()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKUP RESTORE MODAL -->
+<div id="backup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1100;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:15px;font-weight:900;color:var(--navy)">↩ バックアップから復元</div>
+    <div style="font-size:11px;color:var(--dim)">保存ボタンを押すたびに最新5件が自動保存されます。復元すると現在のデータは上書きされます。</div>
+    <div id="backup-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:80px">
+      <div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">読み込み中...</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeBackupModal()">キャンセル</button>
     </div>
   </div>
 </div>
@@ -747,6 +784,7 @@ function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId;
 /* ── AUTH CALLBACKS ── */
 window._fsOnSignIn = function(userData) {
   _currentUser = userData;
+  window._currentUserEmail = userData.email||'unknown';
   document.getElementById('login-overlay').style.display='none';
   if(!userData.lcId && userData.role !== 'mc'){
     showLcSelect();
@@ -779,6 +817,7 @@ function applyUserUI(){
   document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
+  document.getElementById('backup-btn-wrap').style.display=u.role==='mc'?'':'none';
 }
 
 const LC_META = [
@@ -789,7 +828,7 @@ const LC_META = [
   {id:'JO',  name:'上智大学委員会',             region:'East'},
   {id:'KO',  name:'慶應義塾大学委員会',          region:'East'},
   {id:'MJ',  name:'明治大学委員会',             region:'East'},
-  {id:'SFC', name:'湘南藤沢委員会',             region:'East'},
+  {id:'SFC', name:'慶應湘南藤沢委員会',             region:'East'},
   {id:'SP',  name:'立教大学委員会',             region:'East'},
   {id:'TKB', name:'筑波大学委員会',             region:'East'},
   {id:'TO',  name:'東京大学委員会',             region:'East'},
@@ -1565,6 +1604,7 @@ function deleteGoal(lId,aId,gId){
   const kpiCount=area.kpis.filter(k=>k.goalId===gId).length;
   const msg=kpiCount?`Deleting "${g.name}" will unlink ${kpiCount} KPI(s). Continue?`:`Delete "${g.name}"?`;
   if(!confirm(msg))return;
+  auditLog('DELETE_GOAL', {lc:lId, area:aId, goal:g.name, type:g.type, unlinkedKpis:kpiCount});
   area.goals=area.goals.filter(x=>x.id!==gId);
   area.kpis.forEach(k=>{if(k.goalId===gId)k.goalId=null;});
   save();buildNav();
@@ -1722,12 +1762,18 @@ function delT(lId,aId,kId,tId,parentId){
   if(!confirm('Delete this task?'))return;
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  let taskName='';
   if(parentId&&parentId!=='null'){
     const parent=k.tasks.find(x=>x.id===parentId);
+    const child=parent?.children?.find(x=>x.id===tId);
+    taskName=child?.name||tId;
     if(parent)parent.children=(parent.children||[]).filter(x=>x.id!==tId);
   } else {
+    const t=k.tasks.find(x=>x.id===tId);
+    taskName=t?.name||tId;
     k.tasks=k.tasks.filter(x=>x.id!==tId);
   }
+  auditLog('DELETE_TASK', {lc:lId, area:aId, kpi:k.name, task:taskName});
   save();buildNav();
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
   else if(view==='lc'&&lcId)rLC(lcId);
@@ -2074,6 +2120,7 @@ function delKpi(){
   if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   const area=getLCArea(lId,aId);const k=area.kpis.find(x=>x.id===kId);
   if(!confirm(`Delete "${k.name}"?`))return;
+  auditLog('DELETE_KPI', {lc:lId, area:aId, kpi:k.name, target:k.target, taskCount:(k.tasks||[]).length});
   area.kpis=area.kpis.filter(x=>x.id!==kId);
   save();buildNav();closeMKpi();
   if(view==='lc'&&lcId)rLC(lcId);
@@ -2287,6 +2334,7 @@ function _doDeleteAreaType(aId){
   const taskCount=D.lcs.reduce((s,lc)=>{const a=lc.areas[aId];return s+(a?a.kpis.reduce((ss,k)=>ss+k.tasks.length,0):0);},0);
   const msg=taskCount>0?`Deleting "${aId}" will remove ${taskCount} task(s) from all LCs. Continue?`:`Delete "${aId}"?`;
   if(!confirm(msg))return;
+  auditLog('DELETE_AREA_TYPE', {area:aId, removedTasks:taskCount, affectedLCs:D.lcs.length});
   D.areaTypes=D.areaTypes.filter(x=>x.id!==aId);
   D.lcs.forEach(lc=>{
     delete lc.areas[aId];
@@ -2311,6 +2359,7 @@ function _doDeleteExtraArea(lId,aId){
     ?`Deleting "${aId}" (${lId} only) will remove ${taskCount} task(s). Continue?`
     :`Delete "${aId}" from ${lId}?`;
   if(!confirm(msg))return;
+  auditLog('DELETE_EXTRA_AREA', {lc:lId, area:aId, removedTasks:taskCount});
   lc.extraAreas=(lc.extraAreas||[]).filter(x=>x.id!==aId);
   delete lc.areas[aId];
   save();buildNav();
@@ -2366,9 +2415,100 @@ function importD(e){
   if(!isMC()){toast('MC access required','err');return;}
   const f=e.target.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=ev=>{try{D=JSON.parse(ev.target.result);ensureAreas();save();buildNav();sw('dashboard',null);toast('Imported');}catch(err){toast('File error','err');}};
+  r.onload=ev=>{
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      // 確認ダイアログ
+      if(!confirm('⚠️ 全データが上書きされます。\n現在のデータはバックアップに保存されますが、復元には管理者操作が必要です。\n\n本当にインポートしますか？')){
+        e.target.value='';return;
+      }
+      D=parsed;ensureAreas();
+      auditLog('IMPORT', {filename:f.name});
+      save();buildNav();sw('dashboard',null);toast('Imported');
+    }catch(err){toast('File error','err');}
+  };
   r.readAsText(f);e.target.value='';
 }
+
+// ── AUDIT LOG ──
+window._fsLog = async (action, detail) => {
+  try {
+    const ts = Date.now();
+    const logCol = collection(window._db, 'lc-tracker-logs');
+    await setDoc(doc(logCol, String(ts) + '_' + Math.random().toString(36).slice(2,6)), {
+      ts,
+      action,
+      detail,
+      by: window._currentUserEmail || 'unknown',
+      byName: getUser()?.displayName || getUser()?.email || 'unknown'
+    });
+  } catch(e){ console.warn('Log error:', e); }
+};
+
+function auditLog(action, detail){
+  if(window._fsLog) window._fsLog(action, detail);
+}
+
+
+async function openBackupModal(){
+  if(!isMC()){toast('MC access required','err');return;}
+  const modal = document.getElementById('backup-modal');
+  const list = document.getElementById('backup-list');
+  modal.style.display='flex';
+  list.innerHTML='<div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">読み込み中...</div>';
+  try{
+    const backupCol = collection(window._db, 'lc-tracker-backups');
+    const snaps = await getDocs(query(backupCol, orderBy('savedAt','desc')));
+    if(snaps.empty){
+      list.innerHTML='<div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">バックアップがありません</div>';
+      return;
+    }
+    list.innerHTML = snaps.docs.map((d,i)=>{
+      const data = d.data();
+      const dt = new Date(data.savedAt);
+      const dtStr = `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+      let taskCount = 0;
+      try{
+        const p = JSON.parse(data.payload);
+        p.lcs.forEach(lc=>Object.values(lc.areas||{}).forEach(a=>(a.kpis||[]).forEach(k=>taskCount+=(k.tasks||[]).length)));
+      }catch(e){}
+      return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--navy)">${i===0?'🟢 最新 · ':''}${dtStr}</div>
+          <div style="font-size:10px;color:var(--dim)">タスク合計: ${taskCount}件 · 保存者: ${data.savedBy||'不明'}</div>
+        </div>
+        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="restoreBackup('${d.id}')">復元</button>
+      </div>`;
+    }).join('');
+  }catch(e){
+    list.innerHTML=`<div style="color:var(--red);font-size:11px;text-align:center;padding:16px">取得失敗: ${e.message}</div>`;
+  }
+}
+
+function closeBackupModal(){
+  document.getElementById('backup-modal').style.display='none';
+}
+
+async function restoreBackup(docId){
+  if(!confirm('このバックアップで現在のデータを上書きします。\nよろしいですか？')) return;
+  try{
+    const ref = window._fsDoc ? window._fsDoc('lc-tracker-backups', docId) : doc(window._db, 'lc-tracker-backups', docId);
+    const snap = await (window._fsGetDoc ? window._fsGetDoc(ref) : getDoc(ref));
+    if(!snap.exists()){toast('バックアップが見つかりません','err');return;}
+    D = JSON.parse(snap.data().payload);
+    ensureAreas();
+    auditLog('RESTORE_BACKUP', {backupId:docId, backupSavedAt:snap.data().savedAt, backupSavedBy:snap.data().savedBy});
+    save();
+    buildNav();
+    sw('dashboard',null);
+    closeBackupModal();
+    toast('復元しました ✓');
+  }catch(e){
+    toast('復元失敗: '+e.message,'err');
+  }
+}
+
+
 
 /* ── COLUMN RESIZE ── */
 const NOTE_COL_KEY = 'aiesec_note_col_w';
