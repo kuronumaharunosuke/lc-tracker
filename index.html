@@ -298,6 +298,18 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .tt th{position:relative;overflow:visible;}
 .tnote-empty{color:var(--faint);font-size:10px;cursor:pointer;}
 .tnote-empty:hover{color:var(--text);}
+/* ── DRAG AND DROP ── */
+.drag-handle-td{width:16px;padding:0 4px!important;cursor:grab;color:var(--border);text-align:center;font-size:13px;user-select:none;transition:color 0.1s;}
+.drag-handle-td:hover{color:var(--dim);}
+.drag-handle-td:active{cursor:grabbing;}
+tr.tr[draggable]{cursor:default;}
+tr.tr.dg-over-top td{border-top:2px solid #037EF3!important;}
+tr.tr.dg-over-bot td{border-bottom:2px solid #037EF3!important;}
+tr.tr.dg-src{opacity:0.35;}
+.kpi-block.dg-kpi-over{outline:2px solid #037EF3;outline-offset:-2px;border-radius:8px;}
+.kpi-block.dg-kpi-src{opacity:0.35;}
+.kpi-drag-handle{cursor:grab;padding:0 8px;color:var(--border);font-size:14px;display:flex;align-items:center;transition:color 0.1s;flex-shrink:0;}
+.kpi-drag-handle:hover{color:var(--dim);}
 textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
 .chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;border-radius:4px;user-select:none;transition:opacity 0.1s;white-space:nowrap;border:none;}
 .chip.clickable{cursor:pointer;}
@@ -911,6 +923,9 @@ function ensureAreas(){
   });
   D.lcs=D.lcs.filter(lc=>LC_META.find(m=>m.id===lc.id));
   D.lcs.forEach(lc=>{
+    // 常にLC_METAの名前で上書き（名前変更に対応）
+    const meta=LC_META.find(m=>m.id===lc.id);
+    if(meta) lc.name=meta.name;
     if(!lc.areas) lc.areas={};
     if(!lc.extraAreas) lc.extraAreas=[];
     if(lc.areaTypes){
@@ -1349,7 +1364,9 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
     const chipClass=`chip ${sc(t.status)}${cw?' clickable':''}`;
     const chipOnClick=cw?`onclick="cycTask('${lId}','${aId}','${kId}','${t.id}',event)"`:'';
     const grpNote=grp?(getLCArea(lId,aId)?.kpis?.find(x=>x.id===kId)?.groupNotes?.[grp]||''):'';
-    rows+=`<tr class="tr" id="row-${t.id}">
+    const dragAttrs=cw?`draggable="true" ondragstart="onTaskDragStart(event,'${lId}','${aId}','${kId}','${t.id}')" ondragend="onTaskDragEnd(event)" ondragover="onTaskDragOver(event,'${lId}','${aId}','${kId}','${t.id}')" ondrop="onTaskDrop(event,'${lId}','${aId}','${kId}','${t.id}')"`:''
+    rows+=`<tr class="tr" id="row-${t.id}" ${dragAttrs}>
+      ${cw?`<td class="drag-handle-td" title="ドラッグで並び替え">⠿</td>`:''}
       <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
@@ -1374,7 +1391,9 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       const overj=isOver(tj.deadline)&&tj.status!=='DONE';
       const chipClassJ=`chip ${sc(tj.status)}${cw?' clickable':''}`;
       const chipOnClickJ=cw?`onclick="cycTask('${lId}','${aId}','${kId}','${tj.id}',event)"`:'';
-      rows+=`<tr class="tr" id="row-${tj.id}">
+      const dragAttrsJ=cw?`draggable="true" ondragstart="onTaskDragStart(event,'${lId}','${aId}','${kId}','${tj.id}')" ondragend="onTaskDragEnd(event)" ondragover="onTaskDragOver(event,'${lId}','${aId}','${kId}','${tj.id}')" ondrop="onTaskDrop(event,'${lId}','${aId}','${kId}','${tj.id}')"`:'';
+      rows+=`<tr class="tr" id="row-${tj.id}" ${dragAttrsJ}>
+        ${cw?`<td class="drag-handle-td">⠿</td>`:''}
         <td class="tn">${h(tj.name)}</td>
         <td class="tres">${h(tj.res||'—')}</td>
         <td class="tdt">${fd(tj.start)}</td>
@@ -1427,8 +1446,10 @@ function rLC(id){
 
       const rows=buildTaskRowsInner(tasks, id, at.id, k.id, c, cw);
 
-      return `<div class="kpi-block">
+      const kDragAttrs=cw?`draggable="true" ondragstart="onKpiDragStart(event,'${id}','${at.id}','${k.id}')" ondragend="onKpiDragEnd(event)" ondragover="onKpiDragOver(event,'${id}','${at.id}','${k.id}')" ondrop="onKpiDrop(event,'${id}','${at.id}','${k.id}')"`:'';
+      return `<div class="kpi-block" id="kpi-blk-${k.id}" ${kDragAttrs}>
         <div class="kpi-head" onclick="togK('${id}_${at.id}_${k.id}')">
+          ${cw?`<div class="kpi-drag-handle" title="ドラッグで並び替え">⠿</div>`:''}
           <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
           <div class="kpi-info">
             <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}${(()=>{const goals=area.goals||[];const g=goals.find(x=>x.id===k.goalId);return g?` · <span class="goal-type-chip" style="background:${g.type==='KGI'?'#037EF322':'#7552CC22'};color:${g.type==='KGI'?'#037EF3':'#7552CC'};border:1px solid ${g.type==='KGI'?'#037EF344':'#7552CC44'};font-size:9px;padding:1px 5px;border-radius:3px">${g.type}</span> ${h(g.name)}`:'';})()}</div>
@@ -1449,10 +1470,11 @@ function rLC(id){
         <div class="kpi-body open" id="kb-${id}_${at.id}_${k.id}">
           <table class="tt">
             <thead><tr>
+              ${cw?`<th style="width:16px"></th>`:''}
               <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th class="th-note" style="width:150px;min-width:80px">備考<div class="col-resizer" onmousedown="initColResize(event,this)"></div></th><th></th>
             </tr></thead>
             <tbody id="tb-${id}_${at.id}_${k.id}">${rows}</tbody>
-            ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${id}','${at.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
+            ${cw?`<tfoot><tr class="add-r"><td colspan="9"><button class="add-btn" onclick="openAdd('${id}','${at.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>`:''}
           </table>
         </div>
       </div>`;
@@ -1661,8 +1683,10 @@ function rArea(lId,aId){
   const goals=area.goals||[];
   function buildKpiBlock(k,i,totalKpis){
     const ks=kpiStats(k);const pct=ks.total?Math.round(ks.done/ks.total*100):0;
-    return `<div class="kpi-block">
+    const kDragAttrs=cw?`draggable="true" ondragstart="onKpiDragStart(event,'${lId}','${aId}','${k.id}')" ondragend="onKpiDragEnd(event)" ondragover="onKpiDragOver(event,'${lId}','${aId}','${k.id}')" ondrop="onKpiDrop(event,'${lId}','${aId}','${k.id}')"`:''
+    return `<div class="kpi-block" id="kpi-blk-${k.id}" ${kDragAttrs}>
       <div class="kpi-head" onclick="togK('area_${aId}_${k.id}')">
+        ${cw?`<div class="kpi-drag-handle" onmousedown="event.stopPropagation()" title="ドラッグで並び替え">⠿</div>`:''}
         <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
         <div class="kpi-info">
           <div class="kpi-lbl">KPI ${i+1} / ${totalKpis}</div>
@@ -1683,10 +1707,11 @@ function rArea(lId,aId){
       <div class="kpi-body open" id="kb-area_${aId}_${k.id}">
         <table class="tt">
           <thead><tr>
+            ${cw?`<th style="width:16px"></th>`:''}
             <th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th class="th-note" style="width:150px;min-width:80px">備考<div class="col-resizer" onmousedown="initColResize(event,this)"></div></th><th></th>
           </tr></thead>
           <tbody>${buildTaskRows(k)}</tbody>
-          ${cw?`<tfoot><tr class="add-r"><td colspan="8"><button class="add-btn" onclick="openAdd('${lId}','${aId}','${k.id}')">+ Add task...</button></td></tr></tfoot>`:''}
+          ${cw?`<tfoot><tr class="add-r"><td colspan="9"><button class="add-btn" onclick="openAdd('${lId}','${aId}','${k.id}')">+ Add task...</button></td></tr></tfoot>`:''}
         </table>
       </div>
     </div>`;
@@ -2430,7 +2455,106 @@ function importD(e){
   r.readAsText(f);e.target.value='';
 }
 
-// ── AUDIT LOG ──
+// ── DRAG AND DROP ──
+let _dragTask = null;
+let _dragKpi = null;
+
+// --- タスク行ドラッグ ---
+function onTaskDragStart(e, lId, aId, kId, tId){
+  if(e.target.tagName==='BUTTON') { e.preventDefault(); return; }
+  _dragTask = {lId, aId, kId, tId};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', tId);
+  const tr = e.currentTarget;
+  setTimeout(()=>tr.classList.add('dg-src'), 0);
+}
+
+function onTaskDragEnd(e){
+  e.currentTarget.classList.remove('dg-src');
+  document.querySelectorAll('.dg-over-top,.dg-over-bot').forEach(el=>{
+    el.classList.remove('dg-over-top','dg-over-bot');
+  });
+  _dragTask = null;
+}
+
+function onTaskDragOver(e, lId, aId, kId, tId){
+  e.preventDefault();
+  if(!_dragTask || _dragTask.tId===tId || _dragTask.kId!==kId) return;
+  e.dataTransfer.dropEffect = 'move';
+  const tr = e.currentTarget;
+  document.querySelectorAll('.dg-over-top,.dg-over-bot').forEach(el=>{
+    el.classList.remove('dg-over-top','dg-over-bot');
+  });
+  const rect = tr.getBoundingClientRect();
+  if(e.clientY < rect.top + rect.height / 2) tr.classList.add('dg-over-top');
+  else tr.classList.add('dg-over-bot');
+}
+
+function onTaskDrop(e, lId, aId, kId, tId){
+  e.preventDefault();
+  if(!_dragTask || _dragTask.tId===tId || _dragTask.kId!==kId) return;
+  const area = getLCArea(lId, aId); if(!area) return;
+  const k = area.kpis.find(x=>x.id===kId); if(!k) return;
+  const fromIdx = k.tasks.findIndex(x=>x.id===_dragTask.tId);
+  const toIdx = k.tasks.findIndex(x=>x.id===tId);
+  if(fromIdx<0 || toIdx<0) return;
+  const tr = e.currentTarget;
+  const rect = tr.getBoundingClientRect();
+  const insertBefore = e.clientY < rect.top + rect.height / 2;
+  const [item] = k.tasks.splice(fromIdx, 1);
+  const newTo = k.tasks.findIndex(x=>x.id===tId);
+  k.tasks.splice(insertBefore ? newTo : newTo+1, 0, item);
+  save();
+  if(view==='area' && lcId && areaId) rArea(lId, aId);
+  else if(view==='lc' && lcId) rLC(lId);
+}
+
+// --- KPIブロックドラッグ ---
+function onKpiDragStart(e, lId, aId, kId){
+  if(e.target.tagName==='BUTTON') { e.preventDefault(); return; }
+  _dragKpi = {lId, aId, kId};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', kId);
+  const blk = e.currentTarget;
+  setTimeout(()=>blk.classList.add('dg-kpi-src'), 0);
+  e.stopPropagation();
+}
+
+function onKpiDragEnd(e){
+  e.currentTarget.classList.remove('dg-kpi-src');
+  document.querySelectorAll('.dg-kpi-over').forEach(el=>el.classList.remove('dg-kpi-over'));
+  _dragKpi = null;
+}
+
+function onKpiDragOver(e, lId, aId, kId){
+  e.preventDefault();
+  if(!_dragKpi || _dragKpi.kId===kId || _dragKpi.aId!==aId) return;
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.dg-kpi-over').forEach(el=>el.classList.remove('dg-kpi-over'));
+  e.currentTarget.classList.add('dg-kpi-over');
+  e.stopPropagation();
+}
+
+function onKpiDrop(e, lId, aId, kId){
+  e.preventDefault();
+  if(!_dragKpi || _dragKpi.kId===kId || _dragKpi.aId!==aId) return;
+  const area = getLCArea(lId, aId); if(!area) return;
+  const fromIdx = area.kpis.findIndex(x=>x.id===_dragKpi.kId);
+  const toIdx = area.kpis.findIndex(x=>x.id===kId);
+  if(fromIdx<0 || toIdx<0) return;
+  const blk = e.currentTarget;
+  const rect = blk.getBoundingClientRect();
+  const insertBefore = e.clientY < rect.top + rect.height / 2;
+  const [item] = area.kpis.splice(fromIdx, 1);
+  const newTo = area.kpis.findIndex(x=>x.id===kId);
+  area.kpis.splice(insertBefore ? newTo : newTo+1, 0, item);
+  save();
+  if(view==='area' && lcId && areaId) rArea(lId, aId);
+  else if(view==='lc' && lcId) rLC(lId);
+  e.stopPropagation();
+}
+
+
 window._fsLog = async (action, detail) => {
   try {
     const ts = Date.now();
