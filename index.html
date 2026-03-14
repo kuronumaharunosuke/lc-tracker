@@ -1382,6 +1382,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
       <td>${cw?`<div class="ta">
         <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
+        <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${t.id}')">複製</button>
         <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
       </div>`:''}
       </td>
@@ -1402,6 +1403,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
         <td>${cw?`<div class="ta">
           <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
+          <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${tj.id}')">複製</button>
           <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
         </div>`:''}
         </td>
@@ -1781,6 +1783,27 @@ function cycTask(lId,aId,kId,tId,e){
   toast('Status: '+sl(t.status));
   if(view==='dashboard')rDash();
 }
+
+function dupTask(lId,aId,kId,tId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  const orig=k.tasks.find(x=>x.id===tId);if(!orig)return;
+  const copy=JSON.parse(JSON.stringify(orig));
+  copy.id='t'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  copy.name=orig.name+' (コピー)';
+  copy.status='NOT_STARTED';
+  // 元タスクの直後に挿入
+  const idx=k.tasks.findIndex(x=>x.id===tId);
+  k.tasks.splice(idx+1,0,copy);
+  save();
+  if(view==='area'&&lcId&&areaId)rArea(lId,aId);
+  else if(view==='lc'&&lcId)rLC(lId);
+  // 複製後すぐ編集モーダルを開く
+  openEdit(lId,aId,kId,copy.id);
+  toast('複製しました。名前を編集してください');
+}
+
 
 function delT(lId,aId,kId,tId,parentId){
   if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
