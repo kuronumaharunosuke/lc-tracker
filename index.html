@@ -1371,7 +1371,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
-          ${cw?`<div class="gc-actions"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button></div>`:''}
+          ${cw?`<div class="gc-actions" style="display:flex;flex-direction:column;gap:2px">
+            <button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button>
+            <button class="ib" style="font-size:9px;padding:2px 6px;color:#037EF3;border-color:#037EF344" onclick="dupGroup('${lId}','${aId}','${kId}','${h(grp)}')" title="大タスクごと複製">大タスク複製</button>
+          </div>`:''}
         </div>`:''}
       </td>
       <td class="tn">${h(t.name)}</td>
@@ -1382,7 +1385,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
       <td>${cw?`<div class="ta">
         <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
-        <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${t.id}')">複製</button>
+        <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${t.id}')" title="この行だけ複製">行複製</button>
         <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
       </div>`:''}
       </td>
@@ -1403,7 +1406,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
         <td>${cw?`<div class="ta">
           <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
-          <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${tj.id}')">複製</button>
+          <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${tj.id}')" title="この行だけ複製">行複製</button>
           <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
         </div>`:''}
         </td>
@@ -1804,6 +1807,29 @@ function dupTask(lId,aId,kId,tId){
   toast('複製しました。名前を編集してください');
 }
 
+
+function dupGroup(lId,aId,kId,grp){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  // グループに属する全タスクをコピー
+  const origTasks=k.tasks.filter(x=>x.group===grp);
+  if(origTasks.length===0)return;
+  const newGrpName=grp+' (コピー)';
+  const copies=origTasks.map(t=>{
+    const copy=JSON.parse(JSON.stringify(t));
+    copy.id='t'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+    copy.group=newGrpName;
+    copy.status='NOT_STARTED';
+    return copy;
+  });
+  // KPIの一番下に追加
+  k.tasks.push(...copies);
+  save();
+  if(view==='area'&&lcId&&areaId)rArea(lId,aId);
+  else if(view==='lc'&&lcId)rLC(lId);
+  toast(`「${grp}」を${copies.length}件まとめて複製しました`);
+}
 
 function delT(lId,aId,kId,tId,parentId){
   if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
