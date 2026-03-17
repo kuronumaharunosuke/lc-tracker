@@ -481,7 +481,45 @@ html{font-size:13px;}
 .nav-sub-item{padding:7px 14px 7px 28px;}
 }
 
-@media(max-width:400px){
+/* ── AREA TAB (WBS / 週次Todo) ── */
+.area-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;}
+.area-tab{font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:8px 18px;cursor:pointer;color:var(--dim);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color 0.1s,border-color 0.1s;}
+.area-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+/* ── WEEKLY TODO ── */
+.wt-week{border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.wt-week-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;background:var(--bg);user-select:none;}
+.wt-week-hd.current{background:#037EF308;border-left:3px solid #037EF3;}
+.wt-week-label{font-size:12px;font-weight:800;color:var(--dark);flex:1;}
+.wt-week-badge{font-size:9px;font-weight:700;background:#037EF3;color:#fff;padding:1px 7px;border-radius:10px;}
+.wt-week-cnt{font-size:10px;color:var(--dim);}
+.wt-week-body{display:none;border-top:1px solid var(--border);}
+.wt-week-body.open{display:block;}
+.wt-item{display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.wt-item:last-child{border-bottom:none;}
+.wt-item.done-item .wt-name{text-decoration:line-through;color:var(--dim);}
+.wt-check{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:background 0.1s,border-color 0.1s;}
+.wt-check.checked{background:#00C16E;border-color:#00C16E;color:#fff;}
+.wt-item-main{flex:1;min-width:0;}
+.wt-name{font-size:12px;font-weight:600;color:var(--dark);word-break:break-all;}
+.wt-meta{font-size:10px;color:var(--dim);margin-top:2px;}
+.wt-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.1s;flex-shrink:0;}
+.wt-item:hover .wt-item-actions{opacity:1;}
+.wt-add-row{padding:8px 14px;}
+/* ── RANKING ── */
+.rank-pg{padding:24px;}
+.rank-hero{background:var(--navy);color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px;}
+.rank-hero-title{font-size:22px;font-weight:900;letter-spacing:0.06em;}
+.rank-section{margin-bottom:28px;}
+.rank-section-title{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.rank-medal{font-size:18px;font-weight:900;width:32px;text-align:center;color:var(--faint);}
+.rank-medal.m1{color:#F4B400;}
+.rank-medal.m2{color:#9E9E9E;}
+.rank-medal.m3{color:#CD7F32;}
+.rank-bar-bg{background:var(--border);border-radius:4px;height:6px;flex:1;}
+.rank-bar-fg{height:6px;border-radius:4px;transition:width 0.3s;}
+.rank-person-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.rank-person-row:last-child{border-bottom:none;}
+
 .stat-row{grid-template-columns:1fr 1fr;}
 .stat-n{font-size:28px;}
 .dash-hero{padding:14px;}
@@ -527,6 +565,10 @@ html{font-size:13px;}
     <div class="nav-item" data-view="gantt" onclick="sw('gantt',this)">
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ガントチャート
+    </div>
+    <div class="nav-item" data-view="ranking" onclick="sw('ranking',this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      ランキング
     </div>
     <div class="nav-label" style="margin-top:8px">エリア横断</div>
     <div id="nav-cross"></div>
@@ -656,6 +698,25 @@ html{font-size:13px;}
       <button class="btn" id="kpi-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="delKpi()">削除</button>
       <button class="btn" onclick="closeMKpi()">キャンセル</button>
       <button class="btn btn-fill" onclick="saveKpi()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKLY TODO MODAL -->
+<div id="ov-wt" class="overlay" style="display:none" onclick="if(event.target===this)closeWT()">
+  <div class="modal">
+    <div class="mh" id="wt-title">週次 Todo</div>
+    <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0 8px">
+      <div><label class="fl2">タスク名 *</label><input id="wt-name" class="inp" placeholder="タスク名"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="fl2">担当者</label><input id="wt-res" class="inp" placeholder="担当者"></div>
+        <div><label class="fl2">sup</label><input id="wt-sup" class="inp" placeholder="サポート"></div>
+      </div>
+      <div><label class="fl2">メモ</label><textarea id="wt-memo" class="inp" rows="2" placeholder="メモ" style="resize:vertical"></textarea></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <button class="btn" onclick="closeWT()">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveWT()">保存</button>
     </div>
   </div>
 </div>
@@ -1071,6 +1132,11 @@ function sw(v,el,skipHistory){
     document.getElementById('psub').textContent='Feb - Sep 2026';
     if(!skipHistory) try{history.pushState({view:'gantt'},'',location.pathname+'#gantt');}catch(e){}
     rGantt();closeSidebar();
+  } else if(v==='ranking'){
+    document.getElementById('ptitle').textContent='RANKING';
+    document.getElementById('psub').textContent='LC · 個人別 Done率';
+    if(!skipHistory) try{history.pushState({view:'ranking'},'',location.pathname+'#ranking');}catch(e){}
+    rRanking();closeSidebar();
   }
 }
 
@@ -1766,8 +1832,256 @@ function rArea(lId,aId){
         <div class="ah-total">${as.done} / ${as.total} tasks · ${area.kpis.length} KPIs</div>
       </div>
     </div>
-    ${readonlyNotice}${stats}${fbar}${kpisHtml}${addKpiBtn}`;
+    ${readonlyNotice}
+    <div class="area-tabs">
+      <div class="area-tab ${(_areaTab!=='wt')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
+      <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
+    </div>
+    <div id="area-tab-body">
+      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+    </div>`;
   applyNoteColW(getNoteColW());
+}
+
+// ── AREA TAB STATE ──
+let _areaTab = 'wbs'; // 'wbs' | 'wt'
+function setAreaTab(tab, lId, aId){
+  _areaTab = tab;
+  rArea(lId, aId);
+}
+
+// ── WEEKLY TODO ──
+// 週の範囲生成（2026/2/1 〜 2026/9/30）
+function getWeeks(){
+  const weeks=[];
+  let d=new Date(2026,1,2); // 2/2 Mon
+  // 2/1が日曜なら2/1から
+  const start=new Date(2026,1,1);
+  if(start.getDay()===1) d=start;
+  while(d<=new Date(2026,8,30)){
+    const mon=new Date(d);
+    const sun=new Date(d); sun.setDate(sun.getDate()+6);
+    weeks.push({mon,sun,
+      label:`${mon.getMonth()+1}/${mon.getDate()} - ${sun.getMonth()+1}/${sun.getDate()}`
+    });
+    d.setDate(d.getDate()+7);
+  }
+  return weeks;
+}
+
+function isCurrentWeek(mon,sun){
+  const now=new Date();
+  return now>=mon && now<=sun;
+}
+
+function rWeeklyTodo(lId,aId,cw){
+  const area=getLCArea(lId,aId);
+  const todos=(area.weekTodos||[]);
+  const weeks=getWeeks();
+  const now=new Date();
+
+  let html='';
+  weeks.forEach((w,wi)=>{
+    const wKey=`${w.mon.getFullYear()}-${String(w.mon.getMonth()+1).padStart(2,'0')}-${String(w.mon.getDate()).padStart(2,'0')}`;
+    const wTodos=todos.filter(t=>t.week===wKey);
+    const isCur=isCurrentWeek(w.mon,w.sun);
+    const isPast=w.sun<now;
+    const doneCount=wTodos.filter(t=>t.done).length;
+    const open=isCur||(wTodos.length>0&&doneCount<wTodos.length);
+    html+=`<div class="wt-week">
+      <div class="wt-week-hd${isCur?' current':''}" onclick="togWT('wt-body-${wi}')">
+        <span class="wt-week-label">${w.label}</span>
+        ${isCur?`<span class="wt-week-badge">今週</span>`:''}
+        <span class="wt-week-cnt">${wTodos.length>0?`${doneCount}/${wTodos.length} done`:isPast?'':''}
+        </span>
+        ${cw?`<button class="ib" style="font-size:10px;flex-shrink:0" onclick="event.stopPropagation();openWT('${lId}','${aId}','${wKey}',null)">+ 追加</button>`:''}
+        <span style="color:var(--dim);font-size:12px;transition:transform 0.15s" id="wt-chev-${wi}">${open?'▾':'›'}</span>
+      </div>
+      <div class="wt-week-body${open?' open':''}" id="wt-body-${wi}">
+        ${wTodos.length===0?`<div style="padding:10px 14px;font-size:11px;color:var(--dim)">タスクなし</div>`:''}
+        ${wTodos.map(t=>`
+        <div class="wt-item${t.done?' done-item':''}" id="wt-item-${t.id}">
+          <div class="wt-check${t.done?' checked':''}" onclick="togWTDone('${lId}','${aId}','${t.id}')">
+            ${t.done?`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+          </div>
+          <div class="wt-item-main">
+            <div class="wt-name">${h(t.name)}</div>
+            ${(t.res||t.sup||t.memo)?`<div class="wt-meta">${[t.res?'担当: '+t.res:'',t.sup?'sup: '+t.sup:'',t.memo?t.memo:''].filter(Boolean).join(' · ')}</div>`:''}
+          </div>
+          ${cw?`<div class="wt-item-actions">
+            <button class="ib" style="font-size:10px" onclick="openWT('${lId}','${aId}','${wKey}','${t.id}')">編集</button>
+            <button class="ib del" style="font-size:10px" onclick="delWT('${lId}','${aId}','${t.id}')">削除</button>
+          </div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  return `<div>${html}</div>`;
+}
+
+function togWT(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.classList.toggle('open');
+}
+
+let _wtCtx={lId:null,aId:null,week:null,tId:null};
+function openWT(lId,aId,week,tId){
+  _wtCtx={lId,aId,week,tId};
+  const area=getLCArea(lId,aId);
+  const t=tId?(area.weekTodos||[]).find(x=>x.id===tId):null;
+  document.getElementById('wt-title').textContent=t?'週次 Todo 編集':'週次 Todo 追加';
+  document.getElementById('wt-name').value=t?t.name:'';
+  document.getElementById('wt-res').value=t?t.res||'':'';
+  document.getElementById('wt-sup').value=t?t.sup||'':'';
+  document.getElementById('wt-memo').value=t?t.memo||'':'';
+  document.getElementById('ov-wt').style.display='flex';
+  setTimeout(()=>document.getElementById('wt-name').focus(),80);
+}
+function closeWT(){
+  document.getElementById('ov-wt').style.display='none';
+}
+function saveWT(){
+  const {lId,aId,week,tId}=_wtCtx;
+  const name=document.getElementById('wt-name').value.trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const area=getLCArea(lId,aId);
+  if(!area.weekTodos) area.weekTodos=[];
+  if(tId){
+    const t=area.weekTodos.find(x=>x.id===tId);
+    if(t){t.name=name;t.res=document.getElementById('wt-res').value.trim();t.sup=document.getElementById('wt-sup').value.trim();t.memo=document.getElementById('wt-memo').value.trim();}
+  } else {
+    area.weekTodos.push({id:'wt'+Date.now(),week,name,res:document.getElementById('wt-res').value.trim(),sup:document.getElementById('wt-sup').value.trim(),memo:document.getElementById('wt-memo').value.trim(),done:false});
+  }
+  save();closeWT();rArea(lId,aId);
+}
+function togWTDone(lId,aId,tId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);
+  const t=(area.weekTodos||[]).find(x=>x.id===tId);
+  if(!t)return;
+  t.done=!t.done;
+  save();
+  // DOM更新だけで再描画せず高速化
+  const row=document.getElementById('wt-item-'+tId);
+  if(row){
+    row.classList.toggle('done-item',t.done);
+    const chk=row.querySelector('.wt-check');
+    chk.classList.toggle('checked',t.done);
+    chk.innerHTML=t.done?`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:'';
+    row.querySelector('.wt-name').style.textDecoration=t.done?'line-through':'';
+  }
+}
+function delWT(lId,aId,tId){
+  if(!confirm('削除しますか？'))return;
+  const area=getLCArea(lId,aId);
+  area.weekTodos=(area.weekTodos||[]).filter(x=>x.id!==tId);
+  save();rArea(lId,aId);
+}
+
+// ── RANKING ──
+function rRanking(){
+  // LC別ランキング（全エリア合算）
+  const lcRanked=D.lcs.map(lc=>{
+    let done=0,total=0;
+    getLCAreaTypes(lc.id).forEach(at=>{
+      const s=lcAreaStats(lc.id,at.id);
+      done+=s.done; total+=s.total;
+    });
+    const pct=total?Math.round(done/total*100):0;
+    return {lc,done,total,pct};
+  }).sort((a,b)=>b.pct-a.pct||b.done-a.done);
+
+  // エリア別LC内ランキング
+  const areaRankHtml=D.areaTypes.map(at=>{
+    const rows=D.lcs.map(lc=>{
+      const s=lcAreaStats(lc.id,at.id);
+      return {lc,done:s.done,total:s.total,pct:s.total?Math.round(s.done/s.total*100):0};
+    }).sort((a,b)=>b.pct-a.pct||b.done-a.done);
+    return `<div class="rank-section">
+      <div class="rank-section-title" style="color:${at.color}">${at.name}</div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        ${rows.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer" onclick="swArea('${r.lc.id}','${at.id}')">
+          <span class="rank-medal ${i===0?'m1':i===1?'m2':i===2?'m3':''}">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--dark)">${r.lc.id} <span style="font-weight:400;color:var(--dim);font-size:10px">${h(r.lc.name)}</span></div>
+            <div class="rank-bar-bg" style="margin-top:4px"><div class="rank-bar-fg" style="width:${r.pct}%;background:${at.color}"></div></div>
+          </div>
+          <div style="font-size:13px;font-weight:800;color:${at.color};min-width:36px;text-align:right">${r.pct}%</div>
+          <div style="font-size:10px;color:var(--dim);min-width:50px;text-align:right">${r.done}/${r.total}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // 個人別ランキング（担当者名で集計）
+  const personMap={};
+  D.lcs.forEach(lc=>{
+    getLCAreaTypes(lc.id).forEach(at=>{
+      const area=getLCArea(lc.id,at.id);
+      (area.kpis||[]).forEach(k=>{
+        (k.tasks||[]).forEach(t=>{
+          if(!t.res)return;
+          const key=t.res.trim();
+          if(!key)return;
+          if(!personMap[key]) personMap[key]={name:key,done:0,total:0};
+          personMap[key].total++;
+          if(t.status==='DONE') personMap[key].done++;
+        });
+      });
+    });
+  });
+  const personRanked=Object.values(personMap)
+    .filter(p=>p.total>=3)
+    .map(p=>({...p,pct:Math.round(p.done/p.total*100)}))
+    .sort((a,b)=>b.pct-a.pct||b.done-a.done)
+    .slice(0,20);
+
+  const personHtml=personRanked.length===0
+    ?`<div style="color:var(--dim);font-size:11px;padding:16px">タスクが3件以上ある担当者が表示されます</div>`
+    :personRanked.map((p,i)=>`
+    <div class="rank-person-row">
+      <span class="rank-medal ${i===0?'m1':i===1?'m2':i===2?'m3':''}">${i+1}</span>
+      <div style="flex:1">
+        <div style="font-size:12px;font-weight:700;color:var(--dark)">${h(p.name)}</div>
+        <div class="rank-bar-bg" style="margin-top:4px"><div class="rank-bar-fg" style="width:${p.pct}%;background:var(--primary)"></div></div>
+      </div>
+      <div style="font-size:13px;font-weight:800;color:var(--primary);min-width:36px;text-align:right">${p.pct}%</div>
+      <div style="font-size:10px;color:var(--dim);min-width:50px;text-align:right">${p.done}/${p.total}</div>
+    </div>`).join('');
+
+  document.getElementById('ct').innerHTML=`<div class="rank-pg">
+    <div class="rank-hero">
+      <div class="rank-hero-title">RANKING</div>
+      <div style="font-size:11px;opacity:0.6;margin-top:4px">全25 LC · ${D.areaTypes.length} エリア · タスクベース</div>
+    </div>
+
+    <div class="rank-section">
+      <div class="rank-section-title">LC 総合ランキング（全エリア合算）</div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        ${lcRanked.map((r,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer" onclick="swLC('${r.lc.id}',null)">
+          <span class="rank-medal ${i===0?'m1':i===1?'m2':i===2?'m3':''}">${i+1}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:700;color:var(--dark)">${r.lc.id} <span style="font-weight:400;color:var(--dim);font-size:10px">${h(r.lc.name)}</span></div>
+            <div class="rank-bar-bg" style="margin-top:4px"><div class="rank-bar-fg" style="width:${r.pct}%;background:var(--primary)"></div></div>
+          </div>
+          <div style="font-size:13px;font-weight:800;color:var(--primary);min-width:36px;text-align:right">${r.pct}%</div>
+          <div style="font-size:10px;color:var(--dim);min-width:50px;text-align:right">${r.done}/${r.total}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="rank-section">
+      <div class="rank-section-title">個人別ランキング（担当者 · タスク3件以上）</div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        ${personHtml}
+      </div>
+    </div>
+
+    ${areaRankHtml}
+  </div>`;
 }
 
 function cycTask(lId,aId,kId,tId,e){
@@ -2493,7 +2807,7 @@ function importD(e){
     try{
       const parsed=JSON.parse(ev.target.result);
       // 確認ダイアログ
-      if(!confirm('⚠️ 全データが上書きされます。\n現在のデータはバックアップに保存されますが、復元には管理者操作が必要です。\n\n本当にインポートしますか？')){
+      if(!confirm('全データが上書きされます。\n現在のデータはバックアップに保存されますが、復元には管理者操作が必要です。\n\n本当にインポートしますか？')){
         e.target.value='';return;
       }
       D=parsed;ensureAreas();
@@ -2647,7 +2961,7 @@ async function openBackupModal(){
       }catch(e){}
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--navy)">${i===0?'🟢 最新 · ':''}${dtStr}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy)">${i===0?'[最新] ':''}${dtStr}</div>
           <div style="font-size:10px;color:var(--dim)">タスク合計: ${taskCount}件 · 保存者: ${data.savedBy||'不明'}</div>
         </div>
         <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="restoreBackup('${d.id}')">復元</button>
@@ -2675,7 +2989,7 @@ async function restoreBackup(docId){
     buildNav();
     sw('dashboard',null);
     closeBackupModal();
-    toast('復元しました ✓');
+    toast('復元しました');
   }catch(e){
     toast('復元失敗: '+e.message,'err');
   }
@@ -2743,7 +3057,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
