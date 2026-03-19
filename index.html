@@ -163,6 +163,34 @@
       window._fsOnSignOut();
     }
   });
+
+  // ── MKT TL Firestore operations ──
+  window._mktTLUnsub = null;
+  window._mktTLCache = {};
+
+  window._mktTLSubscribe = (lcId, cb) => {
+    if(window._mktTLUnsub){ window._mktTLUnsub(); window._mktTLUnsub=null; }
+    const ref = doc(db, 'mkt-tl', lcId);
+    window._mktTLUnsub = onSnapshot(ref, snap => {
+      window._mktTLCache[lcId] = snap.exists()
+        ? snap.data()
+        : { posts:[], members:[], capData:{} };
+      if(typeof cb === 'function') cb();
+    });
+  };
+
+  window._mktTLUnsubscribe = () => {
+    if(window._mktTLUnsub){ window._mktTLUnsub(); window._mktTLUnsub=null; }
+  };
+
+  window._mktTLSave = async (lcId, data) => {
+    try {
+      await setDoc(doc(db, 'mkt-tl', lcId), data);
+    } catch(e) {
+      console.error('mktTL save error:', e);
+      throw e;
+    }
+  };
 </script>
 <style>
 :root{
@@ -527,6 +555,54 @@ html{font-size:13px;}
 #addbtn{display:none!important;}
 .fr2{grid-template-columns:1fr;}
 }
+/* ── MKT TL ── */
+.mtl-wrap{padding:0 0 20px;}
+.mtl-topbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.mtl-search{font-size:12px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--white);font-family:'Lato',sans-serif;color:var(--text);outline:none;width:160px;flex-shrink:0;}
+.mtl-search:focus{border-color:#F48924;}
+.mtl-sel{font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--white);font-family:'Lato',sans-serif;color:var(--text);outline:none;cursor:pointer;}
+.mtl-count{font-size:11px;color:var(--dim);margin-left:auto;font-weight:700;}
+.mtl-add-btn{font-size:11px;font-weight:700;padding:5px 12px;border:1.5px solid #F48924;border-radius:6px;background:#F48924;color:#fff;cursor:pointer;font-family:'Lato',sans-serif;transition:opacity 0.1s;flex-shrink:0;}
+.mtl-add-btn:hover{opacity:0.85;}
+.mtl-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;margin-bottom:4px;}
+.mtl-table th{background:var(--bg2);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:7px 10px;border-bottom:2px solid var(--border);color:var(--dim);text-align:left;white-space:nowrap;}
+.mtl-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.mtl-table tr:last-child > td{border-bottom:none;}
+.mtl-tr{cursor:pointer;transition:background 0.1s;}
+.mtl-tr:hover{background:var(--bg);}
+.mtl-tr.mtl-today{border-left:3px solid #F85A40;background:#FFF8F8;}
+.mtl-tr.mtl-2d{border-left:3px solid #F48924;background:#FFFAF5;}
+.mtl-tr.mtl-5d{border-left:3px solid #FFC845;background:#FFFEF0;}
+.mtl-tr.mtl-active{background:var(--bg2);}
+.mtl-date{font-family:monospace;font-size:11px;font-weight:700;}
+.mtl-badge{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid;font-family:monospace;vertical-align:middle;margin-right:4px;}
+.mtl-title{font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;}
+.mtl-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;border:1.5px solid;white-space:nowrap;cursor:pointer;user-select:none;}
+.mtl-pill-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.mtl-pill-dd{position:fixed;z-index:9999;background:var(--white);border:1.5px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.12);min-width:180px;overflow:hidden;}
+.mtl-pill-opt{padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--border);}
+.mtl-pill-opt:last-child{border-bottom:none;}
+.mtl-pill-opt:hover{background:var(--bg);}
+.mtl-exp{background:var(--bg);border-bottom:1px solid var(--border);}
+.mtl-exp td{padding:12px 14px;}
+.mtl-exp-inner{display:flex;flex-direction:column;gap:10px;}
+.mtl-fg{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mtl-lbl{font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:3px;}
+.mtl-inp{width:100%;font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--white);font-family:'Lato',sans-serif;color:var(--text);outline:none;}
+.mtl-inp:focus{border-color:#F48924;}
+.mtl-exp-actions{display:flex;gap:7px;justify-content:flex-end;padding-top:4px;}
+.mtl-btn-del{font-size:11px;padding:5px 10px;border:1.5px solid #F85A40;border-radius:5px;background:transparent;color:#F85A40;cursor:pointer;font-family:'Lato',sans-serif;font-weight:700;}
+.mtl-btn-del:hover{background:#FFF5F5;}
+.mtl-btn-close{font-size:11px;padding:5px 10px;border:1.5px solid var(--border);border-radius:5px;background:var(--text);color:var(--white);cursor:pointer;font-family:'Lato',sans-serif;font-weight:700;}
+.mtl-btn-close:hover{opacity:0.85;}
+.mtl-empty{text-align:center;padding:40px;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:0.1em;}
+.mtl-link-preview{margin-top:8px;border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.mtl-link-bar{display:flex;align-items:center;gap:7px;padding:5px 9px;background:var(--bg2);border-bottom:1px solid var(--border);}
+.mtl-link-chip{font-size:8px;font-weight:700;padding:1px 5px;border-radius:3px;border:1px solid;font-family:monospace;}
+.mtl-link-host{font-size:10px;color:var(--dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;}
+.mtl-link-open{font-size:9px;padding:2px 7px;border:1px solid var(--primary);border-radius:3px;color:var(--primary);text-decoration:none;font-weight:700;background:#EBF5FF;flex-shrink:0;}
+.mtl-stats-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.mtl-stat-chip{font-size:10px;font-weight:700;padding:4px 10px;border-radius:5px;border:1px solid;}
 </style>
 </head>
 <body>
@@ -1118,6 +1194,8 @@ function buildNav(){
 }
 
 function sw(v,el,skipHistory){
+  if(window._mktTLUnsubscribe) window._mktTLUnsubscribe();
+  _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all';
   view=v;lcId=null;areaId=null;fil='ALL';
   document.getElementById('addbtn').style.display='none';
   document.getElementById('addkpibtn').style.display='none';
@@ -1318,6 +1396,8 @@ function rCross(aId){
 function setCrossF(s){ fil=s; if(view==='cross'&&areaId) rCross(areaId); }
 
 function swLC(id,el,skipHistory){
+  if(window._mktTLUnsubscribe) window._mktTLUnsubscribe();
+  _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all';
   view='lc';lcId=id;areaId=null;fil='ALL';afilter='ALL';
   const lc=D.lcs.find(x=>x.id===id);
   document.getElementById('ptitle').textContent=lc.id;
@@ -1330,6 +1410,10 @@ function swLC(id,el,skipHistory){
 }
 
 function swArea(lId,aId,skipHistory){
+  // Unsubscribe mkt-tl listener if navigating away from Mkt TL
+  if((aId!=='Mkt'||lId!==_mtlCurrentLC) && window._mktTLUnsubscribe) window._mktTLUnsubscribe();
+  if(aId!=='Mkt') { _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all'; }
+  if(aId!=='Mkt') _areaTab='wbs';
   view='area';lcId=lId;areaId=aId;fil='ALL';
   const lc=D.lcs.find(x=>x.id===lId);
   const at=getLCAreaTypes(lId).find(x=>x.id===aId)||{color:'#037EF3'};
@@ -1834,11 +1918,12 @@ function rArea(lId,aId){
     </div>
     ${readonlyNotice}
     <div class="area-tabs">
-      <div class="area-tab ${(_areaTab!=='wt')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
+      <div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
       <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
+      ${aId==='Mkt'?`<div class="area-tab" style="color:${_areaTab==='mktl'?'#F48924':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mktl'?'#F48924':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mktl','${lId}','${aId}')">Mkt TL</div>`:''}
     </div>
     <div id="area-tab-body">
-      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
     </div>`;
   applyNoteColW(getNoteColW());
 }
@@ -3081,6 +3166,388 @@ function closeSidebar(){
   document.getElementById('sb-overlay').classList.remove('open');
   document.body.style.overflow='';
 }
+
+/* ── TOAST ── */
+function showToast(msg, type){
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    z-index:9999;background:${type==='error'?'#F85A40':'#00C16E'};color:#fff;
+    padding:10px 18px;border-radius:8px;font-size:12px;font-weight:700;
+    font-family:'Lato',sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.18);
+    pointer-events:none;animation:fadeIn 0.15s ease;`;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 4000);
+}
+
+/* ── MKT TL — 投稿管理タブ ── */
+const MTL_STATUSES = ['未着手','作成中','確認待ち','MCチェック提出済','MCFBもらった','完成','投稿済み'];
+const MTL_SM = {
+  '未着手':           {color:'#8A8E96',bg:'#F3F4F7',dot:'#CACCD1'},
+  '作成中':           {color:'#037EF3',bg:'#EBF5FF',dot:'#037EF3'},
+  '確認待ち':         {color:'#7552CC',bg:'#F3EEFF',dot:'#7552CC'},
+  'MCチェック提出済': {color:'#F48924',bg:'#FEF3E8',dot:'#F48924'},
+  'MCFBもらった':     {color:'#0CB9C1',bg:'#E6F9FA',dot:'#0CB9C1'},
+  '完成':             {color:'#00C16E',bg:'#E5F9F0',dot:'#00C16E'},
+  '投稿済み':         {color:'#52565E',bg:'#EAEBF0',dot:'#8A8E96'},
+};
+const MTL_DEFAULT_MEMBERS = ['メンバー1','メンバー2','メンバー3'];
+
+let _mtlExp = null;       // expanded post id
+let _mtlSearch = '';
+let _mtlFilterStatus = 'all';
+let _mtlCurrentLC = null;
+let _mtlSaving = false;
+
+function mtlTodayStr(){ return new Date().toISOString().slice(0,10); }
+function mtlDaysUntil(d){ return Math.ceil((new Date(d)-new Date(mtlTodayStr()))/86400000); }
+function mtlUrgencyClass(du, status){
+  if(['完成','投稿済み'].includes(status)) return '';
+  if(du===0) return 'mtl-today';
+  if(du<=2)  return 'mtl-2d';
+  if(du<=5)  return 'mtl-5d';
+  return '';
+}
+function mtlDaysLabel(du, status){
+  if(['完成','投稿済み'].includes(status)) return '';
+  if(du<0)   return '<span style="font-size:8px;background:#EAEBF0;color:#8A8E96;padding:1px 4px;border-radius:3px;margin-left:4px">PAST</span>';
+  if(du===0) return '<span style="font-size:8px;background:#F85A40;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px">TODAY</span>';
+  if(du<=5)  return `<span style="font-size:8px;background:#F48924;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px">${du}日後</span>`;
+  return '';
+}
+function mtlUID(){ return String(Date.now())+String(Math.floor(Math.random()*9999)); }
+function h2(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function mtlGetData(lcId){
+  return window._mktTLCache && window._mktTLCache[lcId]
+    ? window._mktTLCache[lcId]
+    : { posts:[], members:MTL_DEFAULT_MEMBERS, capData:{} };
+}
+
+function rMktTL(lId, cw){
+  _mtlCurrentLC = lId;
+
+  // Subscribe to real-time updates
+  if(window._mktTLSubscribe){
+    window._mktTLSubscribe(lId, ()=>{
+      if(view==='area' && lcId===lId && areaId==='Mkt' && _areaTab==='mktl'){
+        const body = document.getElementById('area-tab-body');
+        if(body) body.innerHTML = rMktTL(lId, cw);
+      }
+    });
+  }
+
+  const data = mtlGetData(lId);
+  const posts = data.posts || [];
+  const members = data.members && data.members.length ? data.members : MTL_DEFAULT_MEMBERS;
+
+  // Filter
+  const fp = posts.filter(p=>{
+    if(_mtlFilterStatus!=='all' && p.status!==_mtlFilterStatus) return false;
+    const q = _mtlSearch.toLowerCase();
+    if(q && !p.title.toLowerCase().includes(q) && !(p.creator||'').toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+
+  // Stats
+  const done = posts.filter(p=>['完成','投稿済み'].includes(p.status)).length;
+  const pct = posts.length ? Math.round(done/posts.length*100) : 0;
+  const alerts = posts.filter(p=>{const du=mtlDaysUntil(p.date);return du>=0&&du<=3&&!['完成','投稿済み'].includes(p.status);}).length;
+
+  const statsHtml = `
+    <div class="mtl-stats-bar">
+      <span class="mtl-stat-chip" style="background:#EBF5FF;color:#037EF3;border-color:#037EF3">Total ${posts.length}</span>
+      <span class="mtl-stat-chip" style="background:#E5F9F0;color:#00C16E;border-color:#00C16E">完成+投稿 ${done}</span>
+      <span class="mtl-stat-chip" style="background:#EBF5FF;color:#037EF3;border-color:#037EF3">${pct}%</span>
+      ${alerts>0?`<span class="mtl-stat-chip" style="background:#FEF3E8;color:#F48924;border-color:#F48924">⚠ ${alerts}件 締切近い</span>`:''}
+    </div>`;
+
+  // Filter bar
+  const filterHtml = `
+    <div class="mtl-topbar">
+      <input class="mtl-search" placeholder="検索..." value="${h2(_mtlSearch)}" oninput="mtlSetSearch(this.value,'${lId}','${cw}')"/>
+      <select class="mtl-sel" onchange="mtlSetFilter(this.value,'${lId}','${cw}')">
+        <option value="all"${_mtlFilterStatus==='all'?' selected':''}>全ステータス</option>
+        ${MTL_STATUSES.map(s=>`<option value="${s}"${_mtlFilterStatus===s?' selected':''}>${s}</option>`).join('')}
+      </select>
+      <span class="mtl-count">${fp.length} / ${posts.length}</span>
+      ${cw?`<button class="mtl-add-btn" onclick="mtlOpenAdd('${lId}')">+ 投稿を追加</button>`:''}
+    </div>`;
+
+  // Table
+  const rowsHtml = fp.length===0
+    ? `<tr><td colspan="5" class="mtl-empty">投稿なし</td></tr>`
+    : fp.map(p=>{
+        const du = mtlDaysUntil(p.date);
+        const urg = mtlUrgencyClass(du, p.status);
+        const sm = MTL_SM[p.status] || MTL_SM['未着手'];
+        const isExp = _mtlExp === p.id;
+        const linkBadge = p.link ? `<span class="mtl-badge" style="color:#037EF3;border-color:#037EF3">URL</span>` : '';
+        const dateLabel = `<span class="mtl-date" style="color:${du<=0&&!['完成','投稿済み'].includes(p.status)?'#8A8E96':'#52565E'}">${p.date.slice(5).replace('-','/')}</span>${mtlDaysLabel(du,p.status)}`;
+
+        const expandHtml = isExp ? `
+          <tr class="mtl-exp">
+            <td colspan="5">
+              <div class="mtl-exp-inner">
+                <div class="mtl-fg">
+                  <div>
+                    <div class="mtl-lbl">タイトル</div>
+                    <input class="mtl-inp" value="${h2(p.title)}" onchange="mtlUpdate('${lId}','${p.id}','title',this.value)"/>
+                  </div>
+                  <div>
+                    <div class="mtl-lbl">投稿日</div>
+                    <input type="date" class="mtl-inp" value="${p.date}" onchange="mtlUpdate('${lId}','${p.id}','date',this.value)"/>
+                  </div>
+                  <div>
+                    <div class="mtl-lbl">作成担当</div>
+                    <select class="mtl-inp" onchange="mtlUpdate('${lId}','${p.id}','creator',this.value)">
+                      <option value="">未割当</option>
+                      ${members.map(m=>`<option value="${m}"${p.creator===m?' selected':''}>${m}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div>
+                    <div class="mtl-lbl">TL管理担当</div>
+                    <select class="mtl-inp" onchange="mtlUpdate('${lId}','${p.id}','tlManager',this.value)">
+                      <option value="">未割当</option>
+                      ${members.map(m=>`<option value="${m}"${p.tlManager===m?' selected':''}>${m}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <div class="mtl-lbl">メモ・備考</div>
+                  <input class="mtl-inp" value="${h2(p.note||'')}" placeholder="詳細・注意事項など..." onchange="mtlUpdate('${lId}','${p.id}','note',this.value)"/>
+                </div>
+                <div>
+                  <div class="mtl-lbl">投稿リンク / ファイルURL</div>
+                  <input class="mtl-inp" value="${h2(p.link||'')}" placeholder="https://... (Google Drive, Canva, Figma など)" onchange="mtlUpdate('${lId}','${p.id}','link',this.value)"/>
+                  ${mtlLinkPreview(p.link)}
+                </div>
+                <div class="mtl-exp-actions">
+                  ${cw?`<button class="mtl-btn-del" onclick="mtlDelete('${lId}','${p.id}')">削除</button>`:''}
+                  <button class="mtl-btn-close" onclick="mtlToggleExp('${p.id}','${lId}','${cw}')">閉じる</button>
+                </div>
+              </div>
+            </td>
+          </tr>` : '';
+
+        return `
+          <tr class="mtl-tr ${urg}${isExp?' mtl-active':''}" onclick="mtlToggleExp('${p.id}','${lId}','${cw}')">
+            <td style="width:80px">${dateLabel}</td>
+            <td><div class="mtl-title">${linkBadge}${h2(p.title)}</div></td>
+            <td style="width:90px;font-size:11px">${p.creator||'<span style="color:var(--dim)">—</span>'}</td>
+            <td style="width:90px;font-size:11px">${p.tlManager||'<span style="color:var(--dim)">—</span>'}</td>
+            <td style="width:160px" onclick="event.stopPropagation()">
+              ${mtlPillHtml(p, lId, cw)}
+            </td>
+          </tr>
+          ${expandHtml}`;
+      }).join('');
+
+  return `<div class="mtl-wrap">
+    ${statsHtml}
+    ${filterHtml}
+    <table class="mtl-table">
+      <thead><tr>
+        <th>DATE</th><th>TITLE</th><th>作成担当</th><th>TL管理</th><th>STATUS</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>`;
+}
+
+function mtlPillHtml(p, lId, cw){
+  const sm = MTL_SM[p.status] || MTL_SM['未着手'];
+  return `<div class="mtl-pill" style="background:${sm.bg};color:${sm.color};border-color:${sm.color}55"
+    onclick="event.stopPropagation();mtlPillClick(event,'${p.id}','${lId}','${cw}')">
+    <span class="mtl-pill-dot" style="background:${sm.dot}"></span>
+    ${h2(p.status)}
+    <span style="font-size:8px;opacity:0.5;margin-left:2px">▾</span>
+  </div>`;
+}
+
+let _mtlPillOpen = null;
+function mtlPillClick(e, postId, lId, cw){
+  // Close existing dropdown
+  const existing = document.getElementById('mtl-pill-dd');
+  if(existing) existing.remove();
+  if(_mtlPillOpen===postId){ _mtlPillOpen=null; return; }
+  _mtlPillOpen = postId;
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const dd = document.createElement('div');
+  dd.id = 'mtl-pill-dd';
+  dd.className = 'mtl-pill-dd';
+  dd.style.top = (rect.bottom+4)+'px';
+  dd.style.left = Math.min(rect.left, window.innerWidth-200)+'px';
+
+  dd.innerHTML = MTL_STATUSES.map(s=>{
+    const sm = MTL_SM[s];
+    const data = mtlGetData(lId);
+    const post = (data.posts||[]).find(p=>p.id===postId);
+    const isActive = post && post.status===s;
+    return `<div class="mtl-pill-opt" style="color:${sm.color};background:${isActive?sm.bg:'transparent'}"
+      onclick="mtlSetStatus('${lId}','${postId}','${s}','${cw}')">
+      <span style="width:6px;height:6px;border-radius:50%;background:${sm.dot};flex-shrink:0;display:inline-block"></span>
+      ${s}${isActive?'<span style="margin-left:auto;font-size:10px;opacity:0.5">✓</span>':''}
+    </div>`;
+  }).join('');
+
+  document.body.appendChild(dd);
+
+  const close = (ev)=>{
+    if(!dd.contains(ev.target)){ dd.remove(); _mtlPillOpen=null; document.removeEventListener('mousedown',close); }
+  };
+  setTimeout(()=>document.addEventListener('mousedown',close),0);
+}
+
+function mtlSetStatus(lId, postId, status, cw){
+  if(cw==='false'||!cw) return;
+  const dd = document.getElementById('mtl-pill-dd');
+  if(dd) dd.remove();
+  _mtlPillOpen = null;
+  mtlUpdate(lId, postId, 'status', status);
+}
+
+function mtlToggleExp(postId, lId, cw){
+  _mtlExp = _mtlExp===postId ? null : postId;
+  const body = document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rMktTL(lId, cw==='true'||cw===true);
+}
+
+function mtlSetSearch(val, lId, cw){
+  _mtlSearch = val;
+  const body = document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rMktTL(lId, cw==='true'||cw===true);
+}
+
+function mtlSetFilter(val, lId, cw){
+  _mtlFilterStatus = val;
+  const body = document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rMktTL(lId, cw==='true'||cw===true);
+}
+
+function mtlLinkPreview(url){
+  if(!url||!url.trim()) return '';
+  let label='LINK', lc='#8A8E96';
+  if(url.includes('canva.com'))              { label='Canva';  lc='#7D2AE8'; }
+  else if(url.includes('figma.com'))         { label='Figma';  lc='#1A1A1A'; }
+  else if(url.includes('docs.google.com/presentation')) { label='Slides'; lc='#F4B400'; }
+  else if(url.includes('docs.google.com/spreadsheets')) { label='Sheets'; lc='#0F9D58'; }
+  else if(url.includes('docs.google.com/document'))     { label='Docs';   lc='#4285F4'; }
+  else if(url.includes('drive.google.com')) { label='Drive';  lc='#4285F4'; }
+  let hostname=''; try{ hostname=new URL(url).hostname.replace('www.',''); }catch(e){ hostname=url; }
+  return `<div class="mtl-link-preview">
+    <div class="mtl-link-bar">
+      <span class="mtl-link-chip" style="color:${lc};border-color:${lc}55">${label}</span>
+      <span class="mtl-link-host">${hostname}</span>
+      <a href="${h2(url)}" target="_blank" rel="noopener noreferrer" class="mtl-link-open">開く</a>
+    </div>
+  </div>`;
+}
+
+// ── Add post modal ──
+function mtlOpenAdd(lId){
+  const data = mtlGetData(lId);
+  const members = data.members && data.members.length ? data.members : MTL_DEFAULT_MEMBERS;
+  const today = mtlTodayStr();
+
+  // Reuse existing modal infrastructure
+  document.getElementById('ov-add').classList.add('open');
+  document.getElementById('modal').innerHTML = `
+    <div class="mh">+ 投稿を追加 <span style="font-size:11px;color:var(--dim);margin-left:6px">${lId} Mkt TL</span></div>
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div class="mtl-lbl">投稿タイトル *</div>
+        <input class="mtl-inp" id="mtl-new-title" placeholder="例: 新歓キックオフ告知"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div class="mtl-lbl">投稿予定日 *</div>
+          <input type="date" class="mtl-inp" id="mtl-new-date" value="${today}"/>
+        </div>
+        <div>
+          <div class="mtl-lbl">作成担当</div>
+          <select class="mtl-inp" id="mtl-new-creator">
+            <option value="">未割当</option>
+            ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div class="mtl-lbl">TL管理担当</div>
+          <select class="mtl-inp" id="mtl-new-tl">
+            <option value="">未割当</option>
+            ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div class="mtl-lbl">メモ</div>
+          <input class="mtl-inp" id="mtl-new-note" placeholder="備考など..."/>
+        </div>
+      </div>
+      <div>
+        <div class="mtl-lbl">投稿リンク / ファイルURL</div>
+        <input class="mtl-inp" id="mtl-new-link" placeholder="https://..."/>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
+        <button class="btn" onclick="closeModal()">キャンセル</button>
+        <button class="btn btn-fill" onclick="mtlSaveNew('${lId}')">追加する</button>
+      </div>
+    </div>`;
+}
+
+function mtlSaveNew(lId){
+  const title = (document.getElementById('mtl-new-title').value||'').trim();
+  const date  = document.getElementById('mtl-new-date').value;
+  if(!title||!date){ alert('タイトルと日付は必須です'); return; }
+
+  const newPost = {
+    id: mtlUID(),
+    title,
+    date,
+    creator:   document.getElementById('mtl-new-creator').value,
+    tlManager: document.getElementById('mtl-new-tl').value,
+    note:      document.getElementById('mtl-new-note').value,
+    link:      document.getElementById('mtl-new-link').value,
+    status:    '未着手',
+  };
+
+  const data = mtlGetData(lId);
+  const updated = { ...data, posts: [...(data.posts||[]), newPost] };
+  window._mktTLCache[lId] = updated;
+
+  if(window._mktTLSave){
+    window._mktTLSave(lId, updated).catch(e=>{ showToast('保存に失敗しました: '+e.message,'error'); });
+  }
+  closeModal();
+  const body = document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rMktTL(lId, true);
+}
+
+function mtlUpdate(lId, postId, field, val){
+  const data = mtlGetData(lId);
+  const posts = (data.posts||[]).map(p=> p.id===postId ? {...p,[field]:val} : p);
+  const updated = {...data, posts};
+  window._mktTLCache[lId] = updated;
+  if(window._mktTLSave){
+    window._mktTLSave(lId, updated).catch(e=>showToast('保存に失敗しました: '+e.message,'error'));
+  }
+}
+
+function mtlDelete(lId, postId){
+  if(!confirm('この投稿を削除しますか？')) return;
+  _mtlExp = null;
+  const data = mtlGetData(lId);
+  const updated = {...data, posts:(data.posts||[]).filter(p=>p.id!==postId)};
+  window._mktTLCache[lId] = updated;
+  if(window._mktTLSave){
+    window._mktTLSave(lId, updated).catch(e=>showToast('削除に失敗しました: '+e.message,'error'));
+  }
+  const body = document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rMktTL(lId, true);
+}
+
+// Cleanup mkt-tl listener on navigation
+const _origSwArea = typeof swArea==='function' ? swArea : null;
 
 /* ── HISTORY (back button) ── */
 window.addEventListener('popstate', e=>{
