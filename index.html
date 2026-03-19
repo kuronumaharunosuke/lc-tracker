@@ -3330,7 +3330,7 @@ function rMktTLList(lId, posts, members, cw){
     <span class="mtl-stat-chip" style="background:#EBF5FF;color:#037EF3;border-color:#037EF3">Total ${posts.length}</span>
     <span class="mtl-stat-chip" style="background:#E5F9F0;color:#00C16E;border-color:#00C16E">完成+投稿 ${done}</span>
     <span class="mtl-stat-chip" style="background:#EBF5FF;color:#037EF3;border-color:#037EF3">${pct}%</span>
-    ${alerts>0?`<span class="mtl-stat-chip" style="background:#FEF3E8;color:#F48924;border-color:#F48924">⚠ ${alerts}件 締切近い</span>`:''}
+    ${alerts>0?`<span class="mtl-stat-chip" style="background:#FEF3E8;color:#F48924;border-color:#F48924">${alerts}件 締切近い</span>`:''}
   </div>`;
 
   const rowsHtml = fp.length===0
@@ -3339,6 +3339,10 @@ function rMktTLList(lId, posts, members, cw){
         const du = mtlDaysUntil(p.date);
         const urg = mtlUrgencyClass(du, p.status);
         const isExp = _mtlExp === p.id;
+        const mcDu = p.mcCheckDate ? mtlDaysUntil(p.mcCheckDate) : null;
+        const mcCheckLabel = p.mcCheckDate
+          ? `<span class="mtl-date" style="color:${mcDu!==null&&mcDu<0&&!['MCチェック提出済','MCFBもらった','完成','投稿済み'].includes(p.status)?'var(--faint)':'#7552CC'}">${p.mcCheckDate.slice(5).replace('-','/')}</span>${mcDu!==null&&mcDu>=0&&mcDu<=3&&!['MCチェック提出済','MCFBもらった','完成','投稿済み'].includes(p.status)?`<span style="font-size:8px;background:#7552CC;color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px">${mcDu===0?'TODAY':mcDu+'日後'}</span>`:''}`
+          : '<span style="color:var(--faint);font-size:10px">—</span>';
         const linkBadge = p.link ? `<span class="mtl-badge" style="color:#037EF3;border-color:#037EF3">URL</span>` : '';
         const dateLabel = `<span class="mtl-date" style="color:${du<0&&!['完成','投稿済み'].includes(p.status)?'var(--faint)':'var(--text)'}">${p.date.slice(5).replace('-','/')}</span>${mtlDaysLabel(du,p.status)}`;
         const expandHtml = isExp ? `
@@ -3348,6 +3352,7 @@ function rMktTLList(lId, posts, members, cw){
                 <div class="mtl-fg">
                   <div><div class="mtl-lbl">タイトル</div><input class="mtl-inp" value="${h2(p.title)}" onchange="mtlUpdate('${lId}','${p.id}','title',this.value,${cw})"/></div>
                   <div><div class="mtl-lbl">投稿日</div><input type="date" class="mtl-inp" value="${p.date}" onchange="mtlUpdate('${lId}','${p.id}','date',this.value,${cw})"/></div>
+                  <div><div class="mtl-lbl" style="color:#7552CC">MCチェック締切</div><input type="date" class="mtl-inp" style="border-color:#7552CC55" value="${p.mcCheckDate||''}" onchange="mtlUpdate('${lId}','${p.id}','mcCheckDate',this.value,${cw})"/></div>
                   <div><div class="mtl-lbl">作成担当</div>
                     <select class="mtl-inp" onchange="mtlUpdate('${lId}','${p.id}','creator',this.value,${cw})">
                       <option value="">未割当</option>
@@ -3376,6 +3381,7 @@ function rMktTLList(lId, posts, members, cw){
         return `
           <tr class="mtl-tr ${urg}${isExp?' mtl-active':''}" onclick="mtlToggleExp('${p.id}','${lId}',${cw})">
             <td style="width:80px">${dateLabel}</td>
+            <td style="width:80px">${mcCheckLabel}</td>
             <td><div class="mtl-title">${linkBadge}${h2(p.title)}</div></td>
             <td style="width:100px;font-size:11px">
               <div style="display:flex;align-items:center;gap:5px">${mtlAvHtml(p.creator,members)}${p.creator?h2(p.creator):'<span style="color:var(--faint)">—</span>'}</div>
@@ -3389,7 +3395,7 @@ function rMktTLList(lId, posts, members, cw){
 
   return `${statsHtml}${mtlFilterBar(lId,posts,members,cw)}
     <table class="mtl-table">
-      <thead><tr><th>DATE</th><th>TITLE</th><th>作成担当</th><th>TL管理</th><th>STATUS</th></tr></thead>
+      <thead><tr><th>投稿日</th><th>MCチェック締切</th><th>TITLE</th><th>作成担当</th><th>TL管理</th><th>STATUS</th></tr></thead>
       <tbody>${rowsHtml}</tbody>
     </table>`;
 }
@@ -3440,7 +3446,14 @@ function rMktTLCalendar(lId, posts){
   for(let d=1;d<=last.getDate();d++) cells.push(d);
 
   const byDay = {};
-  posts.forEach(p=>{ if(!byDay[p.date])byDay[p.date]=[]; byDay[p.date].push(p); });
+  posts.forEach(p=>{
+    if(!byDay[p.date])byDay[p.date]=[];
+    byDay[p.date].push({...p, _isPostDate:true});
+    if(p.mcCheckDate && p.mcCheckDate !== p.date){
+      if(!byDay[p.mcCheckDate])byDay[p.mcCheckDate]=[];
+      byDay[p.mcCheckDate].push({...p, _isMCCheck:true});
+    }
+  });
   const td = mtlTodayStr();
 
   const grid = cells.map((d,i)=>{
@@ -3453,7 +3466,10 @@ function rMktTLCalendar(lId, posts){
     const cellBg = isToday?'#FFF8EC':!d?'var(--bg2)':hasPending&&du===0?'#FFF0F0':hasPending&&du<=2?'#FFF4ED':hasPending&&du<=5?'#FFFBE8':'transparent';
     return `<div style="min-height:70px;border-bottom:1px solid var(--border);border-right:${dow<6?'1px solid var(--border)':'none'};padding:4px;background:${cellBg}">
       ${d?`<div style="font-family:monospace;font-size:10px;font-weight:${isToday?700:400};color:${isToday?'#F48924':dow===0?'#F85A40':dow===6?'#037EF3':'var(--dim)'};width:17px;height:17px;display:flex;align-items:center;justify-content:center;margin-bottom:2px;${isToday?'background:#F4892422;border-radius:3px;':''}">${d}</div>`:''}
-      ${dp.map(p=>`<div style="font-size:8px;font-weight:700;background:${MTL_SM[p.status]?.bg||'#F3F4F7'};color:${MTL_SM[p.status]?.color||'#8A8E96'};border:1px solid ${MTL_SM[p.status]?.dot||'#CACCD1'};border-radius:3px;padding:1px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${h2(p.title)}</div>`).join('')}
+      ${dp.map(p=>p._isMCCheck
+          ? `<div style="font-size:8px;font-weight:700;background:#F3EEFF;color:#7552CC;border:1px solid #7552CC55;border-radius:3px;padding:1px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">MC: ${h2(p.title)}</div>`
+          : `<div style="font-size:8px;font-weight:700;background:${MTL_SM[p.status]?.bg||'#F3F4F7'};color:${MTL_SM[p.status]?.color||'#8A8E96'};border:1px solid ${MTL_SM[p.status]?.dot||'#CACCD1'};border-radius:3px;padding:1px 3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px">${h2(p.title)}</div>`
+        ).join('')}
     </div>`;
   }).join('');
 
@@ -3537,6 +3553,7 @@ function rMktTLOverview(lId, posts, members, capData){
   const done = posts.filter(p=>['完成','投稿済み'].includes(p.status)).length;
   const pct  = posts.length ? Math.round(done/posts.length*100) : 0;
   const alertPosts = posts.filter(p=>{const du=mtlDaysUntil(p.date);return du>=0&&du<=5&&!['完成','投稿済み'].includes(p.status);}).sort((a,b)=>a.date.localeCompare(b.date));
+  const mcAlertPosts = posts.filter(p=>{if(!p.mcCheckDate)return false;const du=mtlDaysUntil(p.mcCheckDate);return du>=0&&du<=5&&!['MCチェック提出済','MCFBもらった','完成','投稿済み'].includes(p.status);}).sort((a,b)=>a.mcCheckDate.localeCompare(b.mcCheckDate));
 
   const statCards = [
     {label:'総投稿数',val:posts.length},
@@ -3594,6 +3611,15 @@ function rMktTLOverview(lId, posts, members, capData){
         <div style="height:100%;width:${pct}%;background:#00C16E;transition:width 0.5s"></div>
       </div>
     </div>
+    ${mcAlertPosts.length>0?`
+    <div style="border:1.5px solid #7552CC;border-radius:7px;overflow:hidden;margin-bottom:12px">
+      <div style="padding:8px 13px;background:#F3EEFF;border-bottom:2px solid #7552CC;font-size:9px;color:#7552CC;font-weight:700;letter-spacing:0.08em">MC CHECK DEADLINE ALERT — ${mcAlertPosts.length}件</div>
+      ${mcAlertPosts.map(p=>{const du=mtlDaysUntil(p.mcCheckDate);return `<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #E8D5F5">
+        <span style="font-size:9px;font-weight:700;color:#fff;background:#7552CC;padding:2px 6px;border-radius:3px;flex-shrink:0">${du===0?'TODAY':du+'日後'}</span>
+        <span style="flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h2(p.title)}</span>
+        <span style="font-size:10px;color:var(--dim)">${p.creator||'—'}</span>
+      </div>`;}).join('')}
+    </div>`:''}
     ${alertSection}
     <div style="border:1px solid var(--border);border-radius:7px;overflow:hidden;margin-bottom:12px">
       <div style="padding:8px 13px;border-bottom:2px solid var(--border);font-size:9px;color:var(--dim);letter-spacing:0.1em;font-weight:700">STATUS BREAKDOWN</div>
@@ -3635,7 +3661,7 @@ function mtlPillClick(e, postId, lId, cw){
     return `<div class="mtl-pill-opt" style="color:${sm.color};background:${isActive?sm.bg:'transparent'}"
       onclick="mtlSetStatus('${lId}','${postId}','${s}',${cw})">
       <span style="width:6px;height:6px;border-radius:50%;background:${sm.dot};flex-shrink:0;display:inline-block"></span>
-      ${s}${isActive?'<span style="margin-left:auto;font-size:10px;opacity:0.5">✓</span>':''}
+      ${s}${isActive?'<span style="margin-left:auto;font-size:10px;font-weight:900;color:inherit;opacity:0.6"> ●</span>':''}
     </div>`;
   }).join('');
   document.body.appendChild(dd);
@@ -3707,6 +3733,7 @@ function mtlOpenAdd(lId){
     <div class="fg"><label class="fl2">投稿タイトル *</label><input class="fi" id="mtl-new-title" placeholder="例: 新歓キックオフ告知"/></div>
     <div class="fr2">
       <div class="fg"><label class="fl2">投稿予定日 *</label><input type="date" class="fi" id="mtl-new-date" value="${today}"/></div>
+      <div class="fg"><label class="fl2" style="color:#7552CC">MCチェック締切</label><input type="date" class="fi" id="mtl-new-mccheck"/></div>
       <div class="fg"><label class="fl2">作成担当</label>
         <select class="fs" id="mtl-new-creator"><option value="">未割当</option>${members.map(m=>`<option value="${m}">${m}</option>`).join('')}</select>
       </div>
@@ -3734,6 +3761,7 @@ function mtlSaveNew(){
   if(!title||!date){ alert('タイトルと日付は必須です'); return; }
   const newPost = {
     id: mtlUID(), title, date,
+    mcCheckDate: document.getElementById('mtl-new-mccheck').value,
     creator:   document.getElementById('mtl-new-creator').value,
     tlManager: document.getElementById('mtl-new-tl').value,
     note:      document.getElementById('mtl-new-note').value,
