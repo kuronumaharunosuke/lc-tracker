@@ -3446,56 +3446,65 @@ function mtlLinkPreview(url){
 }
 
 // ── Add post modal ──
+let _mtlAddLC = null;
+
 function mtlOpenAdd(lId){
+  _mtlAddLC = lId;
   const data = mtlGetData(lId);
   const members = data.members && data.members.length ? data.members : MTL_DEFAULT_MEMBERS;
   const today = mtlTodayStr();
 
-  // Reuse existing modal infrastructure
-  document.getElementById('ov-add').classList.add('open');
-  document.getElementById('modal').innerHTML = `
-    <div class="mh">+ 投稿を追加 <span style="font-size:11px;color:var(--dim);margin-left:6px">${lId} Mkt TL</span></div>
-    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <div class="mtl-lbl">投稿タイトル *</div>
-        <input class="mtl-inp" id="mtl-new-title" placeholder="例: 新歓キックオフ告知"/>
+  document.getElementById('mtl-modal-title').textContent = `+ 投稿を追加 — ${lId} Mkt TL`;
+  document.getElementById('mtl-modal-body').innerHTML = `
+    <div class="fg">
+      <label class="fl2">投稿タイトル *</label>
+      <input class="fi" id="mtl-new-title" placeholder="例: 新歓キックオフ告知"/>
+    </div>
+    <div class="fr2">
+      <div class="fg">
+        <label class="fl2">投稿予定日 *</label>
+        <input type="date" class="fi" id="mtl-new-date" value="${today}"/>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <div class="mtl-lbl">投稿予定日 *</div>
-          <input type="date" class="mtl-inp" id="mtl-new-date" value="${today}"/>
-        </div>
-        <div>
-          <div class="mtl-lbl">作成担当</div>
-          <select class="mtl-inp" id="mtl-new-creator">
-            <option value="">未割当</option>
-            ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <div class="mtl-lbl">TL管理担当</div>
-          <select class="mtl-inp" id="mtl-new-tl">
-            <option value="">未割当</option>
-            ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <div class="mtl-lbl">メモ</div>
-          <input class="mtl-inp" id="mtl-new-note" placeholder="備考など..."/>
-        </div>
+      <div class="fg">
+        <label class="fl2">作成担当</label>
+        <select class="fs" id="mtl-new-creator">
+          <option value="">未割当</option>
+          ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
       </div>
-      <div>
-        <div class="mtl-lbl">投稿リンク / ファイルURL</div>
-        <input class="mtl-inp" id="mtl-new-link" placeholder="https://..."/>
+    </div>
+    <div class="fr2">
+      <div class="fg">
+        <label class="fl2">TL管理担当</label>
+        <select class="fs" id="mtl-new-tl">
+          <option value="">未割当</option>
+          ${members.map(m=>`<option value="${m}">${m}</option>`).join('')}
+        </select>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;padding-top:4px">
-        <button class="btn" onclick="closeModal()">キャンセル</button>
-        <button class="btn btn-fill" onclick="mtlSaveNew('${lId}')">追加する</button>
+      <div class="fg">
+        <label class="fl2">メモ</label>
+        <input class="fi" id="mtl-new-note" placeholder="備考など..."/>
       </div>
+    </div>
+    <div class="fg">
+      <label class="fl2">投稿リンク / ファイルURL</label>
+      <input class="fi" id="mtl-new-link" placeholder="https://..."/>
     </div>`;
+
+  const ov = document.getElementById('ov-mtl');
+  ov.classList.add('open');
+  ov.style.display = '';
+  setTimeout(()=>{ const t=document.getElementById('mtl-new-title'); if(t) t.focus(); }, 50);
 }
 
-function mtlSaveNew(lId){
+function mtlCloseAdd(){
+  const ov = document.getElementById('ov-mtl');
+  ov.classList.remove('open');
+}
+
+function mtlSaveNew(){
+  const lId = _mtlAddLC;
+  if(!lId) return;
   const title = (document.getElementById('mtl-new-title').value||'').trim();
   const date  = document.getElementById('mtl-new-date').value;
   if(!title||!date){ alert('タイトルと日付は必須です'); return; }
@@ -3516,9 +3525,9 @@ function mtlSaveNew(lId){
   window._mktTLCache[lId] = updated;
 
   if(window._mktTLSave){
-    window._mktTLSave(lId, updated).catch(e=>{ showToast('保存に失敗しました: '+e.message,'error'); });
+    window._mktTLSave(lId, updated).catch(e=>showToast('保存に失敗しました: '+e.message,'error'));
   }
-  closeModal();
+  mtlCloseAdd();
   const body = document.getElementById('area-tab-body');
   if(body) body.innerHTML = rMktTL(lId, true);
 }
@@ -3563,5 +3572,17 @@ window.addEventListener('popstate', e=>{
 document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:0.1em">LOADING...</div>';
 document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active');
 </script>
+<!-- MKT TL 投稿追加モーダル -->
+<div class="overlay" id="ov-mtl" onclick="if(event.target===this)mtlCloseAdd()">
+  <div class="modal">
+    <div class="mh" id="mtl-modal-title">+ 投稿を追加</div>
+    <div class="mb" id="mtl-modal-body"></div>
+    <div class="mf">
+      <button class="btn" onclick="mtlCloseAdd()">キャンセル</button>
+      <button class="btn btn-fill" id="mtl-modal-save" onclick="mtlSaveNew()">追加する</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
