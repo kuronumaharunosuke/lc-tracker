@@ -4476,33 +4476,37 @@ var MC_D, mc_view='dashboard', mc_aid=null, mc_fpid=null, mc_fil='ALL', mc_gfil=
 let MC__areaTabs={}; // aId -> 'wbs' | 'weekly'
 
 function mc_load(){
-  // Try localStorage first
-  try{const s=localStorage.getItem(MC_SK);if(s){MC_D=JSON.parse(s);mc_migrate();}}catch(e){}
-  if(!MC_D) MC_D=JSON.parse(JSON.stringify(MC_SEED));
-  // Then load from Firestore
-  if(window._mcLoad){
-    window._mcLoad().then(data=>{
-      if(data){ MC_D=data; mc_migrate(); try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){} }
-      mc_buildNav();
-      mc_sw(mc_view||'dashboard', null);
-      // Subscribe to live updates
-      if(window._mcSubscribe && !mc__syncUnsub){
-        mc__syncUnsub = window._mcSubscribe(data=>{
-          if(MC__saving) return;
-          MC_D=data; mc_migrate();
-          try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){}
-          mc_buildNav();
-          if(mc_view==='dashboard') mc_rDash();
-          else if(mc_view==='gantt') mc_rGantt();
-          else if(mc_aid) mc_rArea(mc_aid);
-          else if(mc_fpid) mc_rFreeProject(mc_fpid);
-        });
-      }
-    });
-  } else {
+  // localStorageはオフライン時の一時キャッシュのみ。Firestoreが常にマスター。
+  if(!window._mcLoad){
+    // Firestoreが使えない場合のみlocalStorageにフォールバック
+    try{const s=localStorage.getItem(MC_SK);if(s){MC_D=JSON.parse(s);mc_migrate();}}catch(e){}
+    if(!MC_D) MC_D=JSON.parse(JSON.stringify(MC_SEED));
     mc_buildNav();
     mc_sw(mc_view||'dashboard', null);
+    return;
   }
+  // まずSEEDで初期化（ローディング中の空白を防ぐ）
+  MC_D = JSON.parse(JSON.stringify(MC_SEED));
+  // FirestoreからロードしてMC_Dを上書き
+  window._mcLoad().then(data=>{
+    if(data){ MC_D=data; mc_migrate(); try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){} }
+    else { MC_D=JSON.parse(JSON.stringify(MC_SEED)); }
+    mc_buildNav();
+    mc_sw(mc_view||'dashboard', null);
+    // リアルタイム同期
+    if(window._mcSubscribe && !mc__syncUnsub){
+      mc__syncUnsub = window._mcSubscribe(data=>{
+        if(MC__saving) return;
+        MC_D=data; mc_migrate();
+        try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){}
+        mc_buildNav();
+        if(mc_view==='dashboard') mc_rDash();
+        else if(mc_view==='gantt') mc_rGantt();
+        else if(mc_aid) mc_rArea(mc_aid);
+        else if(mc_fpid) mc_rFreeProject(mc_fpid);
+      });
+    }
+  });
 }
 function mc_migrate(){
   if(!MC_D.freeProjects)MC_D.freeProjects=[];
