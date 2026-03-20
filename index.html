@@ -2029,8 +2029,8 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
           <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
           ${cw?`<div class="gc-actions" style="display:flex;flex-direction:column;gap:2px">
-            <button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}','${h(grp)}')">${grpNote?'編集':'＋備考'}</button>
-            <button class="ib" style="font-size:9px;padding:2px 6px;color:#037EF3;border-color:#037EF344" onclick="dupGroup('${lId}','${aId}','${kId}','${h(grp)}')" title="大タスクごと複製">大タスク複製</button>
+            <button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}',this.closest('[data-grp]').dataset.grp)">${grpNote?'編集':'＋備考'}</button>
+            <button class="ib" style="font-size:9px;padding:2px 6px;color:#037EF3;border-color:#037EF344" onclick="dupGroup('${lId}','${aId}','${kId}',this.closest('[data-grp]').dataset.grp)" title="大タスクごと複製">大タスク複製</button>
           </div>`:''}
         </div>`:''}
       </td>
@@ -4854,7 +4854,7 @@ function mc_rArea(id){
     while(i2<tasks.length){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
-      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}','${h(grp)}',event)">大タスク複製</button></div>`:''}</td>`;
+      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,span,c,
         `mc_cycTask('${area.id}','${k.id}','${t.id}',event)`,
         `mc_openEdit('${area.id}','${k.id}','${t.id}')`,
@@ -4914,7 +4914,7 @@ function mc_renderAreaProjects(areaId,areaColor){
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const over=isOver(t.deadline)&&t.status!=='DONE';
       const apGrpCell=grp
-        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}','${h(grp)}',event)">大タスク複製</button></div></td>`
+        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
         :`<td class="group-cell empty" rowspan="${span}"></td>`;
       rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
         ${apGrpCell}
@@ -5013,7 +5013,7 @@ function mc_rFreeProject(id){
     let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
     const over=isOver(t.deadline)&&t.status!=='DONE';
     const grpCell=grp
-      ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}','${h(grp)}',event)">大タスク複製</button></div></td>`
+      ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
       :`<td class="group-cell empty" rowspan="${span}"></td>`;
     rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
       ${grpCell}
@@ -5152,7 +5152,7 @@ function mc_saveT(){
     start:document.getElementById('mc-fs2').value,deadline:document.getElementById('mc_fd').value,
     status:document.getElementById('mc-fst').value,note:(document.getElementById('mc-fnote')?.value||'').trim(),
     priority:document.getElementById('fpri').value||'',
-    _by:currentUser?.displayName||currentUser?.email||'',
+    _by:window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||'',
   };
   if(mc_editing){
     const{aId,kId,tId}=mc_editing;
@@ -5249,7 +5249,7 @@ function mc_saveSub(){
   if(!MC__subModal)return;
   const name=document.getElementById('sub-fn').value.trim();
   if(!name){toast('タスク名を入力してください','err');return;}
-  const obj={name,res:document.getElementById('sub-res').value.trim(),sup:document.getElementById('sub-sup').value.trim(),start:document.getElementById('sub-start').value,deadline:document.getElementById('sub-deadline').value,priority:document.getElementById('sub-pri').value||'',status:document.getElementById('sub-status').value,_by:currentUser?.displayName||currentUser?.email||''};
+  const obj={name,res:document.getElementById('sub-res').value.trim(),sup:document.getElementById('sub-sup').value.trim(),start:document.getElementById('sub-start').value,deadline:document.getElementById('sub-deadline').value,priority:document.getElementById('sub-pri').value||'',status:document.getElementById('sub-status').value,_by:window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||''};
   const{aId,kId,tId,chId}=MC__subModal;
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
   if(!t.children)t.children=[];
@@ -5468,7 +5468,7 @@ function mc_openEditFT(pId,tId){
 function mc_closeMFT(){document.getElementById('mc-ov-ft').classList.remove('open');mc_editingFT=null;}
 function mc_saveFT(){
   const name=document.getElementById('ft-name').value.trim();if(!name){toast('タスク名を入力してください','err');return;}
-  const obj={name,group:document.getElementById('ft-group').value.trim(),res:document.getElementById('ft-res').value.trim(),sup:document.getElementById('ft-sup').value.trim(),start:document.getElementById('ft-start').value,deadline:document.getElementById('ft-deadline').value,note:document.getElementById('ft-note').value.trim(),status:document.getElementById('ft-status').value,_by:currentUser?.displayName||currentUser?.email||''};
+  const obj={name,group:document.getElementById('ft-group').value.trim(),res:document.getElementById('ft-res').value.trim(),sup:document.getElementById('ft-sup').value.trim(),start:document.getElementById('ft-start').value,deadline:document.getElementById('ft-deadline').value,note:document.getElementById('ft-note').value.trim(),status:document.getElementById('ft-status').value,_by:window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||''};
   if(mc_editingFT){
     const proj=MC_D.freeProjects.find(x=>x.id===mc_editingFT.pId);
     const ti=proj.tasks.findIndex(x=>x.id===mc_editingFT.tId);
@@ -5622,7 +5622,7 @@ function mc_openAddWT(aId,weekKey){
   MC__wtModal={aId,weekKey,tId:null};
   document.getElementById('mc-wt-mttl').textContent='Todo 追加';
   document.getElementById('mc-wt-del-btn').style.display='none';
-  ['mc-wt-name','mc-wt-res','wt-sup','mc-wt-note'].forEach(id=>document.getElementById(id).value='');
+  ['mc-wt-name','mc-wt-res','mc-wt-sup','mc-wt-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mc-ov-wt').classList.add('open');
   setTimeout(()=>document.getElementById('mc-wt-name').focus(),80);
 }
@@ -5634,7 +5634,7 @@ function mc_openEditWT(aId,tId){
   document.getElementById('mc-wt-del-btn').style.display='';
   document.getElementById('mc-wt-name').value=t.name||'';
   document.getElementById('mc-wt-res').value=t.res||'';
-  document.getElementById('wt-sup').value=t.sup||'';
+  document.getElementById('mc-wt-sup').value=t.sup||'';
   document.getElementById('mc-wt-note').value=t.note||'';
   document.getElementById('mc-ov-wt').classList.add('open');
   setTimeout(()=>document.getElementById('mc-wt-name').focus(),80);
@@ -5644,7 +5644,7 @@ function mc_saveWT(){
   if(!MC__wtModal)return;
   const name=document.getElementById('mc-wt-name').value.trim();
   if(!name){toast('タスク名を入力してください','err');return;}
-  const obj={name,res:document.getElementById('mc-wt-res').value.trim(),sup:document.getElementById('wt-sup').value.trim(),note:document.getElementById('mc-wt-note').value.trim(),weekStart:MC__wtModal.weekKey,done:false,_by:(window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||'')};
+  const obj={name,res:document.getElementById('mc-wt-res').value.trim(),sup:document.getElementById('mc-wt-sup').value.trim(),note:document.getElementById('mc-wt-note').value.trim(),weekStart:MC__wtModal.weekKey,done:false,_by:(window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||'')};
   const area=MC_D.areas.find(a=>a.id===MC__wtModal.aId);
   if(!area.weekTodos)area.weekTodos=[];
   if(MC__wtModal.tId){
@@ -6146,7 +6146,7 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     </div>
     <div class="fg">
       <label class="fl2">大タスク（グループ名）</label>
-      <input class="fi" id="mc-fg-input" list="fg-list" placeholder="グループ名（空欄でもOK）" autocomplete="off">
+      <input class="fi" id="mc-fg-input" list="mc-fg-list" placeholder="グループ名（空欄でもOK）" autocomplete="off">
       <datalist id="mc-fg-list"></datalist>
     </div>
     <div class="fg"><label class="fl2">担当者</label><input class="fi" id="mc-fr" placeholder="名前..."></div>
@@ -6231,7 +6231,7 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
       </div>
     </div>
     <div class="mf">
-      <button class="btn" id="sub-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="delSub(_subModal&&_subModal.aId,_subModal&&_subModal.kId,_subModal&&_subModal.tId,_subModal&&_subModal.chId)">削除</button>
+      <button class="btn" id="sub-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delSub(MC__subModal&&MC__subModal.aId,MC__subModal&&MC__subModal.kId,MC__subModal&&MC__subModal.tId,MC__subModal&&MC__subModal.chId)">削除</button>
       <button class="btn" onclick="mc_closeMSub()">キャンセル</button>
       <button class="btn btn-fill" onclick="mc_saveSub()">保存</button>
     </div>
@@ -6296,7 +6296,7 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="mc-wt-name" placeholder="今週やること..."></div>
     <div class="fr2">
       <div class="fg"><label class="fl2">担当者</label><input class="fi" id="mc-wt-res" placeholder="名前..."></div>
-      <div class="fg"><label class="fl2">sup</label><input class="fi" id="wt-sup" placeholder="サポート..."></div>
+      <div class="fg"><label class="fl2">sup</label><input class="fi" id="mc-wt-sup" placeholder="サポート..."></div>
     </div>
     <div class="fg"><label class="fl2">メモ</label><textarea class="fi" id="mc-wt-note" rows="2" placeholder="備考・リンクなど..."></textarea></div>
   </div>
