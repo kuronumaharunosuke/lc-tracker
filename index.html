@@ -683,6 +683,25 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .auth-error{margin-top:14px;background:rgba(248,90,64,.15);border:1px solid rgba(248,90,64,.3);border-radius:6px;padding:10px 14px;font-size:12px;color:#F85A40;font-weight:700;display:none;}
 .auth-error.show{display:block;}
 
+/* ── SHARED DASHBOARD COMPONENTS (LC & MC共通) ── */
+.area-tbl{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px;}
+.area-tbl th{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--dim);text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+.area-tbl td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.area-tbl tr:last-child td{border-bottom:none;}
+.area-tbl tbody tr{cursor:pointer;transition:background .08s;}
+.area-tbl tbody tr:hover td{background:var(--bg);}
+.an{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.04em;}
+.prog-n{font-family:'Bebas Neue',sans-serif;font-size:18px;min-width:38px;}
+.up-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px;}
+.up-head{grid-column:1/-1;background:var(--dark);color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:11px 16px;}
+.dl-card{padding:14px 16px;background:var(--white);cursor:pointer;transition:background .08s;}
+.dl-card:hover{background:var(--bg);}
+.dl-area{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
+.dl-task{font-size:13px;font-weight:700;margin-bottom:8px;line-height:1.4;color:var(--dark);}
+.dl-foot{display:flex;align-items:center;gap:8px;}
+.dl-date{font-family:'DM Mono',monospace;font-size:11px;color:var(--dim);}
+.dl-date.ov{color:var(--danger);font-weight:700;}
+
 /* ── SIDEBAR ── */
 #mc-panel .sidebar{width:210px;min-width:210px;position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;background:var(--dark);z-index:100;overflow-y:auto;}
 #mc-panel .logo{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.08);}
@@ -736,7 +755,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .dh-pct{font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:1;color:#fff;}
 #mc-panel .dh-pct-lbl{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.12em;text-transform:uppercase;}
 #mc-panel .dh-total{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;}
-#mc-panel .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+#mc-panel .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
 #mc-panel .stat-card{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:18px 20px;}
 #mc-panel .stat-n{font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:1;}
 #mc-panel .stat-n.g{color:var(--done);}#mc-panel .stat-n.a{color:var(--wip);}#mc-panel .stat-n.d{color:var(--faint);}
@@ -1941,7 +1960,7 @@ function rDash(){
           </span>`;
         }).join('')}
       </td>
-      </tr>`;
+    </tr>`;
   }).join('');
 
   document.getElementById('ct').innerHTML=`
@@ -4665,79 +4684,102 @@ function mc_deadlineBanner(){
 // ── DASHBOARD ──
 async function mc_rDash(){
   const s=mc_totals();
-  const today=new Date(),soon=new Date();soon.setDate(today.getDate()+7);
-  let up=[];
-  MC_D.areas.forEach(a=>a.kpis.forEach(k=>k.tasks.forEach(t=>{
-    if(t.deadline&&t.status!=='DONE'){const d=new Date(t.deadline);if(!isNaN(d)&&d<=soon)up.push({...t,_a:a.id,_d:d});}
-  })));
-  MC_D.freeProjects.forEach(p=>p.tasks.forEach(t=>{
-    if(t.deadline&&t.status!=='DONE'){const d=new Date(t.deadline);if(!isNaN(d)&&d<=soon)up.push({...t,_a:p.name,_aColor:p.color,_d:d});}
-  }));
-  up.sort((a,b)=>a._d-b._d);
-  const arows=MC_D.areas.map(a=>{
-    const st=mc_aStats(a);const c=MC_COLORS[a.id]||'#52565E';
+
+  // ── エリア別ランキング行 ──
+  const arows=MC_D.areas.map((a,i)=>{
+    const st=mc_aStats(a); const c=MC_COLORS[a.id]||'#52565E';
     return `<tr onclick="mc_sw('area-${a.id}',null)">
-      <td><span class="an" style="color:${c}">${a.id}</span></td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${a.kpis.length}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${st.total}</td>
-      <td><div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:${st.pct}%;background:${c}"></div></div><span class="prog-n" style="color:${c}">${st.pct}%</span></div></td>
-      <td class="bdn"><span class="gn">✓ ${st.done}</span><span style="margin-left:8px" class="an2">◑ ${st.wip}</span><span style="margin-left:8px;color:var(--faint)">${st.ns}</span></td>
+      <td><span class="rank-num ${i<3?'top3':''}">${i+1}</span></td>
+      <td>
+        <div class="lc-id-big" style="color:${c}">${a.id}</div>
+        <div class="lc-fname">${h(a.name)}</div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${a.kpis.length} KPI</td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" style="width:${st.pct}%;background:${c}"></div></div>
+          <span class="prog-pct" style="color:${c}">${st.pct}%</span>
+        </div>
+      </td>
+      <td class="bdn">
+        <span class="gn">Done ${st.done}</span>
+        <span style="margin-left:6px" class="an2">WIP ${st.wip}</span>
+        <span style="margin-left:6px;color:var(--faint)">${st.ns}</span>
+      </td>
     </tr>`;
   }).join('');
+
+  // ── フリープロジェクト行 ──
   const globalProjects=MC_D.freeProjects.filter(p=>!p.areaId);
-  const fpCards=globalProjects.length?`
-    <div class="section-row">
-      <div class="section-label" style="margin-bottom:0">自由タスク・プロジェクト（グローバル）</div>
-      <button class="btn btn-sm" onclick="mc_openAddProject()">+ プロジェクト追加</button>
-    </div>
-    <div class="mc-fp-grid" style="margin-top:10px">${globalProjects.map(p=>{
-      const ps=mc_pStats(p);
-      return `<div class="mc-fp-card" onclick="mc_sw('mc-fp-${p.id}',null)">
-        <div class="mc-fp-card-stripe" style="background:${p.color||'#037EF3'}"></div>
-        <div class="mc-fp-card-name">${h(p.name)}</div>
-        ${p.desc?`<div class="mc-fp-card-desc">${h(p.desc)}</div>`:''}
-        <div class="mc-fp-card-stats">
-          <span class="mc-fp-card-pct" style="color:${p.color||'#037EF3'}">${ps.pct}%</span>
-          <div class="mc-fp-card-bar"><div class="mc-fp-card-bar-f" style="width:${ps.pct}%;background:${p.color||'#037EF3'}"></div></div>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ps.done}/${ps.total}</span>
+  const fpRows=globalProjects.map((p,i)=>{
+    const ps=mc_pStats(p); const c=p.color||'#037EF3';
+    return `<tr onclick="mc_sw('mc-fp-${p.id}',null)">
+      <td><span class="rank-num">${i+1}</span></td>
+      <td>
+        <div class="lc-id-big" style="color:${c};font-size:14px">${h(p.name)}</div>
+        ${p.desc?`<div class="lc-fname">${h(p.desc)}</div>`:''}
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${p.tasks.length} tasks</td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-track"><div class="prog-fill" style="width:${ps.pct}%;background:${c}"></div></div>
+          <span class="prog-pct" style="color:${c}">${ps.pct}%</span>
         </div>
-      </div>`;
-    }).join('')}</div>`:`
-    <div class="section-row">
-      <div class="section-label" style="margin-bottom:0">自由タスク・プロジェクト（グローバル）</div>
-      <button class="btn btn-sm" onclick="mc_openAddProject()">+ プロジェクト追加</button>
+      </td>
+      <td class="bdn">
+        <span class="gn">Done ${ps.done}</span>
+        <span style="margin-left:6px" class="an2">WIP ${ps.wip}</span>
+        <span style="margin-left:6px;color:var(--faint)">${ps.ns}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const fpSection=globalProjects.length?`
+    <div class="section-label" style="margin-top:20px">自由タスク・プロジェクト（グローバル）
+      <button class="btn" style="margin-left:10px;font-size:10px;padding:3px 9px;text-transform:none;letter-spacing:0;vertical-align:middle" onclick="mc_openAddProject()">+ 追加</button>
     </div>
-    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;margin-top:10px;margin-bottom:24px">
-      <div style="font-size:12px;color:var(--faint);margin-bottom:8px">KPIに紐づかないタスクやプロジェクトをここで管理できます</div>
-      <button class="btn btn-fill" onclick="mc_openAddProject()">+ 最初のプロジェクトを作成</button>
+    <table class="rank-tbl">
+      <thead><tr>
+        <th style="width:40px">#</th><th>プロジェクト</th><th>Tasks</th>
+        <th style="width:160px">Progress</th><th>Breakdown</th>
+      </tr></thead>
+      <tbody>${fpRows}</tbody>
+    </table>`:`
+    <div class="section-label" style="margin-top:20px">自由タスク・プロジェクト（グローバル）
+      <button class="btn" style="margin-left:10px;font-size:10px;padding:3px 9px;text-transform:none;letter-spacing:0;vertical-align:middle" onclick="mc_openAddProject()">+ 追加</button>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center;font-size:11px;color:var(--faint);margin-bottom:20px">
+      プロジェクトなし
     </div>`;
-  const dcards=up.slice(0,9).map(t=>{
-    const o=t._d<today;const c=t._aColor||MC_COLORS[t._a]||'#52565E';
-    return `<div class="dl-card">
-      <div class="dl-area" style="color:${c}">${h(t._a)}</div>
-      <div class="dl-task">${h(t.name)}</div>
-      <div class="dl-foot"><span class="chip ${sc(t.status)}">${mc_si(t.status)} ${sl(t.status)}</span><span class="dl-date ${o?'ov':''}">${fd(t.deadline)}${o?' ！':''}</span></div>
-    </div>`;
-  }).join('')||'<div style="padding:16px;font-size:11px;color:var(--faint);background:var(--white)">直近の締め切りなし ✓</div>';
+
   document.getElementById('mc-ct').innerHTML=`
+    ${mc_deadlineBanner()}
     <div class="dash-hero">
-      <div><div class="dh-title">MC<br>ACTION<br><span>TRACKER</span></div><div class="dh-sub">2627 · Feb → Sep</div></div>
-      <div class="dh-right"><div class="dh-pct-lbl">Overall Progress</div><div class="dh-pct">${s.pct}%</div><div class="dh-total">${s.done} / ${s.total} tasks · ${MC_D.areas.length} areas · ${MC_D.freeProjects.length} PJTs</div></div>
+      <div class="dh-left">
+        <div class="dh-title">MC<br>ACTION<br><span>TRACKER</span></div>
+        <div class="dh-sub">AIESEC in Japan · 2627 · Feb → Sep</div>
+      </div>
+      <div class="dh-right">
+        <div class="dh-pct-lbl">達成率</div>
+        <div class="dh-pct">${s.pct}%</div>
+        <div class="dh-total">${s.done} / ${s.total} タスク完了</div>
+      </div>
     </div>
     <div class="stat-row">
-      <div class="stat-card"><div class="stat-l">完了 Done</div><div class="stat-n g">${s.done}</div></div>
-      <div class="stat-card"><div class="stat-l">進行中 WIP</div><div class="stat-n a">${s.wip}</div></div>
-      <div class="stat-card"><div class="stat-l">未着手 Not Started</div><div class="stat-n d">${s.ns}</div></div>
+      <div class="stat-card"><div class="stat-l">Areas</div><div class="stat-n p">${MC_D.areas.length}</div></div>
+      <div class="stat-card"><div class="stat-l">Done</div><div class="stat-n g">${s.done}</div></div>
+      <div class="stat-card"><div class="stat-l">WIP</div><div class="stat-n a">${s.wip}</div></div>
+      <div class="stat-card"><div class="stat-l">Not Started</div><div class="stat-n d">${s.ns}</div></div>
     </div>
-    ${fpCards}
-    ${mc_deadlineBanner()}
-    <div class="section-label">エリア別進捗</div>
-    <table class="area-tbl">
-      <thead><tr><th>Area</th><th>KPIs</th><th>Tasks</th><th>Progress</th><th>Breakdown</th></tr></thead>
+    <div class="section-label">エリア別進捗ランキング</div>
+    <table class="rank-tbl">
+      <thead><tr>
+        <th style="width:40px">#</th><th>Area</th><th>KPIs</th>
+        <th style="width:160px">Progress</th><th>Breakdown</th>
+      </tr></thead>
       <tbody>${arows}</tbody>
     </table>
-    <div class="section-label">直近7日の締め切り — ${up.length}件</div>
-    <div class="up-grid"><div class="up-head">Upcoming Deadlines</div>${dcards}</div>`;
+    ${fpSection}`;
 }
 
 // ── AREA VIEW ──
