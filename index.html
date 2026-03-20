@@ -1095,6 +1095,9 @@ function applyUserUI(){
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
   document.getElementById('backup-btn-wrap').style.display=u.role==='mc'?'':'none';
+  // MC tracker nav visibility
+  if(typeof mcShowNav === 'function') mcShowNav(u.role==='mc');
+  window._mcCurrentUser = { uid: u.email, email: u.email, displayName: u.displayName||u.email };
 }
 
 const LC_META = [
@@ -1322,6 +1325,7 @@ function buildNav(){
 }
 
 function sw(v,el,skipHistory){
+  if(typeof mcReturnToLC === 'function') mcReturnToLC();
   if(window._mktTLUnsubscribe) window._mktTLUnsubscribe();
   _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all';
   view=v;lcId=null;areaId=null;fil='ALL';
@@ -1524,6 +1528,7 @@ function rCross(aId){
 function setCrossF(s){ fil=s; if(view==='cross'&&areaId) rCross(areaId); }
 
 function swLC(id,el,skipHistory){
+  if(typeof mcReturnToLC === 'function') mcReturnToLC();
   if(window._mktTLUnsubscribe) window._mktTLUnsubscribe();
   _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all';
   view='lc';lcId=id;areaId=null;fil='ALL';afilter='ALL';
@@ -5634,52 +5639,32 @@ function mc_initApp(){
 /* ══════════════════════════════════════════════
    MC TRACKER INTEGRATION
 ══════════════════════════════════════════════ */
-let _mcView = 'lc'; // current top-level view: 'lc' or 'mc'
+let _mcView = 'lc';
 let _mcInited = false;
 let _mcSyncUnsub = null;
 
-// Called after auth - show MC nav if user is MC
 function mcShowNav(show){
-  ['mc-nav-divider','mc-nav-label','mc-nav-items'].forEach(id=>{
-    const el = document.getElementById(id);
+  ['mc-nav-divider','mc-nav-label','mc-nav-items'].forEach(function(id){
+    var el = document.getElementById(id);
     if(el) el.style.display = show ? '' : 'none';
   });
 }
 
-// Switch between LC and MC tracker views
 function mcSw(v, el){
-  // Check MC access
   if(!isMC()){
     toast('MC権限が必要です。MCメンバーのみアクセスできます。','err');
     return;
   }
-  
-  // Hide LC content, show MC content
   _mcView = 'mc';
   document.getElementById('mc-panel').style.display = '';
-  
-  // Hide LC tracker main content
-  const lcMain = document.querySelector('.main');
-  if(lcMain){
-    // Hide the LC topbar and content
-    const lcTopbar = lcMain.querySelector('.topbar');
-    const lcContent = lcMain.querySelector('#ct');
-    if(lcTopbar) lcTopbar.style.display = 'none';
-    if(lcContent) lcContent.style.display = 'none';
-  }
-  
-  // Update nav
-  document.querySelectorAll('.nav-item').forEach(n=>{
+  var lcTopbar = document.querySelector('.main > .topbar');
+  var lcContent = document.getElementById('ct');
+  if(lcTopbar) lcTopbar.style.display = 'none';
+  if(lcContent) lcContent.style.display = 'none';
+  document.querySelectorAll('.nav-item').forEach(function(n){
     n.classList.toggle('active', n.dataset.view===v);
   });
-  
-  // Init MC tracker if not done
-  if(!_mcInited){
-    mc_initApp();
-    _mcInited = true;
-  }
-  
-  // Route to MC view
+  if(!_mcInited){ mc_initApp(); _mcInited=true; }
   mc_sw(v.replace('mc-',''), el);
   closeSidebar();
 }
@@ -5687,58 +5672,22 @@ function mcSw(v, el){
 function mcReturnToLC(){
   _mcView = 'lc';
   document.getElementById('mc-panel').style.display = 'none';
-  
-  const lcMain = document.querySelector('.main');
-  if(lcMain){
-    const lcTopbar = lcMain.querySelector('.topbar');
-    const lcContent = lcMain.querySelector('#ct');
-    if(lcTopbar) lcTopbar.style.display = '';
-    if(lcContent) lcContent.style.display = '';
-  }
+  var lcTopbar = document.querySelector('.main > .topbar');
+  var lcContent = document.getElementById('ct');
+  if(lcTopbar) lcTopbar.style.display = '';
+  if(lcContent) lcContent.style.display = '';
 }
 
-// Override LC tracker's nav click - if MC nav is active and user clicks LC nav, switch back
-const _origSwLC = swLC;
-const _origSw = sw;
-
-function swLC(id, el, skipHistory){
-  mcReturnToLC();
-  _origSwLC(id, el, skipHistory);
-}
-
-// Override sw to also return to LC
-const _origSwFn = window.sw || sw;
-window.sw = function(v, el, skipHistory){
-  if(!v.startsWith('mc-')) mcReturnToLC();
-  _origSwFn(v, el, skipHistory);
-};
-
-// Hook into auth: show MC nav and init MC Firebase when user is MC
-const _origApplyUserUI = applyUserUI;
-function applyUserUI(){
-  _origApplyUserUI();
-  const u = getUser();
-  mcShowNav(u.role === 'mc');
-  // Set MC current user
-  window._mcCurrentUser = {
-    uid: u.email, // use email as UID for MC tracker
-    email: u.email,
-    displayName: u.displayName || u.email
-  };
-}
-
-// Add comment function (was missing)
 async function mc_addComment(){
-  const input = document.getElementById('mc-cp-input');
-  const text = (input?.value||'').trim();
+  var input = document.getElementById('mc-cp-input');
+  var text = (input ? input.value : '').trim();
   if(!text || !window._mcCurrentUser) return;
-  const tid = window._mcDb ? window._cpTaskId_mc : null;
+  var tid = window._cpTaskId_mc;
   if(!tid) return;
-  
   try {
     await window._mcDb.collection('mc-comments').add({
       taskId: tid,
-      text,
+      text: text,
       uid: window._mcCurrentUser.uid,
       name: window._mcCurrentUser.displayName,
       ts: Date.now()
@@ -5752,30 +5701,25 @@ async function mc_addComment(){
 
 async function mc_loadComments(tid){
   window._cpTaskId_mc = tid;
-  const list = document.getElementById('mc-cp-list');
+  var list = document.getElementById('mc-cp-list');
   if(!list) return;
   list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">読み込み中...</div>';
   try {
-    const snap = await window._mcDb.collection('mc-comments')
+    var snap = await window._mcDb.collection('mc-comments')
       .where('taskId','==',tid).orderBy('ts','asc').get();
     if(snap.empty){
       list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">コメントなし</div>';
       return;
     }
-    list.innerHTML = snap.docs.map(d=>{
-      const c = d.data();
-      const dt = new Date(c.ts);
-      return `<div class="cp-item">
-        <div class="cp-meta">${h(c.name||c.uid)} · ${(dt.getMonth()+1)}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</div>
-        <div class="cp-text">${h(c.text)}</div>
-      </div>`;
+    list.innerHTML = snap.docs.map(function(d){
+      var c = d.data();
+      var dt = new Date(c.ts);
+      return '<div class="cp-item"><div class="cp-meta">'+h(c.name||c.uid)+' · '+(dt.getMonth()+1)+'/'+dt.getDate()+'</div><div class="cp-text">'+h(c.text)+'</div></div>';
     }).join('');
   } catch(e) {
     list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px">読み込みに失敗しました</div>';
   }
 }
-
-
 
 /* ── HISTORY (back button) ── */
 window.addEventListener('popstate', e=>{
