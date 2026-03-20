@@ -1723,6 +1723,7 @@ function sw(v,el,skipHistory){
 }
 
 function swCross(aId, skipHistory){
+  if(typeof mcReturnToLC === 'function') mcReturnToLC();
   view='cross'; lcId=null; areaId=aId; fil='ALL';
   const at = D.areaTypes.find(x=>x.id===aId)||{color:'#037EF3',name:aId};
   document.getElementById('ptitle').innerHTML=
@@ -1915,6 +1916,7 @@ function swLC(id,el,skipHistory){
 }
 
 function swArea(lId,aId,skipHistory){
+  if(typeof mcReturnToLC === 'function') mcReturnToLC();
   // Unsubscribe mkt-tl listener if navigating away from Mkt TL
   if((aId!=='Mkt'||lId!==_mtlCurrentLC) && window._mktTLUnsubscribe) window._mktTLUnsubscribe();
   if(aId!=='Mkt') { _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all'; }
@@ -4452,7 +4454,7 @@ const MC_SEED={areas:[
 ]}]},
 ],freeProjects:[]};
 
-let MC_D, mc_view='dashboard', mc_aid=null, mc_fpid=null, mc_fil='ALL', mc_gfil='ALL', mc_editing=null, mc_editingKpi=null, mc_editingProj=null, mc_editingFT=null;
+var MC_D, mc_view='dashboard', mc_aid=null, mc_fpid=null, mc_fil='ALL', mc_gfil='ALL', mc_editing=null, mc_editingKpi=null, mc_editingProj=null, mc_editingFT=null;
 let MC__areaTabs={}; // aId -> 'wbs' | 'weekly'
 
 function mc_load(){
@@ -6008,14 +6010,26 @@ function mcSw(v, el){
   }
   _mcView = 'mc';
   document.getElementById('mc-panel').style.display = '';
-  // LC側のトップバー・コンテンツを隠す
   document.getElementById('lc-topbar').style.display = 'none';
   document.getElementById('ct').style.display = 'none';
   document.querySelectorAll('.mc-nav-item').forEach(function(n){
     n.classList.toggle('active', n.dataset.mcview===v || n.dataset.mcview===(v.replace('mc-','')));
   });
-  if(!_mcInited){ mc_initApp(); _mcInited=true; }
-  mc_sw(v.replace('mc-',''), el);
+  // MC_Dが消えていたら再初期化
+  if(!_mcInited || !window.MC_D){
+    mc_initApp();
+    _mcInited = true;
+  }
+  try {
+    mc_sw(v.replace('mc-',''), el);
+  } catch(e) {
+    console.error('mcSw error:', e);
+    // MC_Dが壊れている可能性があるので再初期化して再試行
+    _mcInited = false;
+    mc_initApp();
+    _mcInited = true;
+    setTimeout(()=>{ try{ mc_sw(v.replace('mc-',''), el); }catch(e2){ toast('MC読み込みエラー','err'); } }, 800);
+  }
   closeSidebar();
 }
 
