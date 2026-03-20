@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs, addDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -211,6 +211,14 @@
       if(snap.exists()) cb(JSON.parse(snap.data().payload));
     });
   };
+
+  // ── Firestore v9 helpers exposed for comment functions ──
+  window._fsCollection = (path) => collection(db, path);
+  window._fsAddDoc    = (colRef, data) => addDoc(colRef, data);
+  window._fsQuery     = (...args) => query(...args);
+  window._fsWhere     = where;
+  window._fsOrderByFn = orderBy;
+  window._fsGetDocs   = getDocs;
 
   window._mktTLSave = async (lcId, data) => {
     try {
@@ -4498,9 +4506,14 @@ function mc_priHtml(p){if(!p)return'';return`<span class="pri ${p}">${mc_priLabe
 
 let MC__ccache={};
 async function loadCommentCounts(taskIds){
-  if(!db||!taskIds.length)return;
+  if(!window._db||!taskIds.length)return;
   for(const tid of taskIds){
-    try{const snap=await window._mcDb.collection('comments').where('taskId','==',tid).get();MC__ccache[tid]=snap.size;}
+    try{
+      const col=window._fsCollection('comments');
+      const q=window._fsQuery(col,window._fsWhere('taskId','==',tid));
+      const snap=await window._fsGetDocs(q);
+      MC__ccache[tid]=snap.size;
+    }
     catch(e){MC__ccache[tid]=0;}
   }
 }
@@ -5230,31 +5243,12 @@ function mc_openComments(tId,e){
 }
 
 function mc_closeComments(){
-  document.getElementById('cp').classList.remove('open');
-  document.getElementById('cp-overlay').classList.remove('open');
+  const ov=document.getElementById('mc-ov-comments');
+  if(ov) ov.style.display='none';
   if(mc__cpUnsub){mc__cpUnsub();mc__cpUnsub=null;}
   MC__cpTaskId=null;
 }
-async function postComment(){
-  const text=document.getElementById('mc-cp-input').value.trim();
-  if(!text||!MC__cpTaskId)return;
-  if(!window._mcDb){toast('Firestoreに接続されていません','err');return;}
-  if(!currentUser){toast('ログインが必要です','err');return;}
-  document.getElementById('mc-cp-input').value='';
-  try{
-    await window._mcDb.collection('comments').add({
-      taskId:MC__cpTaskId,text,
-      who:(window._mcCurrentUser?.displayName||"")||(window._mcCurrentUser?.email||"")||'Unknown',
-      email:(window._mcCurrentUser?.email||"")||'',
-      ts:firebase.firestore.FieldValue.serverTimestamp(),
-    });
-    MC__ccache[MC__cpTaskId]=(MC__ccache[MC__cpTaskId]||0)+1;
-  }catch(err){
-    console.error('postComment',err);
-    toast('送信に失敗しました','err');
-    document.getElementById('mc-cp-input').value=text;
-  }
-}
+// postComment removed — HTML calls mc_addComment() which is defined below
 
 // ── KPI MODAL ──
 function mc_openAddKpi(aId){
@@ -5585,7 +5579,7 @@ function mc_openAddWT(aId,weekKey){
   MC__wtModal={aId,weekKey,tId:null};
   document.getElementById('mc-wt-mttl').textContent='Todo 追加';
   document.getElementById('mc-wt-del-btn').style.display='none';
-  ['wt-name','wt-res','wt-sup','wt-note'].forEach(id=>document.getElementById(id).value='');
+  ['mc-wt-name','mc-wt-res','wt-sup','mc-wt-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('mc-ov-wt').classList.add('open');
   setTimeout(()=>document.getElementById('mc-wt-name').focus(),80);
 }
@@ -5607,7 +5601,7 @@ function mc_saveWT(){
   if(!MC__wtModal)return;
   const name=document.getElementById('mc-wt-name').value.trim();
   if(!name){toast('タスク名を入力してください','err');return;}
-  const obj={name,res:document.getElementById('mc-wt-res').value.trim(),sup:document.getElementById('wt-sup').value.trim(),note:document.getElementById('mc-wt-note').value.trim(),weekStart:MC__wtModal.weekKey,done:false,_by:currentUser?.displayName||currentUser?.email||''};
+  const obj={name,res:document.getElementById('mc-wt-res').value.trim(),sup:document.getElementById('wt-sup').value.trim(),note:document.getElementById('mc-wt-note').value.trim(),weekStart:MC__wtModal.weekKey,done:false,_by:(window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||'')};
   const area=MC_D.areas.find(a=>a.id===MC__wtModal.aId);
   if(!area.weekTodos)area.weekTodos=[];
   if(MC__wtModal.tId){
@@ -5875,7 +5869,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('mc-si').focus();}
 });
-['ov','ov-kpi','ov-proj','ov-ft','ov-sub','ov-wt'].forEach(id=>{
+['mc-ov','mc-ov-kpi','mc-ov-proj','mc-ov-ft','mc-ov-sub','mc-ov-wt'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',function(e){if(e.target===this){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}});
 });
@@ -6001,11 +5995,12 @@ async function mc_addComment(){
   var tid = window._cpTaskId_mc;
   if(!tid) return;
   try {
-    await window._mcDb.collection('mc-comments').add({
+    const col = window._fsCollection('mc-comments');
+    await window._fsAddDoc(col, {
       taskId: tid,
       text: text,
-      uid: window._mcCurrentUser.uid,
-      name: window._mcCurrentUser.displayName,
+      uid: window._mcCurrentUser.uid||'',
+      name: window._mcCurrentUser.displayName||window._mcCurrentUser.email||'Unknown',
       ts: Date.now()
     });
     input.value = '';
@@ -6021,8 +6016,9 @@ async function mc_loadComments(tid){
   if(!list) return;
   list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">読み込み中...</div>';
   try {
-    var snap = await window._mcDb.collection('mc-comments')
-      .where('taskId','==',tid).orderBy('ts','asc').get();
+    const col = window._fsCollection('mc-comments');
+    const q   = window._fsQuery(col, window._fsWhere('taskId','==',tid), window._fsOrderByFn('ts','asc'));
+    const snap = await window._fsGetDocs(q);
     if(snap.empty){
       list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">コメントなし</div>';
       return;
