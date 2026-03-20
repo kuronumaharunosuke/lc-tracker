@@ -4590,12 +4590,12 @@ function mc_buildNav(){
   var anavEl = document.getElementById('mc-anav');
   if(anavEl) anavEl.innerHTML=MC_D.areas.map(function(a){
     var s=mc_aStats(a);var c=MC_COLORS[a.id]||'#52565E';
-    return `<div class="nav-item mc-nav-item" data-mcview="area-${a.id}" onclick="mc_sw('area-${a.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${c}"></div>${a.name}<span class="nb">${s.pct}%</span></div>`;
+    return `<div class="nav-item mc-nav-item" data-mcview="area-${a.id}" onclick="mcSw('area-${a.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${c}"></div>${a.name}<span class="nb">${s.pct}%</span></div>`;
   }).join('');
   var fpnavEl = document.getElementById('mc-fpnav');
   if(fpnavEl) fpnavEl.innerHTML=(MC_D.freeProjects||[]).filter(function(p){return !p.areaId;}).map(function(p){
     var s=mc_pStats(p);
-    return `<div class="nav-item mc-nav-item" data-mcview="mc-fp-${p.id}" onclick="mc_sw('mc-fp-${p.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${p.color||'#037EF3'}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.name)}</span><span class="nb">${s.pct}%</span></div>`;
+    return `<div class="nav-item mc-nav-item" data-mcview="mc-fp-${p.id}" onclick="mcSw('mc-fp-${p.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${p.color||'#037EF3'}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.name)}</span><span class="nb">${s.pct}%</span></div>`;
   }).join('');
   // Update active state only for MC nav items
   document.querySelectorAll('.mc-nav-item').forEach(function(n){
