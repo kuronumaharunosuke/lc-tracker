@@ -6013,22 +6013,29 @@ function mcSw(v, el){
   document.getElementById('lc-topbar').style.display = 'none';
   document.getElementById('ct').style.display = 'none';
   document.querySelectorAll('.mc-nav-item').forEach(function(n){
-    n.classList.toggle('active', n.dataset.mcview===v || n.dataset.mcview===(v.replace('mc-','')));
+    n.classList.toggle('active', n.dataset.mcview===v || n.dataset.mcview===v.replace(/^mc-/,''));
   });
-  // MC_Dが消えていたら再初期化
   if(!_mcInited || !window.MC_D){
     mc_initApp();
     _mcInited = true;
   }
+  // mc_sw が期待する形式に変換:
+  //   'mc-dashboard' → 'dashboard'
+  //   'mc-gantt'     → 'gantt'
+  //   'mc-fp-xxxx'   → 'mc-fp-xxxx' (そのまま)
+  //   'area-xxxx'    → 'area-xxxx'  (そのまま)
+  var mcV = v;
+  if(v === 'mc-dashboard') mcV = 'dashboard';
+  else if(v === 'mc-gantt') mcV = 'gantt';
+  // mc-fp- と area- はそのまま渡す
   try {
-    mc_sw(v.replace('mc-',''), el);
+    mc_sw(mcV, el);
   } catch(e) {
     console.error('mcSw error:', e);
-    // MC_Dが壊れている可能性があるので再初期化して再試行
     _mcInited = false;
     mc_initApp();
     _mcInited = true;
-    setTimeout(()=>{ try{ mc_sw(v.replace('mc-',''), el); }catch(e2){ toast('MC読み込みエラー','err'); } }, 800);
+    setTimeout(function(){ try{ mc_sw(mcV, el); }catch(e2){ toast('MC読み込みエラー','err'); } }, 800);
   }
   closeSidebar();
 }
