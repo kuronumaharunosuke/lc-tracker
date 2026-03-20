@@ -5566,9 +5566,9 @@ let MC_appInitialized=false;
 
 // mc_initApp: see patched version below
 
-(function boot(){
+(function mc_boot_disabled(){ return; // disabled
   // Firebase初期化に失敗していた場合はすぐにログイン画面へ
-  if(!firebaseOk||!auth){
+  if(false){ // firebaseOk check disabled
     hideLoading();
     showScreen('auth-screen');
     setAuthError('Firebase の読み込みに失敗しました。ページを再読み込みしてください。');
@@ -5639,7 +5639,7 @@ function mc_initApp(){
 /* ══════════════════════════════════════════════
    MC TRACKER INTEGRATION
 ══════════════════════════════════════════════ */
-let _mcView = 'lc';
+var _mcView = 'lc';
 let _mcInited = false;
 let _mcSyncUnsub = null;
 
