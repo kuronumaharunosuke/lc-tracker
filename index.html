@@ -689,6 +689,31 @@ html{font-size:13px;}
 /* Nav item for MC section */
 .nav-section-divider{height:1px;background:rgba(255,255,255,.08);margin:6px 12px;}
 
+
+/* ── MC TRACKER ADDITIONAL STYLES ── */
+.mc-deadline-banner{background:#F85A4015;border:1px solid #F85A4044;border-radius:7px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .1s;}
+.mc-deadline-banner:hover{background:#F85A4022;}
+.mc-deadline-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border);}
+.mc-deadline-item:last-child{border-bottom:none;}
+.sub-row td{background:#FAFBFC;padding:7px 16px;}
+.sub-name{font-size:12px;color:var(--dark);padding-left:20px;}
+.free-proj-section{background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.free-proj-head{display:flex;align-items:center;padding:10px 14px;cursor:pointer;gap:8px;user-select:none;}
+.free-proj-head:hover{background:var(--bg);}
+.free-proj-body{display:none;border-top:1px solid var(--border);}
+.free-proj-body.open{display:block;}
+.mc-wt-week{border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden;}
+.mc-wt-hd{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:var(--bg);user-select:none;}
+.mc-wt-hd.current-week{background:#037EF308;border-left:3px solid #037EF3;}
+.mc-wt-body{display:none;border-top:1px solid var(--border);}
+.mc-wt-body.open{display:block;}
+.mc-wt-item{display:flex;align-items:flex-start;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);}
+.mc-wt-item:last-child{border-bottom:none;}
+.mc-wt-check{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+.mc-wt-check.done-check{background:#00C16E;border-color:#00C16E;}
+.mc-sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-left:4px;vertical-align:middle;}
+.mc-sync-dot.ok{background:#00C16E;}.mc-sync-dot.syncing{background:#FFC845;}.mc-sync-dot.err{background:#F85A40;}
+
 </style>
 </head>
 <body>
@@ -3971,6 +3996,14 @@ function mtlCloseMembers(){
 /* ────────────────────────────────────────────
    MC TRACKER APP CODE (namespaced)
 ──────────────────────────────────────────── */
+/* ══════════════════════════════════════════════
+   MC TRACKER INTEGRATION VARS (declared early)
+══════════════════════════════════════════════ */
+var _mcView = 'lc';
+var _mcInited = false;
+var mc__syncUnsub = null;
+var _cpTaskId_mc = null;
+
 const MC_COLORS={OGX:'#F85A40',ICX:'#0CB9C1',PD:'#037EF3',TMOD:'#F48924',BDF:'#7552CC',BnM:'#00C16E',LG:'#52565E',OPS:'#E9518A',GS:'#FFC845'};
 const MC_PROJ_COLORS=['#F85A40','#0CB9C1','#037EF3','#F48924','#7552CC','#00C16E','#E9518A','#FFC845','#52565E','#FF6B6B'];
 const MC_SK='aiesec2627v9';
@@ -4425,9 +4458,9 @@ function mc_rArea(id){
   const area=MC_D.areas.find(a=>a.id===id);if(!area)return;
   const c=MC_COLORS[id]||'#52565E';
   const tab=MC__areaTabs[id]||'wbs';
-  const tabBar=`<div class="area-tabs">
-    <button class="area-tab${tab==='wbs'?' active':''}" onclick="MC__areaTabs['${id}']='wbs';mc_rArea('${id}')">WBS / KPI</button>
-    <button class="area-tab${tab==='weekly'?' active':''}" onclick="MC__areaTabs['${id}']='weekly';mc_rArea('${id}')">週次 Todo</button>
+  const tabBar=`<div class="mc-area-tabs" style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
+    <button class="mc-area-tab${tab==='wbs'?' mc-area-tab-active':''}" onclick="MC__areaTabs['${id}']='wbs';mc_rArea('${id}')" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 18px;cursor:pointer;color:${tab==='wbs'?'var(--aiesec)':'var(--dim)'};border:none;background:transparent;border-bottom:2px solid ${tab==='wbs'?'var(--aiesec)':'transparent'};margin-bottom:-2px">WBS / KPI</button>
+    <button class="mc-area-tab${tab==='weekly'?' mc-area-tab-active':''}" onclick="MC__areaTabs['${id}']='weekly';mc_rArea('${id}')" style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 18px;cursor:pointer;color:${tab==='weekly'?'var(--aiesec)':'var(--dim)'};border:none;background:transparent;border-bottom:2px solid ${tab==='weekly'?'var(--aiesec)':'transparent'};margin-bottom:-2px">週次 Todo</button>
   </div>`;
   if(tab==='weekly'){
     document.getElementById('mc-ct').innerHTML=tabBar+mc_rWeekTodo(id,c);
@@ -4435,7 +4468,7 @@ function mc_rArea(id){
   }
   // ── WBS tab ──
   const s=mc_aStats(area);
-  const q=document.getElementById('mc_si').value.toLowerCase();
+  const q=(document.getElementById('mc-si')||{value:''}).value.toLowerCase();
   const fbar=`<div class="fbar">
     <span class="fl">Filter</span>
     <button class="fb ${mc_fil==='ALL'?'active':''}" onclick="mc_setF('ALL')">All (${s.total})</button>
@@ -4504,7 +4537,7 @@ function mc_renderAreaProjects(areaId,areaColor){
   const c=areaColor||MC_COLORS[areaId]||'#037EF3';
   const cards=projs.map(p=>{
     const ps=mc_pStats(p);
-    const q=document.getElementById('mc_si').value.toLowerCase();
+    const q=(document.getElementById('mc-si')||{value:''}).value.toLowerCase();
     let rows='';let i2=0;
     const tasks=p.tasks.filter(t=>{
       if(mc_fil!=='ALL'&&t.status!==mc_fil)return false;
@@ -4594,7 +4627,7 @@ function mc_togK(id){
 function mc_rFreeProject(id){
   const proj=MC_D.freeProjects.find(p=>p.id===id);if(!proj)return;
   const s=mc_pStats(proj);const c=proj.color||'#037EF3';
-  const q=document.getElementById('mc_si').value.toLowerCase();
+  const q=(document.getElementById('mc-si')||{value:''}).value.toLowerCase();
   const tasks=proj.tasks.filter(t=>{
     if(mc_fil!=='ALL'&&t.status!==mc_fil)return false;
     if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q))return false;
@@ -5508,8 +5541,7 @@ function mc_rGantt(){
       </div>`;
     });
   });
-  document.getElementById('mc-ct').innerHTML=`
-    <div class="gantt-wrap">
+  document.getElementById('mc-ct').innerHTML=`<div class="gantt-wrap">
       <div class="gantt-toolbar">
         <div class="gantt-legend">
           <div class="gl-item"><div class="gl-dot" style="background:#00C16E"></div><span style="color:var(--done)">Done</span></div>
@@ -5551,7 +5583,7 @@ function mc_importD(e){const f=e.target.files[0];if(!f)return;const r=new FileRe
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}
-  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('mc_si').focus();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('mc-si').focus();}
 });
 ['ov','ov-kpi','ov-proj','ov-ft','ov-sub','ov-wt'].forEach(id=>{
   const el=document.getElementById(id);
@@ -5620,9 +5652,9 @@ function mc_initApp(){
   }
   mc_load();
   // Subscribe to Firestore updates
-  if(_mcSyncUnsub) _mcSyncUnsub();
+  if(mc__syncUnsub) mc__syncUnsub();
   if(window._mcSubscribe){
-    _mcSyncUnsub = window._mcSubscribe(data=>{
+    mc__syncUnsub = window._mcSubscribe(data=>{
       if(MC__saving) return;
       MC_D = data;
       mc_migrate();
@@ -5635,12 +5667,7 @@ function mc_initApp(){
 }
 
 
-/* ══════════════════════════════════════════════
-   MC TRACKER INTEGRATION
-══════════════════════════════════════════════ */
-var _mcView = 'lc';
-var _mcInited = false;
-var mc__syncUnsub = null;
+/* MC integration vars moved above */
 
 function mcShowNav(show){
   ['mc-nav-divider','mc-nav-label','mc-nav-items'].forEach(function(id){
