@@ -4476,37 +4476,8 @@ var MC_D, mc_view='dashboard', mc_aid=null, mc_fpid=null, mc_fil='ALL', mc_gfil=
 let MC__areaTabs={}; // aId -> 'wbs' | 'weekly'
 
 function mc_load(){
-  // localStorageはオフライン時の一時キャッシュのみ。Firestoreが常にマスター。
-  if(!window._mcLoad){
-    // Firestoreが使えない場合のみlocalStorageにフォールバック
-    try{const s=localStorage.getItem(MC_SK);if(s){MC_D=JSON.parse(s);mc_migrate();}}catch(e){}
-    if(!MC_D) MC_D=JSON.parse(JSON.stringify(MC_SEED));
-    mc_buildNav();
-    mc_sw(mc_view||'dashboard', null);
-    return;
-  }
-  // まずSEEDで初期化（ローディング中の空白を防ぐ）
-  MC_D = JSON.parse(JSON.stringify(MC_SEED));
-  // FirestoreからロードしてMC_Dを上書き
-  window._mcLoad().then(data=>{
-    if(data){ MC_D=data; mc_migrate(); try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){} }
-    else { MC_D=JSON.parse(JSON.stringify(MC_SEED)); }
-    mc_buildNav();
-    mc_sw(mc_view||'dashboard', null);
-    // リアルタイム同期
-    if(window._mcSubscribe && !mc__syncUnsub){
-      mc__syncUnsub = window._mcSubscribe(data=>{
-        if(MC__saving) return;
-        MC_D=data; mc_migrate();
-        try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){}
-        mc_buildNav();
-        if(mc_view==='dashboard') mc_rDash();
-        else if(mc_view==='gantt') mc_rGantt();
-        else if(mc_aid) mc_rArea(mc_aid);
-        else if(mc_fpid) mc_rFreeProject(mc_fpid);
-      });
-    }
-  });
+  // mc_initApp が全処理を担うため、ここはフォールバックのみ
+  if(!MC_D) MC_D = JSON.parse(JSON.stringify(MC_SEED));
 }
 function mc_migrate(){
   if(!MC_D.freeProjects)MC_D.freeProjects=[];
@@ -5995,22 +5966,44 @@ let MC_appInitialized=false;
 // Patched mc_initApp - uses shared LC tracker Firebase
 function mc_initApp(){
   if(!window._mcDb){
-    document.getElementById('mc-ct').innerHTML = 
+    document.getElementById('mc-ct').innerHTML =
       '<div style="padding:40px;text-align:center;color:var(--dim)">Firebase接続エラー</div>';
     return;
   }
-  mc_load();
-  // Subscribe to Firestore updates
-  if(mc__syncUnsub) mc__syncUnsub();
+  // 既存の購読を解除
+  if(mc__syncUnsub){ mc__syncUnsub(); mc__syncUnsub=null; }
+
+  // Firestoreから直接読み込み（localStorageは使わない）
+  if(window._mcLoad){
+    window._mcLoad().then(data=>{
+      MC_D = data || JSON.parse(JSON.stringify(MC_SEED));
+      mc_migrate();
+      try{ localStorage.setItem(MC_SK, JSON.stringify(MC_D)); }catch(e){}
+      mc_buildNav();
+      mc_sw(mc_view||'dashboard', null);
+    }).catch(()=>{
+      MC_D = JSON.parse(JSON.stringify(MC_SEED));
+      mc_buildNav();
+      mc_sw(mc_view||'dashboard', null);
+    });
+  } else {
+    MC_D = JSON.parse(JSON.stringify(MC_SEED));
+    mc_buildNav();
+    mc_sw(mc_view||'dashboard', null);
+  }
+
+  // リアルタイム同期購読
   if(window._mcSubscribe){
     mc__syncUnsub = window._mcSubscribe(data=>{
       if(MC__saving) return;
       MC_D = data;
       mc_migrate();
+      try{ localStorage.setItem(MC_SK, JSON.stringify(MC_D)); }catch(e){}
       mc_buildNav();
-      if(MC_D && window._mcView_current){
-        mc_sw(window._mcView_current, null);
-      }
+      if(mc_view==='dashboard') mc_rDash();
+      else if(mc_view==='gantt') mc_rGantt();
+      else if(mc_aid) mc_rArea(mc_aid);
+      else if(mc_fpid) mc_rFreeProject(mc_fpid);
     });
   }
 }
