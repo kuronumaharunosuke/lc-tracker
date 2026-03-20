@@ -4310,6 +4310,16 @@ function mtlCloseMembers(){
 
 
 
+// ── MC audit log helper (alias for auditLog in MC context) ──
+function logAction(action, detail){
+  if(window._fsLog) window._fsLog('MC_'+action.toUpperCase(), {detail});
+}
+
+// ── checkLogin: Enter key on login screen triggers Google OAuth ──
+function checkLogin(){
+  if(window._fsSignIn) window._fsSignIn();
+}
+
 /* ────────────────────────────────────────────
    MC TRACKER APP CODE (namespaced)
 ──────────────────────────────────────────── */
