@@ -745,15 +745,17 @@ html{font-size:13px;}
   <div class="nav-section-divider" id="mc-nav-divider" style="display:none"></div>
   <div class="nav-label" id="mc-nav-label" style="margin-top:4px;display:none">MC TRACKER</div>
   <div id="mc-nav-items" style="display:none">
-    <div class="nav-item" data-view="mc-dashboard" onclick="mcSw('mc-dashboard',this)">
+    <div class="nav-item mc-nav-item" data-mcview="dashboard" onclick="mcSw('mc-dashboard',this)">
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ダッシュボード
     </div>
-    <div class="nav-item" data-view="mc-gantt" onclick="mcSw('mc-gantt',this)">
+    <div class="nav-item mc-nav-item" data-mcview="gantt" onclick="mcSw('mc-gantt',this)">
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ガントチャート
     </div>
     <div id="mc-anav"></div>
+    <div class="nav-label" style="margin-top:4px">プロジェクト</div>
+    <div id="mc-fpnav"></div>
   </div>
   <div class="sidebar-foot">
     <div id="user-badge-wrap" class="user-badge">
@@ -4189,29 +4191,26 @@ function mc_totals(){
 
 // ── NAV ──
 function mc_buildNav(){
-  document.getElementById('mc-anav').innerHTML=MC_D.areas.map(a=>{
-    const s=mc_aStats(a);const c=MC_COLORS[a.id]||'#52565E';
-    return `<div class="nav-item" data-mc_view="area-${a.id}" onclick="mc_sw('area-${a.id}',this)">
-      <div class="ndot" style="background:${c}"></div>${a.name}<span class="nb">${s.pct}%</span>
-    </div>`;
+  var anavEl = document.getElementById('mc-anav');
+  if(anavEl) anavEl.innerHTML=MC_D.areas.map(function(a){
+    var s=mc_aStats(a);var c=MC_COLORS[a.id]||'#52565E';
+    return `<div class="nav-item mc-nav-item" data-mcview="area-${a.id}" onclick="mc_sw('area-${a.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${c}"></div>${a.name}<span class="nb">${s.pct}%</span></div>`;
   }).join('');
-  document.getElementById('fpnav').innerHTML=MC_D.freeProjects.filter(p=>!p.areaId).map(p=>{
-    const s=mc_pStats(p);
-    return `<div class="nav-item" data-mc_view="mc-fp-${p.id}" onclick="mc_sw('mc-fp-${p.id}',this)">
-      <div class="ndot" style="background:${p.color||'#037EF3'}"></div>
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.name)}</span>
-      <span class="nb">${s.pct}%</span>
-    </div>`;
+  var fpnavEl = document.getElementById('mc-fpnav');
+  if(fpnavEl) fpnavEl.innerHTML=(MC_D.freeProjects||[]).filter(function(p){return !p.areaId;}).map(function(p){
+    var s=mc_pStats(p);
+    return `<div class="nav-item mc-nav-item" data-mcview="mc-fp-${p.id}" onclick="mc_sw('mc-fp-${p.id}',this)" style="border-left:3px solid transparent"><div class="ndot" style="background:${p.color||'#037EF3'}"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.name)}</span><span class="nb">${s.pct}%</span></div>`;
   }).join('');
-  document.querySelectorAll('.nav-item').forEach(n=>{
-    const active=n.dataset.mc_view===mc_view;
+  // Update active state only for MC nav items
+  document.querySelectorAll('.mc-nav-item').forEach(function(n){
+    var active=n.dataset.mcview===mc_view;
     n.classList.toggle('active',active);
-    if(active&&n.dataset.view.startsWith('area-'))
-      n.style.borderLeftColor=MC_COLORS[n.dataset.view.replace('area-','')]||'#fff';
-    else if(active&&n.dataset.view.startsWith('mc-fp-')){
-      const p=MC_D.freeProjects.find(x=>x.id===n.dataset.view.replace('mc-fp-',''));
-      n.style.borderLeftColor=p?.color||'#037EF3';
-    } else n.style.borderLeftColor='transparent';
+    if(active){
+      var aId=n.dataset.mcview.replace('area-','');
+      n.style.borderLeftColor=MC_COLORS[aId]||'#FFC845';
+    } else {
+      n.style.borderLeftColor='transparent';
+    }
   });
 }
 
@@ -5661,8 +5660,8 @@ function mcSw(v, el){
   var lcContent = document.getElementById('ct');
   if(lcTopbar) lcTopbar.style.display = 'none';
   if(lcContent) lcContent.style.display = 'none';
-  document.querySelectorAll('.nav-item').forEach(function(n){
-    n.classList.toggle('active', n.dataset.view===v);
+  document.querySelectorAll('.mc-nav-item').forEach(function(n){
+    n.classList.toggle('active', n.dataset.mcview===v || n.dataset.mcview===(v.replace('mc-','')));
   });
   if(!_mcInited){ mc_initApp(); _mcInited=true; }
   mc_sw(v.replace('mc-',''), el);
