@@ -183,6 +183,35 @@
     if(window._mktTLUnsub){ window._mktTLUnsub(); window._mktTLUnsub=null; }
   };
 
+
+  // ── MC TRACKER FIRESTORE BRIDGE ──
+  const MC_REF = doc(db, 'mc-tracker-2627', 'main');
+  window._mcDb = db; // share same Firestore instance
+  
+  window._mcCurrentUser = null; // set by auth callback
+  
+  window._mcSave = async (data) => {
+    try {
+      await setDoc(MC_REF, { payload: JSON.stringify(data) });
+    } catch(e) {
+      console.error('MC save error:', e);
+    }
+  };
+  
+  window._mcLoad = async () => {
+    try {
+      const snap = await getDoc(MC_REF);
+      if(snap.exists()) return JSON.parse(snap.data().payload);
+      return null;
+    } catch(e) { return null; }
+  };
+  
+  window._mcSubscribe = (cb) => {
+    return onSnapshot(MC_REF, (snap) => {
+      if(snap.exists()) cb(JSON.parse(snap.data().payload));
+    });
+  };
+
   window._mktTLSave = async (lcId, data) => {
     try {
       await setDoc(doc(db, 'mkt-tl', lcId), data);
@@ -603,6 +632,63 @@ html{font-size:13px;}
 .mtl-link-open{font-size:9px;padding:2px 7px;border:1px solid var(--primary);border-radius:3px;color:var(--primary);text-decoration:none;font-weight:700;background:#EBF5FF;flex-shrink:0;}
 .mtl-stats-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
 .mtl-stat-chip{font-size:10px;font-weight:700;padding:4px 10px;border-radius:5px;border:1px solid;}
+
+/* ── MC TRACKER SPECIFIC STYLES ── */
+.mc-section { display: none; }
+.mc-section.mc-active { display: block; }
+
+/* Priority badges */
+.pri{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em;}
+.pri.high{background:#F85A4020;color:#F85A40;border:1px solid #F85A4044;}
+.pri.medium{background:#F4892420;color:#F48924;border:1px solid #F4892444;}
+.pri.low{background:#8A8E9620;color:#8A8E96;border:1px solid #8A8E9644;}
+
+/* Comment badge */
+.cc-badge{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;color:var(--dim);cursor:pointer;padding:2px 5px;border:1px solid var(--border);border-radius:3px;transition:all .1s;}
+.cc-badge:hover{border-color:var(--text);color:var(--text);}
+
+/* Comments panel */
+#mc-ov-comments{position:fixed;inset:0;background:rgba(27,44,94,.48);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+#mc-ov-comments.open{display:flex;}
+.cp-list{max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:12px;background:var(--bg);}
+.cp-item{padding:9px 12px;border-bottom:1px solid var(--border);}
+.cp-item:last-child{border-bottom:none;}
+.cp-meta{font-size:9px;color:var(--dim);margin-bottom:3px;font-family:monospace;}
+.cp-text{font-size:12px;color:var(--text);line-height:1.5;}
+
+/* Sub-task modal */
+#mc-ov-sub{position:fixed;inset:0;background:rgba(27,44,94,.48);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+#mc-ov-sub.open{display:flex;}
+
+/* Sync dot */
+.mc-sync-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-left:6px;transition:background .3s;}
+.mc-sync-dot.ok{background:#00C16E;}
+.mc-sync-dot.syncing{background:#FFC845;animation:pulse .8s infinite;}
+.mc-sync-dot.err{background:#F85A40;}
+
+/* Deadline banner */
+.mc-deadline-banner{background:#F85A4015;border:1px solid #F85A4044;border-radius:7px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;cursor:pointer;}
+.mc-deadline-banner:hover{background:#F85A4020;}
+
+/* Free project section */
+.mc-fp-section{background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;}
+.mc-fp-head{display:flex;align-items:center;padding:10px 14px;cursor:pointer;gap:8px;}
+.mc-fp-head:hover{background:var(--bg);}
+
+/* Weekly Todo MC version */
+.mc-wt-week{border:1px solid var(--border);border-radius:8px;margin-bottom:6px;overflow:hidden;}
+.mc-wt-hd{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;background:var(--bg);user-select:none;}
+.mc-wt-hd.current{background:#037EF308;border-left:3px solid #037EF3;}
+.mc-wt-body{display:none;border-top:1px solid var(--border);}
+.mc-wt-body.open{display:block;}
+.mc-wt-item{display:flex;align-items:flex-start;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);}
+.mc-wt-item:last-child{border-bottom:none;}
+.mc-wt-check{width:16px;height:16px;border:2px solid var(--border);border-radius:4px;cursor:pointer;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+.mc-wt-check.done{background:#00C16E;border-color:#00C16E;}
+
+/* Nav item for MC section */
+.nav-section-divider{height:1px;background:rgba(255,255,255,.08);margin:6px 12px;}
+
 </style>
 </head>
 <body>
@@ -655,6 +741,20 @@ html{font-size:13px;}
     <div class="nav-label" style="margin-top:4px">West</div>
     <div id="nav-west"></div>
   </div>
+
+  <div class="nav-section-divider" id="mc-nav-divider" style="display:none"></div>
+  <div class="nav-label" id="mc-nav-label" style="margin-top:4px;display:none">MC TRACKER</div>
+  <div id="mc-nav-items" style="display:none">
+    <div class="nav-item" data-view="mc-dashboard" onclick="mcSw('mc-dashboard',this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      ダッシュボード
+    </div>
+    <div class="nav-item" data-view="mc-gantt" onclick="mcSw('mc-gantt',this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      ガントチャート
+    </div>
+    <div id="mc-anav"></div>
+  </div>
   <div class="sidebar-foot">
     <div id="user-badge-wrap" class="user-badge">
       <div>
@@ -695,6 +795,34 @@ html{font-size:13px;}
     </div>
   </div>
   <div class="content" id="ct"></div>
+
+  <!-- MC TRACKER CONTENT -->
+  <div id="mc-panel" style="display:none">
+    <div class="topbar">
+      <div class="topbar-l">
+        <button class="ham" onclick="toggleSidebar()" aria-label="menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <div class="page-title" id="mc-ptitle">MC DASHBOARD</div>
+          <div class="page-sub" id="mc-psub"></div>
+        </div>
+      </div>
+      <div class="topbar-r">
+        <div class="search-box">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:var(--faint);flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" placeholder="タスク検索" id="mc-si" oninput="mc_applyF()">
+        </div>
+        <button class="btn btn-fill" id="mc-addbtn" style="display:none" onclick="mc_openAdd()">+ タスク追加</button>
+        <button class="btn btn-primary" id="mc-addkpibtn" style="display:none" onclick="mc_openAddKpi()">+ KPI 追加</button>
+        <button class="btn" id="mc-addprojtaskbtn" style="display:none" onclick="mc_openAddFreeTask()">+ PJT タスク追加</button>
+        <span class="mc-sync-dot" id="mc-sync-dot" title="同期状態"></span>
+      </div>
+    </div>
+    <div class="content" id="mc-ct">
+      <div style="padding:40px;text-align:center;color:var(--dim);font-size:13px;font-weight:700;letter-spacing:.1em">MC TRACKER 読み込み中...</div>
+    </div>
+  </div>
 </main>
 </div>
 
@@ -3832,6 +3960,1823 @@ function mtlCloseMembers(){
 }
 
 
+
+/* ────────────────────────────────────────────
+   MC TRACKER APP CODE (namespaced)
+──────────────────────────────────────────── */
+const MC_COLORS={OGX:'#F85A40',ICX:'#0CB9C1',PD:'#037EF3',TMOD:'#F48924',BDF:'#7552CC',BnM:'#00C16E',LG:'#52565E',OPS:'#E9518A',GS:'#FFC845'};
+const MC_PROJ_COLORS=['#F85A40','#0CB9C1','#037EF3','#F48924','#7552CC','#00C16E','#E9518A','#FFC845','#52565E','#FF6B6B'];
+const MC_SK='aiesec2627v9';
+
+const MC_SEED={areas:[
+{id:'OGX',name:'OGX',kpis:[
+{id:'o1',name:'コース分けGV Realize #5',target:5,actual:1,tasks:[
+  {id:'t1',name:'Pilot LC募集＆組閣',res:'hinata',start:'2026-02-21',deadline:'2026-03-02',status:'WIP',group:'',children:[]},
+  {id:'t2',name:'Ghana OP引継ぎ',res:'hinata',start:'',deadline:'',status:'NOT_STARTED',group:'',children:[]},
+  {id:'t3',name:'Pilot LCのJDをfixする',res:'hinata',start:'2026-02-23',deadline:'2026-03-03',status:'WIP',group:'',children:[]},
+  {id:'t4',name:'PJT全体のTL立てる',res:'hinata',start:'2026-02-25',deadline:'',status:'WIP',group:'',children:[]},
+  {id:'t5',name:'OP候補出し',res:'hinata',start:'',deadline:'2026-03-03',status:'WIP',group:'',children:[]},
+]},
+{id:'o2',name:'説明会→個別相談会 CVR 20%',target:20,actual:2,tasks:[
+  {id:'t6',name:'各会議体の位置づけ整理',res:'hinata',start:'2026-02-24',deadline:'',status:'DONE',group:'',children:[]},
+  {id:'t7',name:'3,4月callのアジェンダメイク',res:'hinata',start:'2026-02-26',deadline:'',status:'WIP',group:'',children:[]},
+  {id:'t8',name:'MConLCの形態を整備',res:'hinata',start:'',deadline:'2026-02-28',status:'DONE',group:'',children:[]},
+  {id:'t9',name:'MConLCのres振り',res:'hinata',start:'2026-02-25',deadline:'2026-02-27',status:'DONE',group:'',children:[]},
+  {id:'t10',name:'各LCへの伝達と日調',res:'hinata',start:'2026-02-26',deadline:'2026-02-28',status:'WIP',group:'',children:[]},
+]},
+{id:'o3',name:'Premium AP Raise #125',target:125,actual:3,tasks:[
+  {id:'t11',name:'次期IRについて',res:'ryuta',start:'2026-02-24',deadline:'',status:'DONE',group:'',children:[]},
+  {id:'t12',name:'Kintoneレイアウト改善',res:'ryuta',start:'2026-03-01',deadline:'',status:'WIP',group:'',children:[]},
+  {id:'t22',name:'Final改訂',res:'kanta',start:'2026-02-26',deadline:'2026-02-27',status:'DONE',group:'',children:[]},
+  {id:'t23',name:'問題作成',res:'kanta',start:'2026-02-28',deadline:'2026-03-06',status:'WIP',group:'',children:[]},
+]},
+{id:'o4',name:'行動意欲6以上のEP 85%',target:85,actual:4,tasks:[
+  {id:'t26',name:'AJ版STのupdate',res:'riko',start:'',deadline:'',status:'NOT_STARTED',group:'',children:[]},
+  {id:'t33',name:'会期目的や位置づけの決定（事前）',res:'Moeha',start:'2026-02-23',deadline:'2026-02-18',status:'DONE',group:'',children:[]},
+  {id:'t34',name:'KGI,KPIの指標化,数値化',res:'Moeha',start:'2026-02-23',deadline:'2026-02-20',status:'WIP',group:'',children:[]},
+]},
+{id:'o5',name:'7月時点でのLC資格審査項目抵触数 #0',target:0,actual:5,tasks:[
+  {id:'t75',name:'LCヒアリングによる課題分析',res:'aoi',start:'2026-03-10',deadline:'2026-03-16',status:'NOT_STARTED',group:'',children:[]},
+  {id:'t76',name:'LG作成ツールの理解/棲み分け確定',res:'aoi',start:'2026-03-10',deadline:'2026-03-16',status:'NOT_STARTED',group:'',children:[]},
+]},
+]},
+{id:'ICX',name:'ICX',kpis:[
+{id:'i1',name:'ヒアリング渉外数 #300',target:300,actual:3,tasks:[
+  {id:'i11',name:'sales 1on1（マネジメント）',res:'koyo/kazuaki',start:'2026-03-02',deadline:'2026-03-31',status:'WIP',group:'',children:[]},
+  {id:'i12',name:'sales 1on1（育成）',res:'koyo/kazuaki',start:'2026-06-15',deadline:'2026-08-15',status:'NOT_STARTED',group:'',children:[]},
+  {id:'i14',name:'sales 1on1 カリキュラム作成',res:'koyo/kazuaki',start:'2026-03-02',deadline:'2026-03-31',status:'NOT_STARTED',group:'',children:[]},
+]},
+{id:'i4',name:'地域セミナー開催数 #12',target:12,actual:4,tasks:[
+  {id:'i41',name:'セミナーマニュアル作成',res:'yuto',start:'',deadline:'2026-03-10',status:'DONE',group:'',children:[]},
+  {id:'i42',name:'SHアポ',res:'yuto',start:'',deadline:'2026-03-31',status:'DONE',group:'',children:[]},
+  {id:'i43',name:'SH確定',res:'yuto',start:'',deadline:'2026-04-30',status:'NOT_STARTED',group:'',children:[]},
+]},
+{id:'i6',name:'OP NPS 推奨者率50%',target:50,actual:4,tasks:[
+  {id:'i61',name:'案件運営者育成機会①の設計',res:'ryu',start:'2026-03-01',deadline:'2026-04-04',status:'NOT_STARTED',group:'',children:[]},
+  {id:'i68',name:'制度・マニュアル改善',res:'ryu',start:'2026-02-22',deadline:'2026-03-31',status:'WIP',group:'',children:[]},
+]},
+]},
+{id:'PD',name:'PD',kpis:[{id:'p1',name:'KPI 1',target:5,actual:3,tasks:[
+  {id:'p11',name:'戦術A',res:'',start:'',deadline:'',status:'DONE',group:'',children:[]},
+  {id:'p12',name:'戦術B',res:'',start:'',deadline:'',status:'DONE',group:'',children:[]},
+  {id:'p14',name:'戦術C',res:'',start:'',deadline:'',status:'NOT_STARTED',group:'',children:[]},
+]}]},
+{id:'TMOD',name:'TMOD',kpis:[
+{id:'tm4',name:'各LCでのOff-JT実施数の年間平均 #2',target:2,actual:4,tasks:[
+  {id:'tm41',name:'EST Open前思考',res:'sohki',start:'2026-02-21',deadline:'2026-02-23',status:'WIP',group:'',children:[]},
+  {id:'tm42',name:'EST Open',res:'sohki',start:'2026-02-23',deadline:'2026-02-24',status:'NOT_STARTED',group:'',children:[]},
+  {id:'tm43',name:'EST選考',res:'sohki',start:'2026-02-24',deadline:'2026-03-09',status:'NOT_STARTED',group:'',children:[]},
+]},
+{id:'tm5',name:'Leader Mtg EB層参加 #40',target:40,actual:5,tasks:[
+  {id:'tm51',name:'Leader Mtg位置付け思考',res:'aoi',start:'2026-02-20',deadline:'2026-02-25',status:'WIP',group:'',children:[]},
+  {id:'tm52',name:'コンテンツ思考',res:'aoi',start:'2026-02-25',deadline:'2026-02-27',status:'NOT_STARTED',group:'',children:[]},
+]},
+]},
+{id:'BDF',name:'BDF',kpis:[{id:'b1',name:'KPI 1',target:2,actual:3,tasks:[
+  {id:'b11',name:'戦術A',res:'',start:'2026-02-14',deadline:'2026-02-25',status:'DONE',group:'',children:[]},
+  {id:'b12',name:'戦術B',res:'',start:'2026-02-05',deadline:'2026-02-17',status:'DONE',group:'',children:[]},
+  {id:'b13',name:'戦術C',res:'',start:'2026-03-01',deadline:'2026-04-30',status:'NOT_STARTED',group:'',children:[]},
+]}]},
+{id:'BnM',name:'BnM',kpis:[{id:'bn1',name:'KPI 1',target:5,actual:3,tasks:[
+  {id:'bn11',name:'戦術A',res:'',start:'2026-02-01',deadline:'2026-03-31',status:'DONE',group:'',children:[]},
+  {id:'bn12',name:'戦術B',res:'',start:'2026-03-01',deadline:'2026-05-31',status:'DONE',group:'',children:[]},
+  {id:'bn13',name:'戦術C',res:'',start:'2026-04-01',deadline:'2026-07-31',status:'NOT_STARTED',group:'',children:[]},
+]}]},
+{id:'LG',name:'LG',kpis:[{id:'lg1',name:'KPI 1',target:5,actual:3,tasks:[
+  {id:'lg11',name:'戦術A',res:'',start:'2026-02-01',deadline:'2026-03-31',status:'DONE',group:'',children:[]},
+  {id:'lg12',name:'戦術B',res:'',start:'2026-03-01',deadline:'2026-05-31',status:'DONE',group:'',children:[]},
+]}]},
+{id:'OPS',name:'OPS',kpis:[{id:'op1',name:'KPI 1',target:5,actual:3,tasks:[
+  {id:'op11',name:'戦術A',res:'',start:'2026-02-01',deadline:'2026-03-31',status:'DONE',group:'',children:[]},
+  {id:'op12',name:'戦術B',res:'',start:'2026-03-01',deadline:'2026-05-31',status:'DONE',group:'',children:[]},
+]}]},
+{id:'GS',name:'GS',kpis:[{id:'gs1',name:'KPI 1',target:5,actual:3,tasks:[
+  {id:'gs11',name:'戦術A',res:'',start:'2026-02-01',deadline:'2026-03-31',status:'DONE',group:'',children:[]},
+  {id:'gs12',name:'戦術B',res:'',start:'2026-02-04',deadline:'2026-02-25',status:'WIP',group:'',children:[]},
+]}]},
+],freeProjects:[]};
+
+let MC_D, mc_view='dashboard', mc_aid=null, mc_fpid=null, mc_fil='ALL', mc_gfil='ALL', mc_editing=null, mc_editingKpi=null, mc_editingProj=null, mc_editingFT=null;
+let MC__areaTabs={}; // aId -> 'wbs' | 'weekly'
+
+function mc_load(){
+  // Try localStorage first
+  try{const s=localStorage.getItem(MC_SK);if(s){MC_D=JSON.parse(s);mc_migrate();}}catch(e){}
+  if(!MC_D) MC_D=JSON.parse(JSON.stringify(MC_SEED));
+  // Then load from Firestore
+  if(window._mcLoad){
+    window._mcLoad().then(data=>{
+      if(data){ MC_D=data; mc_migrate(); try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){} }
+      mc_buildNav();
+      mc_sw(mc_view||'dashboard', null);
+      // Subscribe to live updates
+      if(window._mcSubscribe && !mc__syncUnsub){
+        mc__syncUnsub = window._mcSubscribe(data=>{
+          if(MC__saving) return;
+          MC_D=data; mc_migrate();
+          try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){}
+          mc_buildNav();
+          if(mc_view==='dashboard') mc_rDash();
+          else if(mc_view==='gantt') mc_rGantt();
+          else if(mc_aid) mc_rArea(mc_aid);
+          else if(mc_fpid) mc_rFreeProject(mc_fpid);
+        });
+      }
+    });
+  } else {
+    mc_buildNav();
+    mc_sw(mc_view||'dashboard', null);
+  }
+}
+function mc_migrate(){
+  if(!MC_D.freeProjects)MC_D.freeProjects=[];
+  MC_D.areas.forEach(a=>{
+    if(!a.weekTodos)a.weekTodos=[];
+    a.kpis.forEach(k=>k.tasks.forEach(t=>{
+      if(!t.group)t.group='';
+      if(!t.children)t.children=[];
+      if(!('priority' in t))t.priority='';
+      if(!('sup' in t))t.sup='';
+      t.children.forEach(ch=>{if(!('priority' in ch))ch.priority='';if(!('sup' in ch))ch.sup='';});
+    }));
+  });
+  MC_D.freeProjects.forEach(p=>{
+    if(!p.tasks)p.tasks=[];
+    if(!('areaId' in p))p.areaId=null;
+    p.tasks.forEach(t=>{if(!t.group)t.group='';if(!('priority' in t))t.priority='';if(!('sup' in t))t.sup='';});
+  });
+}
+
+// ── SYNC ──
+const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
+let MC__saving=false,MC__saveTimer=null,MC__syncUnsub=null;
+
+function mc_setSyncDot(state){
+  const d=document.getElementById('mc-sync-dot');
+  if(d)d.className='mc-sync-dot'+(state?' '+state:'');
+}
+
+function mc_save(){
+  try{localStorage.setItem(MC_SK,JSON.stringify(MC_D));}catch(e){}
+  if(!window._mcSave) return;
+  clearTimeout(mc__saveTimer);
+  mc_setSyncDot('syncing');
+  mc__saveTimer=setTimeout(async()=>{
+    MC__saving=true;
+    try{
+      await window._mcSave(MC_D);
+      mc_setSyncDot('ok');
+      setTimeout(()=>mc_setSyncDot(''),3000);
+    }catch(e){
+      console.error('MC save error',e);
+      mc_setSyncDot('err');
+    }
+    setTimeout(()=>{MC__saving=false;},600);
+  },800);
+}
+
+// mc_initSync removed - handled by mc_load
+
+// mc_gid removed - using shared gid(){return 'x'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
+function h(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+// function fd(s){if(!s)return'—';const d=new Date(s);if(isNaN(d))return s;return(d.getMonth()+1)+'/'+(d.getDate());}
+// function isOver(dl){if(!dl)return false;const d=new Date(dl);return !isNaN(d)&&d<new Date();}
+// function sl(s){return s==='DONE'?'Done':s==='WIP'?'WIP':'Not Started';}
+// function sc(s){return s==='DONE'?'done':s==='WIP'?'wip':'ns';}
+function mc_si(s){return s==='DONE'?'✓':s==='WIP'?'◑':'';}
+function mc_priLabel(p){return p==='high'?'高':p==='medium'?'中':p==='low'?'低':'';}
+function mc_priHtml(p){if(!p)return'';return`<span class="pri ${p}">${mc_priLabel(p)}</span>`;}
+
+let MC__ccache={};
+async function loadCommentCounts(taskIds){
+  if(!db||!taskIds.length)return;
+  for(const tid of taskIds){
+    try{const snap=await window._mcDb.collection('comments').where('taskId','==',tid).get();MC__ccache[tid]=snap.size;}
+    catch(e){MC__ccache[tid]=0;}
+  }
+}
+function mc_ccBadge(tid){
+  const n=MC__ccache[tid]||0;
+  return `<button class="cp-count" onclick="mc_openComments('${tid}',event)">${n>0?n+' コメント':'コメント'}</button>`;
+}
+function mc_taskStats(t){
+  let d=0,w=0,n=0,tot=0;
+  function count(x){tot++;if(x.status==='DONE')d++;else if(x.status==='WIP')w++;else n++;(x.children||[]).forEach(c=>count(c));}
+  count(t);return{done:d,wip:w,ns:n,total:tot};
+}
+function mc_aStats(area){
+  let d=0,w=0,n=0,t=0;
+  area.kpis.forEach(k=>k.tasks.forEach(task=>{const s=mc_taskStats(task);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;}));
+  MC_D.freeProjects.filter(p=>p.areaId===area.id).forEach(p=>{const s=mc_pStats(p);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
+  return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
+}
+function mc_pStats(proj){
+  let d=0,w=0,n=0,t=proj.tasks.length;
+  proj.tasks.forEach(task=>{if(task.status==='DONE')d++;else if(task.status==='WIP')w++;else n++;});
+  return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
+}
+function mc_totals(){
+  let d=0,w=0,n=0,t=0;
+  MC_D.areas.forEach(a=>{const s=mc_aStats(a);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
+  MC_D.freeProjects.filter(p=>!p.areaId).forEach(p=>{const s=mc_pStats(p);d+=s.done;w+=s.wip;n+=s.ns;t+=s.total;});
+  return{done:d,wip:w,ns:n,total:t,pct:t?Math.round(d/t*100):0};
+}
+
+// ── NAV ──
+function mc_buildNav(){
+  document.getElementById('mc-anav').innerHTML=MC_D.areas.map(a=>{
+    const s=mc_aStats(a);const c=MC_COLORS[a.id]||'#52565E';
+    return `<div class="nav-item" data-mc_view="area-${a.id}" onclick="mc_sw('area-${a.id}',this)">
+      <div class="ndot" style="background:${c}"></div>${a.name}<span class="nb">${s.pct}%</span>
+    </div>`;
+  }).join('');
+  document.getElementById('fpnav').innerHTML=MC_D.freeProjects.filter(p=>!p.areaId).map(p=>{
+    const s=mc_pStats(p);
+    return `<div class="nav-item" data-mc_view="mc-fp-${p.id}" onclick="mc_sw('mc-fp-${p.id}',this)">
+      <div class="ndot" style="background:${p.color||'#037EF3'}"></div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(p.name)}</span>
+      <span class="nb">${s.pct}%</span>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const active=n.dataset.mc_view===mc_view;
+    n.classList.toggle('active',active);
+    if(active&&n.dataset.view.startsWith('area-'))
+      n.style.borderLeftColor=MC_COLORS[n.dataset.view.replace('area-','')]||'#fff';
+    else if(active&&n.dataset.view.startsWith('mc-fp-')){
+      const p=MC_D.freeProjects.find(x=>x.id===n.dataset.view.replace('mc-fp-',''));
+      n.style.borderLeftColor=p?.color||'#037EF3';
+    } else n.style.borderLeftColor='transparent';
+  });
+}
+
+function mc_sw(v,el){
+  mc_view=v;window._mcView_current=v;mc_aid=null;mc_fpid=null;mc_fil='ALL';
+  mc_buildNav();
+  const kpiBtn=document.getElementById('mc-addkpibtn');
+  const addBtn=document.getElementById('mc-addbtn');
+  const ptBtn=document.getElementById('mc-addprojtaskbtn');
+  kpiBtn.style.display='none';addBtn.style.display='none';ptBtn.style.display='none';
+  if(v==='dashboard'){
+    document.getElementById('mc-ptitle').textContent='DASHBOARD';
+    document.getElementById('mc-psub').textContent='';
+    mc_rDash();
+  } else if(v==='gantt'){
+    document.getElementById('mc-ptitle').textContent='GANTT';
+    document.getElementById('mc-psub').textContent='Feb → Sep 2026';
+    mc_rGantt();
+  } else if(v.startsWith('area-')){
+    mc_aid=v.replace('area-','');
+    const a=MC_D.areas.find(x=>x.id===mc_aid);
+    document.getElementById('mc-ptitle').textContent=a.name;
+    document.getElementById('mc-psub').textContent='AREA · '+a.kpis.length+' KPIs';
+    addBtn.style.display='';kpiBtn.style.display='';
+    mc_rArea(mc_aid);
+  } else if(v.startsWith('mc-fp-')){
+    mc_fpid=v.replace('mc-fp-','');
+    const p=MC_D.freeProjects.find(x=>x.id===mc_fpid);
+    if(!p)return;
+    document.getElementById('mc-ptitle').textContent=p.name;
+    document.getElementById('mc-psub').textContent='PROJECT';
+    ptBtn.style.display='';
+    mc_rFreeProject(mc_fpid);
+  }
+}
+
+// ── DEADLINE BANNER ──
+let MC__bannerDismissed=false;
+function mc_deadlineBanner(){
+  if(MC__bannerDismissed)return'';
+  const today=new Date(),soon=new Date();soon.setDate(today.getDate()+3);
+  const byArea={};
+  MC_D.areas.forEach(a=>{
+    a.kpis.forEach(k=>k.tasks.forEach(t=>{
+      if(!t.deadline||t.status==='DONE')return;
+      const d=new Date(t.deadline);
+      if(!isNaN(d)&&d<=soon){
+        if(!byArea[a.id])byArea[a.id]={areaId:a.id,fpId:null,items:[]};
+        byArea[a.id].items.push({name:t.name,deadline:t.deadline,over:d<today});
+      }
+    }));
+  });
+  MC_D.freeProjects.forEach(p=>p.tasks.forEach(t=>{
+    if(!t.deadline||t.status==='DONE')return;
+    const d=new Date(t.deadline);
+    if(!isNaN(d)&&d<=soon){
+      const key='mc-fp-'+p.id;
+      if(!byArea[key])byArea[key]={areaId:p.areaId||null,fpId:p.id,items:[]};
+      byArea[key].items.push({name:t.name,deadline:t.deadline,over:d<today});
+    }
+  }));
+  if(!Object.keys(byArea).length)return'';
+  const total=Object.values(byArea).reduce((s,g)=>s+g.items.length,0);
+  const groups=Object.values(byArea).map(g=>{
+    g.items.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+    const nav=g.fpId?`mc_sw('mc-fp-${g.fpId}',null)`:g.areaId?`mc_sw('area-${g.areaId}',null)`:'';
+    const label=g.fpId?(MC_D.freeProjects.find(p=>p.id===g.fpId)?.name||g.fpId):g.areaId;
+    const show=[...g.items].sort((a,b)=>a.name.localeCompare(b.name,'ja')).slice(0,3);
+    const rest=g.items.length-3;
+    const badges=show.map(it=>`<button class="dl-banner-item${it.over?' over':''}" onclick="${nav}" title="${h(it.deadline)}">${h(it.name.slice(0,18))} · ${fd(it.deadline)}</button>`).join('');
+    const more=rest>0?`<button class="dl-banner-more" onclick="${nav}">${label} の残り ${rest}件 →</button>`:'';
+    return `<div class="dl-banner-group">
+      <div class="dl-banner-area-label">${h(label)}</div>
+      <div class="dl-banner-items">${badges}${more}</div>
+    </div>`;
+  }).join('');
+  return `<div class="dl-banner" id="dl-banner">
+    <div class="dl-banner-icon">!</div>
+    <div class="dl-banner-body">
+      <div class="dl-banner-title">直近3日以内の締め切り (${total}件)</div>
+      ${groups}
+    </div>
+    <button class="dl-banner-close" onclick="document.getElementById('dl-banner').remove();MC__bannerDismissed=true">×</button>
+  </div>`;
+}
+
+// ── DASHBOARD ──
+async function mc_rDash(){
+  const s=mc_totals();
+  const today=new Date(),soon=new Date();soon.setDate(today.getDate()+7);
+  let up=[];
+  MC_D.areas.forEach(a=>a.kpis.forEach(k=>k.tasks.forEach(t=>{
+    if(t.deadline&&t.status!=='DONE'){const d=new Date(t.deadline);if(!isNaN(d)&&d<=soon)up.push({...t,_a:a.id,_d:d});}
+  })));
+  MC_D.freeProjects.forEach(p=>p.tasks.forEach(t=>{
+    if(t.deadline&&t.status!=='DONE'){const d=new Date(t.deadline);if(!isNaN(d)&&d<=soon)up.push({...t,_a:p.name,_aColor:p.color,_d:d});}
+  }));
+  up.sort((a,b)=>a._d-b._d);
+  const arows=MC_D.areas.map(a=>{
+    const st=mc_aStats(a);const c=MC_COLORS[a.id]||'#52565E';
+    return `<tr onclick="mc_sw('area-${a.id}',null)">
+      <td><span class="an" style="color:${c}">${a.id}</span></td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${a.kpis.length}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--dim)">${st.total}</td>
+      <td><div class="prog-wrap"><div class="prog-track"><div class="prog-fill" style="width:${st.pct}%;background:${c}"></div></div><span class="prog-n" style="color:${c}">${st.pct}%</span></div></td>
+      <td class="bdn"><span class="gn">✓ ${st.done}</span><span style="margin-left:8px" class="an2">◑ ${st.wip}</span><span style="margin-left:8px;color:var(--faint)">${st.ns}</span></td>
+    </tr>`;
+  }).join('');
+  const globalProjects=MC_D.freeProjects.filter(p=>!p.areaId);
+  const fpCards=globalProjects.length?`
+    <div class="section-row">
+      <div class="section-label" style="margin-bottom:0">自由タスク・プロジェクト（グローバル）</div>
+      <button class="btn btn-sm" onclick="mc_openAddProject()">+ プロジェクト追加</button>
+    </div>
+    <div class="mc-fp-grid" style="margin-top:10px">${globalProjects.map(p=>{
+      const ps=mc_pStats(p);
+      return `<div class="mc-fp-card" onclick="mc_sw('mc-fp-${p.id}',null)">
+        <div class="mc-fp-card-stripe" style="background:${p.color||'#037EF3'}"></div>
+        <div class="mc-fp-card-name">${h(p.name)}</div>
+        ${p.desc?`<div class="mc-fp-card-desc">${h(p.desc)}</div>`:''}
+        <div class="mc-fp-card-stats">
+          <span class="mc-fp-card-pct" style="color:${p.color||'#037EF3'}">${ps.pct}%</span>
+          <div class="mc-fp-card-bar"><div class="mc-fp-card-bar-f" style="width:${ps.pct}%;background:${p.color||'#037EF3'}"></div></div>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--dim)">${ps.done}/${ps.total}</span>
+        </div>
+      </div>`;
+    }).join('')}</div>`:`
+    <div class="section-row">
+      <div class="section-label" style="margin-bottom:0">自由タスク・プロジェクト（グローバル）</div>
+      <button class="btn btn-sm" onclick="mc_openAddProject()">+ プロジェクト追加</button>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:24px;text-align:center;margin-top:10px;margin-bottom:24px">
+      <div style="font-size:12px;color:var(--faint);margin-bottom:8px">KPIに紐づかないタスクやプロジェクトをここで管理できます</div>
+      <button class="btn btn-fill" onclick="mc_openAddProject()">+ 最初のプロジェクトを作成</button>
+    </div>`;
+  const dcards=up.slice(0,9).map(t=>{
+    const o=t._d<today;const c=t._aColor||MC_COLORS[t._a]||'#52565E';
+    return `<div class="dl-card">
+      <div class="dl-area" style="color:${c}">${h(t._a)}</div>
+      <div class="dl-task">${h(t.name)}</div>
+      <div class="dl-foot"><span class="chip ${sc(t.status)}">${mc_si(t.status)} ${sl(t.status)}</span><span class="dl-date ${o?'ov':''}">${fd(t.deadline)}${o?' ！':''}</span></div>
+    </div>`;
+  }).join('')||'<div style="padding:16px;font-size:11px;color:var(--faint);background:var(--white)">直近の締め切りなし ✓</div>';
+  document.getElementById('mc-ct').innerHTML=`
+    <div class="dash-hero">
+      <div><div class="dh-title">MC<br>ACTION<br><span>TRACKER</span></div><div class="dh-sub">2627 · Feb → Sep</div></div>
+      <div class="dh-right"><div class="dh-pct-lbl">Overall Progress</div><div class="dh-pct">${s.pct}%</div><div class="dh-total">${s.done} / ${s.total} tasks · ${MC_D.areas.length} areas · ${MC_D.freeProjects.length} PJTs</div></div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-l">完了 Done</div><div class="stat-n g">${s.done}</div></div>
+      <div class="stat-card"><div class="stat-l">進行中 WIP</div><div class="stat-n a">${s.wip}</div></div>
+      <div class="stat-card"><div class="stat-l">未着手 Not Started</div><div class="stat-n d">${s.ns}</div></div>
+    </div>
+    ${fpCards}
+    ${mc_deadlineBanner()}
+    <div class="section-label">エリア別進捗</div>
+    <table class="area-tbl">
+      <thead><tr><th>Area</th><th>KPIs</th><th>Tasks</th><th>Progress</th><th>Breakdown</th></tr></thead>
+      <tbody>${arows}</tbody>
+    </table>
+    <div class="section-label">直近7日の締め切り — ${up.length}件</div>
+    <div class="up-grid"><div class="up-head">Upcoming Deadlines</div>${dcards}</div>`;
+}
+
+// ── AREA VIEW ──
+function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
+  const over=isOver(t.deadline)&&t.status!=='DONE';
+  const hasSub=(t.children||[]).length>0;
+  const subToggle=hasSub?`<button class="sub-toggle" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)">›</button>`:'<span style="display:inline-block;width:14px"></span>';
+  return `<tr class="tr" id="row-${t.id}" draggable="true"
+    data-dtype="kpi" data-scope="${aId}" data-kid="${kId}" data-tid="${t.id}"
+    ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)"
+    ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+    ${grpHtml}
+    <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${subToggle}${mc_priHtml(t.priority)}<span>${h(t.name)}</span></div></td>
+    <td class="tres">${h(t.res||'—')}</td>
+    <td class="tsup">${h(t.sup||'')}</td>
+    <td class="tdt">${fd(t.start)}</td>
+    <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
+    <td><span class="chip ${sc(t.status)}" onclick="${onCyc}">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span></td>
+    <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="${onEdit}">+ メモ</span>`}</td>
+    <td>${mc_ccBadge(t.id)}</td>
+    <td class="tby">${h(t._by||'')}</td>
+    <td><div class="ta"><button class="ib" onclick="${onEdit}">編集</button><button class="ib" onclick="mc_dupTask('${aId}','${kId}','${t.id}',event)">複製</button><button class="ib del" onclick="${onDel}">削除</button>${hasSub?'':`<button class="ib" onclick="mc_addSubTask('${aId}','${kId}','${t.id}',event)">+ サブ</button>`}</div></td>
+  </tr>`;
+}
+
+function mc_subRows(t,aId,kId,c){
+  if(!(t.children||[]).length)return'';
+  let html=`<tr id="sub-container-${t.id}" style="display:none"><td colspan="10" style="padding:0">`;
+  html+=`<table style="width:100%;border-collapse:collapse">`;
+  t.children.forEach(ch=>{
+    const over=isOver(ch.deadline)&&ch.status!=='DONE';
+    html+=`<tr class="tr sub-row" id="row-${ch.id}">
+      <td class="tn sub-indent">${mc_priHtml(ch.priority)}<span>${h(ch.name)}</span></td>
+      <td class="tres">${h(ch.res||'—')}</td>
+      <td class="tsup">${h(ch.sup||'')}</td>
+      <td class="tdt">${fd(ch.start)}</td>
+      <td class="tdt${over?' ov':''}">${fd(ch.deadline)}${over?' ！':''}</td>
+      <td><span class="chip ${sc(ch.status)}" onclick="mc_cycSub('${aId}','${kId}','${t.id}','${ch.id}',event)">${mc_si(ch.status)?mc_si(ch.status)+' ':''}${sl(ch.status)}</span></td>
+      <td class="tnote">${ch.note?h(ch.note).replace(/\n/g,'<br>'):''}</td>
+      <td>${mc_ccBadge(ch.id)}</td>
+      <td class="tby">${h(ch._by||'')}</td>
+      <td><div class="ta"><button class="ib" onclick="mc_openEditSub('${aId}','${kId}','${t.id}','${ch.id}')">編集</button><button class="ib del" onclick="mc_delSub('${aId}','${kId}','${t.id}','${ch.id}')">削除</button></div></td>
+    </tr>`;
+  });
+  html+=`</table></td></tr>`;
+  return html;
+}
+
+function mc_rArea(id){
+  const area=MC_D.areas.find(a=>a.id===id);if(!area)return;
+  const c=MC_COLORS[id]||'#52565E';
+  const tab=MC__areaTabs[id]||'wbs';
+  const tabBar=`<div class="area-tabs">
+    <button class="area-tab${tab==='wbs'?' active':''}" onclick="MC__areaTabs['${id}']='wbs';mc_rArea('${id}')">WBS / KPI</button>
+    <button class="area-tab${tab==='weekly'?' active':''}" onclick="MC__areaTabs['${id}']='weekly';mc_rArea('${id}')">週次 Todo</button>
+  </div>`;
+  if(tab==='weekly'){
+    document.getElementById('mc-ct').innerHTML=tabBar+mc_rWeekTodo(id,c);
+    return;
+  }
+  // ── WBS tab ──
+  const s=mc_aStats(area);
+  const q=document.getElementById('mc_si').value.toLowerCase();
+  const fbar=`<div class="fbar">
+    <span class="fl">Filter</span>
+    <button class="fb ${mc_fil==='ALL'?'active':''}" onclick="mc_setF('ALL')">All (${s.total})</button>
+    <button class="fb ${mc_fil==='DONE'?'active':''}" onclick="mc_setF('DONE')">Done (${s.done})</button>
+    <button class="fb ${mc_fil==='WIP'?'active':''}" onclick="mc_setF('WIP')">WIP (${s.wip})</button>
+    <button class="fb ${mc_fil==='NOT_STARTED'?'active':''}" onclick="mc_setF('NOT_STARTED')">Not Started (${s.ns})</button>
+    <div class="fr" style="color:${c}">${s.done}/${s.total}</div>
+  </div>`;
+  const kpis=area.kpis.map((k,i)=>{
+    let dn=0,tot2=0;k.tasks.forEach(t=>{const ts=mc_taskStats(t);dn+=ts.done;tot2+=ts.total;});
+    const pct=tot2?Math.round(dn/tot2*100):0;
+    let tasks=k.tasks.filter(t=>{
+      if(mc_fil!=='ALL'&&t.status!==mc_fil)return false;
+      if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q))return false;
+      return true;
+    });
+    let rows='';let i2=0;
+    while(i2<tasks.length){
+      const t=tasks[i2];const grp=t.group||'';
+      let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
+      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}','${h(grp)}',event)">大タスク複製</button></div>`:''}</td>`;
+      rows+=mc_taskRow(t,area.id,k.id,grpHtml,span,c,
+        `mc_cycTask('${area.id}','${k.id}','${t.id}',event)`,
+        `mc_openEdit('${area.id}','${k.id}','${t.id}')`,
+        `mc_delT('${area.id}','${k.id}','${t.id}')`
+      );
+      rows+=mc_subRows(t,area.id,k.id,c);
+      for(let j=1;j<span;j++){
+        const tj=tasks[i2+j];
+        rows+=mc_taskRow(tj,area.id,k.id,'',1,c,
+          `mc_cycTask('${area.id}','${k.id}','${tj.id}',event)`,
+          `mc_openEdit('${area.id}','${k.id}','${tj.id}')`,
+          `mc_delT('${area.id}','${k.id}','${tj.id}')`
+        );
+        rows+=mc_subRows(tj,area.id,k.id,c);
+      }
+      i2+=span;
+    }
+    return `<div class="kpi-block">
+      <div class="kpi-head" onclick="mc_togK('${k.id}')">
+        <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
+        <div class="kpi-info"><div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div><div class="kpi-ttl">${h(k.name)}</div>${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}</div>
+        <div class="kpi-r"><div class="kpi-pct" style="color:${c}">${pct}%</div><div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div><div class="kpi-cnt">${dn}/${tot2} done</div></div>
+        <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0"><button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();mc_openEditKpi('${area.id}','${k.id}')">編集</button></div>
+        <div class="kpi-chev open" id="cv-${k.id}">›</div>
+      </div>
+      <div class="kpi-body open" id="kb-${k.id}">
+        <table class="tt">
+          <thead><tr><th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>sup</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:140px">備考</th><th style="width:80px">コメント</th><th>記入者</th><th></th></tr></thead>
+          <tbody id="tb-${k.id}">${rows}</tbody>
+          <tfoot><tr class="add-r"><td colspan="11"><button class="add-btn" onclick="mc_openAdd('${area.id}','${k.id}')">+ タスクを追加...</button></td></tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('mc-ct').innerHTML=tabBar+fbar+kpis+`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="mc_openAddKpi('${area.id}')">+ KPI を追加...</button></div>`+mc_renderAreaProjects(area.id,c);
+  const allTids=[];
+  area.kpis.forEach(k=>k.tasks.forEach(t=>{allTids.push(t.id);(t.children||[]).forEach(c=>allTids.push(c.id));}));
+  if(allTids.length)loadCommentCounts(allTids).then(()=>{
+    allTids.forEach(tid=>{document.querySelectorAll('.cp-count').forEach(el=>{if(el.getAttribute('onclick')?.includes(tid)){const n=MC__ccache[tid]||0;el.textContent=n>0?n+' コメント':'コメント';}});});
+  });
+}
+
+function mc_renderAreaProjects(areaId,areaColor){
+  const projs=MC_D.freeProjects.filter(p=>p.areaId===areaId);
+  const c=areaColor||MC_COLORS[areaId]||'#037EF3';
+  const cards=projs.map(p=>{
+    const ps=mc_pStats(p);
+    const q=document.getElementById('mc_si').value.toLowerCase();
+    let rows='';let i2=0;
+    const tasks=p.tasks.filter(t=>{
+      if(mc_fil!=='ALL'&&t.status!==mc_fil)return false;
+      if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q))return false;
+      return true;
+    });
+    while(i2<tasks.length){
+      const t=tasks[i2];const grp=t.group||'';
+      let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
+      const over=isOver(t.deadline)&&t.status!=='DONE';
+      const apGrpCell=grp
+        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}','${h(grp)}',event)">大タスク複製</button></div></td>`
+        :`<td class="group-cell empty" rowspan="${span}"></td>`;
+      rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+        ${apGrpCell}
+        <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
+        <td class="tdt">${fd(t.start)}</td>
+        <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
+        <td><span class="chip ${sc(t.status)}" onclick="mc_cycFT('${p.id}','${t.id}',event)">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span></td>
+        <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${p.id}','${t.id}')">+ メモ</span>`}</td>
+        <td class="tby">${h(t._by||'')}</td>
+        <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button></div></td>
+      </tr>`;
+      for(let j=1;j<span;j++){
+        const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
+        rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+          <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
+          <td class="tdt">${fd(tj.start)}</td>
+          <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
+          <td><span class="chip ${sc(tj.status)}" onclick="mc_cycFT('${p.id}','${tj.id}',event)">${mc_si(tj.status)?mc_si(tj.status)+' ':''}${sl(tj.status)}</span></td>
+          <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${p.id}','${tj.id}')">+ メモ</span>`}</td>
+          <td class="tby">${h(tj._by||'')}</td>
+          <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${tj.id}')">削除</button></div></td>
+        </tr>`;
+      }
+      i2+=span;
+    }
+    const emptyRow=tasks.length?'':`<tr><td colspan="10" style="padding:16px;text-align:center;font-size:11px;color:var(--faint)">タスクなし。追加してください。</td></tr>`;
+    return `<div class="kpi-block" style="margin-top:12px">
+      <div class="kpi-head" onclick="mc_togK('ap-${p.id}')">
+        <div class="kpi-idx" style="color:${p.color||c};font-size:22px;width:64px">PJT</div>
+        <div class="kpi-info">
+          <div class="kpi-lbl">エリア内プロジェクト</div>
+          <div class="kpi-ttl">${h(p.name)}</div>
+          ${p.desc?`<div class="kpi-target">${h(p.desc)}</div>`:''}
+        </div>
+        <div class="kpi-r">
+          <div class="kpi-pct" style="color:${p.color||c}">${ps.pct}%</div>
+          <div class="kpi-bar"><div class="kpi-bar-f" style="width:${ps.pct}%;background:${p.color||c}"></div></div>
+          <div class="kpi-cnt">${ps.done}/${ps.total} done</div>
+        </div>
+        <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
+          <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();mc_openEditProject('${p.id}')">編集</button>
+        </div>
+        <div class="kpi-chev open" id="cv-ap-${p.id}">›</div>
+      </div>
+      <div class="kpi-body open" id="kb-ap-${p.id}">
+        <table class="tt">
+          <thead><tr><th style="width:100px">グループ</th><th>タスク名</th><th>担当者</th><th>sup</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th>記入者</th><th></th></tr></thead>
+          <tbody>${rows}${emptyRow}</tbody>
+          <tfoot><tr class="add-r"><td colspan="10"><button class="add-btn" onclick="mc_openAddFreeTaskInArea('${p.id}')">+ タスクを追加...</button></td></tr></tfoot>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="section-label" style="margin-bottom:0">エリア内プロジェクト</div>
+      <button class="btn btn-sm" onclick="mc_openAddProject('${areaId}')">+ プロジェクト追加</button>
+    </div>
+    ${cards||`<div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:20px;text-align:center;font-size:11px;color:var(--faint)">
+      このエリアにプロジェクトはまだありません<br>
+      <button class="btn btn-fill" style="margin-top:10px;font-size:10px" onclick="mc_openAddProject('${areaId}')">+ プロジェクトを追加</button>
+    </div>`}
+  </div>`;
+}
+
+// ── mc_togK (1回のみ定義) ──
+function mc_togK(id){
+  const kbId=id.startsWith('ap-')?'kb-ap-'+id.replace('ap-',''):'kb-'+id;
+  const cvId=id.startsWith('ap-')?'cv-ap-'+id.replace('ap-',''):'cv-'+id;
+  document.getElementById(kbId)?.classList.toggle('open');
+  const cv=document.getElementById(cvId);
+  if(cv)cv.classList.toggle('open');
+}
+
+function mc_rFreeProject(id){
+  const proj=MC_D.freeProjects.find(p=>p.id===id);if(!proj)return;
+  const s=mc_pStats(proj);const c=proj.color||'#037EF3';
+  const q=document.getElementById('mc_si').value.toLowerCase();
+  const tasks=proj.tasks.filter(t=>{
+    if(mc_fil!=='ALL'&&t.status!==mc_fil)return false;
+    if(q&&!t.name.toLowerCase().includes(q)&&!(t.res||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  const fbar=`<div class="fbar">
+    <span class="fl">Filter</span>
+    <button class="fb ${mc_fil==='ALL'?'active':''}" onclick="mc_setF('ALL')">All (${s.total})</button>
+    <button class="fb ${mc_fil==='DONE'?'active':''}" onclick="mc_setF('DONE')">Done (${s.done})</button>
+    <button class="fb ${mc_fil==='WIP'?'active':''}" onclick="mc_setF('WIP')">WIP (${s.wip})</button>
+    <button class="fb ${mc_fil==='NOT_STARTED'?'active':''}" onclick="mc_setF('NOT_STARTED')">Not Started (${s.ns})</button>
+    <div class="fr" style="color:${c}">${s.done}/${s.total}</div>
+    <button class="btn btn-sm" style="margin-left:8px" onclick="mc_openEditProject('${proj.id}')">⚙ 編集</button>
+  </div>`;
+  let rows='';let i2=0;
+  while(i2<tasks.length){
+    const t=tasks[i2];const grp=t.group||'';
+    let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
+    const over=isOver(t.deadline)&&t.status!=='DONE';
+    const grpCell=grp
+      ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}','${h(grp)}',event)">大タスク複製</button></div></td>`
+      :`<td class="group-cell empty" rowspan="${span}"></td>`;
+    rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+      ${grpCell}
+      <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
+      <td class="tdt">${fd(t.start)}</td>
+      <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
+      <td><span class="chip ${sc(t.status)}" onclick="mc_cycFT('${proj.id}','${t.id}',event)">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span></td>
+      <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${proj.id}','${t.id}')">+ メモ</span>`}</td>
+      <td class="tby">${h(t._by||'')}</td>
+      <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${proj.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${proj.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${proj.id}','${t.id}')">削除</button></div></td>
+    </tr>`;
+    for(let j=1;j<span;j++){
+      const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
+      rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+        <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
+        <td class="tdt">${fd(tj.start)}</td>
+        <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
+        <td><span class="chip ${sc(tj.status)}" onclick="mc_cycFT('${proj.id}','${tj.id}',event)">${mc_si(tj.status)?mc_si(tj.status)+' ':''}${sl(tj.status)}</span></td>
+        <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${proj.id}','${tj.id}')">+ メモ</span>`}</td>
+        <td class="tby">${h(tj._by||'')}</td>
+        <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${proj.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${proj.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${proj.id}','${tj.id}')">削除</button></div></td>
+      </tr>`;
+    }
+    i2+=span;
+  }
+  const emptyRow=tasks.length?'':`<tr><td colspan="10" style="padding:20px 16px;text-align:center;font-size:11px;color:var(--faint)">タスクがありません。「+ タスク追加」から追加してください。</td></tr>`;
+  document.getElementById('mc-ct').innerHTML=`
+    ${fbar}
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="background:${c};padding:16px 20px;display:flex;align-items:center;gap:16px">
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:.04em">${h(proj.name)}</div>
+          ${proj.desc?`<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:3px">${h(proj.desc)}</div>`:''}
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#fff">${s.pct}%</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.5)">${s.done}/${s.total} done</div>
+        </div>
+      </div>
+      <table class="tt">
+        <thead><tr><th style="width:100px">グループ</th><th>タスク名</th><th>担当者</th><th>sup</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th>記入者</th><th></th></tr></thead>
+        <tbody>${rows}${emptyRow}</tbody>
+        <tfoot><tr class="add-r"><td colspan="10"><button class="add-btn" onclick="mc_openAddFreeTask()">+ タスクを追加...</button></td></tr></tfoot>
+      </table>
+    </div>`;
+}
+
+// ── TASK ACTIONS ──
+function mc_cycTask(aId,kId,tId,e){
+  if(e)e.stopPropagation();
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  let t=k.tasks.find(x=>x.id===tId);
+  if(!t){for(const p of k.tasks){const c=(p.children||[]).find(x=>x.id===tId);if(c){t=c;break;}}}
+  if(!t)return;
+  const ord=['NOT_STARTED','WIP','DONE'];
+  t.status=ord[(ord.indexOf(t.status)+1)%3];
+  mc_save();mc_buildNav();
+  const row=document.getElementById('row-'+tId);
+  if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(mc_si(t.status)?mc_si(t.status)+' ':'')+sl(t.status);}
+  logAction('status',`「${t.name}」→ ${sl(t.status)}`);
+  toast(sl(t.status)+'に変更');
+}
+
+function mc_cycFT(pId,tId,e){
+  if(e)e.stopPropagation();
+  const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
+  const t=proj.tasks.find(x=>x.id===tId);if(!t)return;
+  const ord=['NOT_STARTED','WIP','DONE'];
+  t.status=ord[(ord.indexOf(t.status)+1)%3];
+  mc_save();mc_buildNav();
+  const row=document.getElementById('frow-'+tId);
+  if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(mc_si(t.status)?mc_si(t.status)+' ':'')+sl(t.status);}
+  logAction('status',`[${proj.name}] 「${t.name}」→ ${sl(t.status)}`);
+  toast(sl(t.status)+'に変更');
+}
+
+function mc_setF(s){mc_fil=s;if(mc_aid)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);}
+function mc_applyF(){if(mc_aid)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);else if(mc_view==='gantt')mc_rGantt();else mc_rDash();}
+
+// ── AREA TASK MODAL ──
+function mc_openAdd(aId,kId){
+  mc_editing=null;
+  document.getElementById('mc-mttl').textContent='タスク追加';
+  document.getElementById('task-del-btn').style.display='none';
+  ['fn','fr','fsup','fs2','mc_fd','fnote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mc-fg-input').value='';
+  document.getElementById('mc-fst').value='NOT_STARTED';
+  document.getElementById('fpri').value='';
+  mc_fillA(aId||mc_aid,kId);
+  document.getElementById('mc-ov').classList.add('open');
+  setTimeout(()=>document.getElementById('mc-fn').focus(),80);
+}
+function mc_openEdit(aId,kId,tId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  let t=k.tasks.find(x=>x.id===tId);
+  if(!t){for(const p of k.tasks){const c=(p.children||[]).find(x=>x.id===tId);if(c){t=c;break;}}}
+  if(!t)return;
+  mc_editing={aId,kId,tId};
+  document.getElementById('mc-mttl').textContent='タスク編集';
+  document.getElementById('task-del-btn').style.display='';
+  document.getElementById('mc-fn').value=t.name;
+  document.getElementById('mc-fg-input').value=t.group||'';
+  document.getElementById('mc-fnote').value=t.note||'';
+  document.getElementById('mc-fr').value=t.res||'';
+  document.getElementById('fsup').value=t.sup||'';
+  document.getElementById('mc-fs2').value=t.start||'';
+  document.getElementById('mc_fd').value=t.deadline||'';
+  document.getElementById('mc-fst').value=t.status;
+  document.getElementById('fpri').value=t.priority||'';
+  mc_fillA(aId,kId);
+  document.getElementById('mc-ov').classList.add('open');
+  setTimeout(()=>document.getElementById('mc-fn').focus(),80);
+}
+function mc_fillA(sa,sk){
+  const el=document.getElementById('mc-fa');
+  el.innerHTML=MC_D.areas.map(a=>`<option value="${a.id}"${a.id===sa?' selected':''}>${a.id}</option>`).join('');
+  mc_updK(sa,sk);
+}
+function mc_updK(fa,sk){
+  const id=fa||document.getElementById('mc-fa').value;
+  const a=MC_D.areas.find(x=>x.id===id);
+  document.getElementById('mc-fk').innerHTML=(a?a.kpis:[]).map(k=>`<option value="${k.id}"${k.id===sk?' selected':''}>${k.name.slice(0,40)}</option>`).join('');
+  const aId=document.getElementById('mc-fa').value,kId=document.getElementById('mc-fk').value;
+  const a2=MC_D.areas.find(x=>x.id===aId);const k=a2?.kpis.find(x=>x.id===kId);
+  const dl=document.getElementById('mc-fg-list');
+  if(dl&&k){const gs=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];dl.innerHTML=gs.map(g=>`<option value="${h(g)}">`).join('');}
+}
+function mc_closeM(){document.getElementById('mc-ov').classList.remove('open');mc_editing=null;}
+function mc_saveT(){
+  const name=document.getElementById('mc-fn').value.trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const obj={
+    name,group:(document.getElementById('mc-fg-input')?.value||'').trim(),
+    res:document.getElementById('mc-fr').value.trim(),
+    sup:document.getElementById('fsup').value.trim(),
+    start:document.getElementById('mc-fs2').value,deadline:document.getElementById('mc_fd').value,
+    status:document.getElementById('mc-fst').value,note:(document.getElementById('mc-fnote')?.value||'').trim(),
+    priority:document.getElementById('fpri').value||'',
+    _by:currentUser?.displayName||currentUser?.email||'',
+  };
+  if(mc_editing){
+    const{aId,kId,tId}=mc_editing;
+    const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+    const newAId=document.getElementById('mc-fa').value,newKId=document.getElementById('mc-fk').value;
+    if(aId!==newAId||kId!==newKId){
+      const ti=k.tasks.findIndex(x=>x.id===tId);
+      const[task]=k.tasks.splice(ti,1);
+      const na=MC_D.areas.find(x=>x.id===newAId),nk=na.kpis.find(x=>x.id===newKId);
+      nk.tasks.push({...task,...obj});
+    } else {
+      const ti=k.tasks.findIndex(x=>x.id===tId);
+      k.tasks[ti]={...k.tasks[ti],...obj};
+    }
+    logAction('edit',`「${name}」を更新`);toast('更新しました');
+  } else {
+    const aId=document.getElementById('mc-fa').value,kId=document.getElementById('mc-fk').value;
+    const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+    k.tasks.push({id:gid(),...obj,children:[]});
+    logAction('add',`「${name}」を${aId}/${kId}に追加`);toast('追加しました');
+  }
+  mc_save();mc_buildNav();mc_closeM();
+  if(mc_view==='dashboard')mc_rDash();else if(mc_view==='gantt')mc_rGantt();else if(mc_aid)mc_rArea(mc_aid);
+}
+function mc_delEditingTask(){
+  if(!mc_editing)return;
+  if(!confirm('削除しますか？'))return;
+  const{aId,kId,tId}=mc_editing;
+  mc_delT(aId,kId,tId,true);mc_closeM();
+}
+function mc_delT(aId,kId,tId,skipConfirm){
+  if(!skipConfirm&&!confirm('削除しますか？'))return;
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  k.tasks=k.tasks.filter(x=>x.id!==tId);
+  mc_save();mc_buildNav();
+  if(mc_view==='dashboard')mc_rDash();else if(mc_view==='gantt')mc_rGantt();else if(mc_aid)mc_rArea(mc_aid);
+  logAction('del',`「${t?.name||tId}」を削除`);toast('削除しました');
+}
+
+// ── SUBTASK ──
+function mc_togSub(tId,e){
+  if(e)e.stopPropagation();
+  const container=document.getElementById('sub-container-'+tId);
+  const tog=document.getElementById('stog-'+tId);
+  if(!container)return;
+  const open=container.style.display==='none'||container.style.display==='';
+  container.style.display=open?'':'none';
+  if(tog)tog.classList.toggle('open',open);
+}
+function mc_cycSub(aId,kId,tId,chId,e){
+  if(e)e.stopPropagation();
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);if(!t)return;
+  const ch=(t.children||[]).find(x=>x.id===chId);if(!ch)return;
+  const ord=['NOT_STARTED','WIP','DONE'];
+  ch.status=ord[(ord.indexOf(ch.status)+1)%3];
+  mc_save();mc_buildNav();
+  const row=document.getElementById('row-'+chId);
+  if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(ch.status)}`;chip.textContent=(mc_si(ch.status)?mc_si(ch.status)+' ':'')+sl(ch.status);}
+  logAction('status',`サブ「${ch.name}」→ ${sl(ch.status)}`);toast(sl(ch.status)+'に変更');
+}
+let MC__subModal=null;
+function mc_addSubTask(aId,kId,tId,e){
+  if(e)e.stopPropagation();
+  MC__subModal={aId,kId,tId,chId:null};
+  document.getElementById('mc-sub-mttl').textContent='サブタスク追加';
+  document.getElementById('sub-del-btn').style.display='none';
+  ['sub-fn','sub-res','sub-sup','sub-start','sub-deadline'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sub-pri').value='';
+  document.getElementById('sub-status').value='NOT_STARTED';
+  document.getElementById('mc-ov-sub').classList.add('open');
+  setTimeout(()=>document.getElementById('sub-fn').focus(),80);
+}
+function mc_openEditSub(aId,kId,tId,chId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);const ch=(t.children||[]).find(x=>x.id===chId);
+  if(!ch)return;
+  MC__subModal={aId,kId,tId,chId};
+  document.getElementById('mc-sub-mttl').textContent='サブタスク編集';
+  document.getElementById('sub-del-btn').style.display='';
+  document.getElementById('sub-fn').value=ch.name||'';
+  document.getElementById('sub-res').value=ch.res||'';
+  document.getElementById('sub-sup').value=ch.sup||'';
+  document.getElementById('sub-start').value=ch.start||'';
+  document.getElementById('sub-deadline').value=ch.deadline||'';
+  document.getElementById('sub-pri').value=ch.priority||'';
+  document.getElementById('sub-status').value=ch.status||'NOT_STARTED';
+  document.getElementById('mc-ov-sub').classList.add('open');
+  setTimeout(()=>document.getElementById('sub-fn').focus(),80);
+}
+function mc_closeMSub(){document.getElementById('mc-ov-sub').classList.remove('open');MC__subModal=null;}
+function mc_saveSub(){
+  if(!MC__subModal)return;
+  const name=document.getElementById('sub-fn').value.trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const obj={name,res:document.getElementById('sub-res').value.trim(),sup:document.getElementById('sub-sup').value.trim(),start:document.getElementById('sub-start').value,deadline:document.getElementById('sub-deadline').value,priority:document.getElementById('sub-pri').value||'',status:document.getElementById('sub-status').value,_by:currentUser?.displayName||currentUser?.email||''};
+  const{aId,kId,tId,chId}=MC__subModal;
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
+  if(!t.children)t.children=[];
+  if(chId){const i=t.children.findIndex(x=>x.id===chId);t.children[i]={...t.children[i],...obj};logAction('edit',`サブ「${name}」を更新`);toast('更新しました');}
+  else{t.children.push({id:gid(),...obj});logAction('add',`サブ「${name}」を追加`);toast('追加しました');}
+  mc_save();mc_buildNav();mc_closeMSub();if(mc_aid)mc_rArea(mc_aid);else mc_rDash();
+}
+function mc_delSub(aId,kId,tId,chId){
+  if(!confirm('削除しますか？'))return;
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
+  const ch=(t.children||[]).find(x=>x.id===chId);
+  t.children=t.children.filter(x=>x.id!==chId);
+  mc_save();mc_buildNav();mc_closeMSub();
+  logAction('del',`サブ「${ch?.name||chId}」を削除`);toast('削除しました');
+  if(mc_aid)mc_rArea(mc_aid);else mc_rDash();
+}
+
+// ── COMMENTS ──
+let MC__cpTaskId=null,mc__cpUnsub=null;
+function mc_openComments(tId,e){
+  if(e)e.stopPropagation();
+  MC__cpTaskId=tId;
+  let taskName='',taskArea='';
+  outer:for(const a of MC_D.areas){for(const k of a.kpis){for(const t of k.tasks){if(t.id===tId){taskName=t.name;taskArea=a.id;break outer;}for(const ch of(t.children||[])){if(ch.id===tId){taskName=ch.name;taskArea=a.id+' サブ';break outer;}}}}}
+  if(!taskName){for(const p of MC_D.freeProjects){for(const t of p.tasks){if(t.id===tId){taskName=t.name;taskArea=p.name;break;}}}}
+  document.getElementById('cp-task-name').textContent=taskName||tId;
+  document.getElementById('cp-task-area').textContent=taskArea;
+  document.getElementById('mc-cp-input').value='';
+  document.getElementById('cp').classList.add('open');
+  document.getElementById('cp-overlay').classList.add('open');
+  if(mc__cpUnsub)mc__cpUnsub();
+  if(db){
+    mc__cpUnsub=window._mcDb.collection('comments').where('taskId','==',tId).orderBy('ts','asc').onSnapshot(snap=>{
+      MC__ccache[tId]=snap.size;
+      const list=document.getElementById('mc-cp-list');
+      if(!snap.size){list.innerHTML='<div class="cp-empty">コメントはまだありません</div>';return;}
+      list.innerHTML=snap.docs.map(d=>{
+        const c=d.data();
+        const initials=(c.who||'?').split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+        return `<div class="cp-msg">
+          <div class="cp-avatar">${initials}</div>
+          <div class="cp-bubble">
+            <div class="cp-who">${h(c.who||'')}</div>
+            <div class="cp-text">${h(c.text||'').replace(/\n/g,'<br>')}</div>
+            <div class="cp-when">${c.ts?.toDate?new Date(c.ts.toDate()).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'...'}</div>
+          </div>
+        </div>`;
+      }).join('');
+      list.scrollTop=list.scrollHeight;
+    },err=>{console.error('comments listener',err);});
+  } else {
+    document.getElementById('mc-cp-list').innerHTML='<div class="cp-empty">Firestoreに接続されていません</div>';
+  }
+}
+function mc_closeComments(){
+  document.getElementById('cp').classList.remove('open');
+  document.getElementById('cp-overlay').classList.remove('open');
+  if(mc__cpUnsub){mc__cpUnsub();mc__cpUnsub=null;}
+  MC__cpTaskId=null;
+}
+async function postComment(){
+  const text=document.getElementById('mc-cp-input').value.trim();
+  if(!text||!MC__cpTaskId)return;
+  if(!window._mcDb){toast('Firestoreに接続されていません','err');return;}
+  if(!currentUser){toast('ログインが必要です','err');return;}
+  document.getElementById('mc-cp-input').value='';
+  try{
+    await window._mcDb.collection('comments').add({
+      taskId:MC__cpTaskId,text,
+      who:(window._mcCurrentUser?.displayName||"")||(window._mcCurrentUser?.email||"")||'Unknown',
+      email:(window._mcCurrentUser?.email||"")||'',
+      ts:firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    MC__ccache[MC__cpTaskId]=(MC__ccache[MC__cpTaskId]||0)+1;
+  }catch(err){
+    console.error('postComment',err);
+    toast('送信に失敗しました','err');
+    document.getElementById('mc-cp-input').value=text;
+  }
+}
+
+// ── KPI MODAL ──
+function mc_openAddKpi(aId){
+  mc_editingKpi=null;
+  document.getElementById('mc-kpi-mttl').textContent='KPI 追加';
+  document.getElementById('mc-kn').value='';document.getElementById('mc-kt').value='';document.getElementById('mc-kac').value='0';
+  document.getElementById('mc-kpi-del-btn').style.display='none';
+  const el=document.getElementById('mc-ka');
+  el.innerHTML=MC_D.areas.map(a=>`<option value="${a.id}"${a.id===(aId||mc_aid)?'selected':''}>${a.id}</option>`).join('');
+  document.getElementById('mc-ov-kpi').classList.add('open');
+  setTimeout(()=>document.getElementById('mc-kn').focus(),80);
+}
+function mc_openEditKpi(aId,kId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  mc_editingKpi={aId,kId};
+  document.getElementById('mc-kpi-mttl').textContent='KPI 編集';
+  document.getElementById('mc-kn').value=k.name;document.getElementById('mc-kt').value=k.target||'';document.getElementById('mc-kac').value=k.actual||'';
+  document.getElementById('mc-kpi-del-btn').style.display='';
+  const el=document.getElementById('mc-ka');
+  el.innerHTML=MC_D.areas.map(a2=>`<option value="${a2.id}"${a2.id===aId?'selected':''}>${a2.id}</option>`).join('');
+  document.getElementById('mc-ov-kpi').classList.add('open');
+}
+function mc_closeMKpi(){document.getElementById('mc-ov-kpi').classList.remove('open');mc_editingKpi=null;}
+function mc_saveKpi(){
+  const name=document.getElementById('mc-kn').value.trim();if(!name){toast('KPI名を入力してください','err');return;}
+  const aId=document.getElementById('mc-ka').value;const a=MC_D.areas.find(x=>x.id===aId);
+  const target=parseInt(document.getElementById('mc-kt').value)||0,actual=parseInt(document.getElementById('mc-kac').value)||0;
+  if(mc_editingKpi){
+    const sa=MC_D.areas.find(x=>x.id===mc_editingKpi.aId),kidx=sa.kpis.findIndex(x=>x.id===mc_editingKpi.kId),existing=sa.kpis[kidx];
+    if(mc_editingKpi.aId!==aId){sa.kpis.splice(kidx,1);a.kpis.push({...existing,name,target,actual});}
+    else sa.kpis[kidx]={...existing,name,target,actual};
+    logAction('edit',`KPI「${name}」を更新`);toast('KPIを更新しました');
+  } else {
+    a.kpis.push({id:gid(),name,target,actual,tasks:[]});
+    logAction('add',`KPI「${name}」を${aId}に追加`);toast('KPIを追加しました');
+  }
+  mc_save();mc_buildNav();mc_closeMKpi();
+  mc_aid=aId;mc_view='area-'+aId;mc_buildNav();
+  const ar=MC_D.areas.find(x=>x.id===aId);
+  document.getElementById('mc-ptitle').textContent=ar.name;
+  document.getElementById('mc-psub').textContent='AREA · '+ar.kpis.length+' KPIs';
+  document.getElementById('mc-addbtn').style.display='';document.getElementById('mc-addkpibtn').style.display='';
+  mc_rArea(aId);
+}
+function mc_delKpi(){
+  if(!mc_editingKpi)return;
+  const a=MC_D.areas.find(x=>x.id===mc_editingKpi.aId),k=a.kpis.find(x=>x.id===mc_editingKpi.kId);
+  if(!confirm(`「${k.name}」を削除しますか？`))return;
+  const savedAid=mc_editingKpi.aId;
+  a.kpis=a.kpis.filter(x=>x.id!==mc_editingKpi.kId);
+  mc_save();mc_buildNav();mc_closeMKpi();
+  document.getElementById('mc-psub').textContent='AREA · '+a.kpis.length+' KPIs';
+  mc_rArea(savedAid);toast('KPIを削除しました');
+}
+
+// ── PROJECT MODAL ──
+let MC_selectedProjColor=MC_PROJ_COLORS[1];
+let MC_addingProjToArea=null;
+function mc_buildColorPicker(selected){
+  MC_selectedProjColor=selected||MC_PROJ_COLORS[1];
+  document.getElementById('pj-color-picker').innerHTML=MC_PROJ_COLORS.map(c=>
+    `<div class="color-swatch${c===MC_selectedProjColor?' selected':''}" style="background:${c}" onclick="mc_selectColor('${c}')"></div>`
+  ).join('');
+}
+function mc_selectColor(c){
+  MC_selectedProjColor=c;
+  document.querySelectorAll('#pj-color-picker .color-swatch').forEach(el=>{el.classList.toggle('selected',el.style.background===c||el.style.backgroundColor===c);});
+}
+function mc_openAddProject(aId){
+  mc_editingProj=null;MC_addingProjToArea=aId||null;
+  const title=aId?`プロジェクト追加（${aId}エリア内）`:'プロジェクト追加';
+  document.getElementById('mc-proj-mttl').textContent=title;
+  document.getElementById('pj-name').value='';document.getElementById('pj-desc').value='';
+  document.getElementById('mc-proj-del-btn').style.display='none';
+  mc_buildColorPicker(aId?(MC_COLORS[aId]||MC_PROJ_COLORS[1]):MC_PROJ_COLORS[1]);
+  document.getElementById('mc-ov-proj').classList.add('open');
+  setTimeout(()=>document.getElementById('pj-name').focus(),80);
+}
+function mc_openEditProject(pId){
+  const p=MC_D.freeProjects.find(x=>x.id===pId);if(!p)return;
+  mc_editingProj=pId;MC_addingProjToArea=null;
+  const title=p.areaId?`プロジェクト編集（${p.areaId}エリア内）`:'プロジェクト編集';
+  document.getElementById('mc-proj-mttl').textContent=title;
+  document.getElementById('pj-name').value=p.name;document.getElementById('pj-desc').value=p.desc||'';
+  document.getElementById('mc-proj-del-btn').style.display='';
+  mc_buildColorPicker(p.color);
+  document.getElementById('mc-ov-proj').classList.add('open');
+  setTimeout(()=>document.getElementById('pj-name').focus(),80);
+}
+function mc_closeMProj(){document.getElementById('mc-ov-proj').classList.remove('open');mc_editingProj=null;MC_addingProjToArea=null;}
+function mc_saveProject(){
+  const name=document.getElementById('pj-name').value.trim();if(!name){toast('プロジェクト名を入力してください','err');return;}
+  const desc=document.getElementById('pj-desc').value.trim();
+  if(mc_editingProj){
+    const p=MC_D.freeProjects.find(x=>x.id===mc_editingProj);
+    p.name=name;p.desc=desc;p.color=MC_selectedProjColor;
+    logAction('edit',`プロジェクト「${name}」を更新`);toast('更新しました');
+    mc_save();mc_buildNav();mc_closeMProj();
+    if(p.areaId&&mc_aid===p.areaId)mc_rArea(mc_aid);
+    else if(mc_fpid===p.id)mc_rFreeProject(mc_fpid);
+    else mc_rDash();
+  } else {
+    const scopedAid=MC_addingProjToArea||null;
+    const p={id:gid(),name,desc,color:MC_selectedProjColor,tasks:[],areaId:scopedAid};
+    MC_D.freeProjects.push(p);
+    logAction('add',`プロジェクト「${name}」を${scopedAid?scopedAid+'内に':''}作成`);toast('プロジェクトを作成しました');
+    mc_save();mc_buildNav();mc_closeMProj();
+    if(scopedAid){
+      mc_aid=scopedAid;mc_view='area-'+scopedAid;
+      const ar=MC_D.areas.find(x=>x.id===scopedAid);
+      document.getElementById('mc-ptitle').textContent=ar.name;
+      document.getElementById('mc-psub').textContent='AREA · '+ar.kpis.length+' KPIs';
+      document.getElementById('mc-addbtn').style.display='';
+      document.getElementById('mc-addkpibtn').style.display='';
+      document.getElementById('mc-addprojtaskbtn').style.display='none';
+      mc_buildNav();mc_rArea(scopedAid);
+    } else {
+      mc_fpid=p.id;mc_view='mc-fp-'+p.id;
+      document.getElementById('mc-ptitle').textContent=p.name;document.getElementById('mc-psub').textContent='PROJECT';
+      document.getElementById('mc-addprojtaskbtn').style.display='';
+      document.getElementById('mc-addbtn').style.display='none';document.getElementById('mc-addkpibtn').style.display='none';
+      mc_rFreeProject(mc_fpid);
+    }
+  }
+}
+function mc_delProject(){
+  if(!mc_editingProj)return;
+  const p=MC_D.freeProjects.find(x=>x.id===mc_editingProj);
+  if(!confirm(`「${p.name}」を削除しますか？タスクも全て削除されます。`))return;
+  const wasAreaId=p.areaId;
+  MC_D.freeProjects=MC_D.freeProjects.filter(x=>x.id!==mc_editingProj);
+  logAction('del',`プロジェクト「${p.name}」を削除`);
+  mc_save();mc_buildNav();mc_closeMProj();
+  if(wasAreaId&&mc_aid===wasAreaId){mc_rArea(mc_aid);}
+  else{mc_fpid=null;mc_view='dashboard';mc_sw('dashboard',null);}
+  toast('削除しました');
+}
+
+// ── FREE TASK MODAL ──
+function mc_openAddFreeTaskInArea(pId){
+  window._ftTargetProjId=pId;
+  mc_openAddFreeTask();
+}
+function mc_openAddFreeTask(){
+  mc_editingFT=null;
+  document.getElementById('mc-ft-mttl').textContent='タスク追加';
+  document.getElementById('mc-ft-del-btn').style.display='none';
+  ['ft-name','ft-res','ft-sup','ft-start','ft-deadline','ft-note','ft-group'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('ft-status').value='NOT_STARTED';
+  const targetId=window._ftTargetProjId||mc_fpid;
+  if(targetId){const p=MC_D.freeProjects.find(x=>x.id===targetId);const gs=[...new Set(p.tasks.map(t=>t.group||'').filter(Boolean))];document.getElementById('ft-group-list').innerHTML=gs.map(g=>`<option value="${h(g)}">`).join('');}
+  document.getElementById('mc-ov-ft').classList.add('open');
+  setTimeout(()=>document.getElementById('ft-name').focus(),80);
+}
+function mc_openEditFT(pId,tId){
+  const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
+  const t=proj.tasks.find(x=>x.id===tId);if(!t)return;
+  mc_editingFT={pId,tId};
+  document.getElementById('mc-ft-mttl').textContent='タスク編集';
+  document.getElementById('mc-ft-del-btn').style.display='';
+  document.getElementById('ft-name').value=t.name;
+  document.getElementById('ft-group').value=t.group||'';
+  document.getElementById('ft-res').value=t.res||'';
+  document.getElementById('ft-sup').value=t.sup||'';
+  document.getElementById('ft-start').value=t.start||'';
+  document.getElementById('ft-deadline').value=t.deadline||'';
+  document.getElementById('ft-note').value=t.note||'';
+  document.getElementById('ft-status').value=t.status;
+  const gs=[...new Set(proj.tasks.map(x=>x.group||'').filter(Boolean))];
+  document.getElementById('ft-group-list').innerHTML=gs.map(g=>`<option value="${h(g)}">`).join('');
+  document.getElementById('mc-ov-ft').classList.add('open');
+  setTimeout(()=>document.getElementById('ft-name').focus(),80);
+}
+function mc_closeMFT(){document.getElementById('mc-ov-ft').classList.remove('open');mc_editingFT=null;}
+function mc_saveFT(){
+  const name=document.getElementById('ft-name').value.trim();if(!name){toast('タスク名を入力してください','err');return;}
+  const obj={name,group:document.getElementById('ft-group').value.trim(),res:document.getElementById('ft-res').value.trim(),sup:document.getElementById('ft-sup').value.trim(),start:document.getElementById('ft-start').value,deadline:document.getElementById('ft-deadline').value,note:document.getElementById('ft-note').value.trim(),status:document.getElementById('ft-status').value,_by:currentUser?.displayName||currentUser?.email||''};
+  if(mc_editingFT){
+    const proj=MC_D.freeProjects.find(x=>x.id===mc_editingFT.pId);
+    const ti=proj.tasks.findIndex(x=>x.id===mc_editingFT.tId);
+    proj.tasks[ti]={...proj.tasks[ti],...obj};
+    logAction('edit',`[${proj.name}] 「${name}」を更新`);toast('更新しました');
+    mc_save();mc_buildNav();mc_closeMFT();
+    if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);
+    else if(mc_fpid)mc_rFreeProject(mc_fpid);
+    else mc_rDash();
+  } else {
+    const targetId=window._ftTargetProjId||mc_fpid;
+    window._ftTargetProjId=null;
+    const proj=MC_D.freeProjects.find(x=>x.id===targetId);if(!proj){toast('プロジェクトを選択してください','err');return;}
+    proj.tasks.push({id:gid(),...obj});
+    logAction('add',`[${proj.name}] 「${name}」を追加`);toast('追加しました');
+    mc_save();mc_buildNav();mc_closeMFT();
+    if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);
+    else if(mc_fpid)mc_rFreeProject(mc_fpid);
+    else mc_rDash();
+  }
+}
+function mc_delEditingFreeTask(){
+  if(!mc_editingFT)return;if(!confirm('削除しますか？'))return;
+  const{pId,tId}=mc_editingFT;mc_delFT(pId,tId,true);mc_closeMFT();
+}
+function mc_delFT(pId,tId,skipConfirm){
+  if(!skipConfirm&&!confirm('削除しますか？'))return;
+  const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
+  const t=proj.tasks.find(x=>x.id===tId);
+  proj.tasks=proj.tasks.filter(x=>x.id!==tId);
+  mc_save();mc_buildNav();
+  logAction('del',`[${proj.name}] 「${t?.name||tId}」を削除`);toast('削除しました');
+  if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);
+  else if(mc_fpid)mc_rFreeProject(mc_fpid);
+  else mc_rDash();
+}
+
+// ── WEEKLY TODO ──
+// Generate week start dates (Monday) from 2026-02-02 to 2026-09-28
+function mc_wtWeeks(){
+  const weeks=[];
+  let d=new Date(2026,1,2); // Feb 2, 2026 (Monday)
+  const end=new Date(2026,8,28);
+  while(d<=end){
+    weeks.push(new Date(d));
+    d=new Date(d);d.setDate(d.getDate()+7);
+  }
+  return weeks;
+}
+function mc_wtWeekKey(d){
+  const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function mc_wtWeekLabel(d){
+  const sun=new Date(d);sun.setDate(d.getDate()+6);
+  return `${d.getMonth()+1}/${d.getDate()} 〜 ${sun.getMonth()+1}/${sun.getDate()}`;
+}
+function mc_wtIsCurrentWeek(d){
+  const today=new Date();
+  const sun=new Date(d);sun.setDate(d.getDate()+6);sun.setHours(23,59,59);
+  return today>=d&&today<=sun;
+}
+function mc_wtIsPast(d){
+  const sun=new Date(d);sun.setDate(d.getDate()+6);sun.setHours(23,59,59);
+  return new Date()>sun;
+}
+
+function mc_rWeekTodo(aId,c){
+  const area=MC_D.areas.find(a=>a.id===aId);if(!area)return'';
+  if(!area.weekTodos)area.weekTodos=[];
+  const weeks=mc_wtWeeks();
+  const todayWk=weeks.find(w=>mc_wtIsCurrentWeek(w));
+  const cards=weeks.map(w=>{
+    const key=mc_wtWeekKey(w);
+    const todos=area.weekTodos.filter(t=>t.weekStart===key);
+    const done=todos.filter(t=>t.done).length;
+    const past=mc_wtIsPast(w);
+    const isCurrent=mc_wtIsCurrentWeek(w);
+    const isOpen=isCurrent||(!past&&todos.length>0);
+    const todoItems=todos.map(t=>`
+      <div class="mc-wt-item" id="wtrow-${t.id}">
+        <div class="wt-cb${t.done?' done':''}" onclick="mc_togWT('${aId}','${t.id}')">${t.done?'<span class="wt-cb-check">✓</span>':''}</div>
+        <div class="wt-main">
+          <div class="wt-name${t.done?' done':''}">${h(t.name)}</div>
+          ${(t.res||t.sup)?`<div class="wt-meta">${t.res?`<span class="wt-res">${h(t.res)}</span>`:''}${t.sup?`<span class="wt-sup">sup: ${h(t.sup)}</span>`:''}</div>`:''}
+          ${t.note?`<div class="wt-note">${h(t.note).replace(/\n/g,'<br>')}</div>`:''}
+        </div>
+        <div class="wt-actions">
+          <button class="ib" onclick="mc_openEditWT('${aId}','${t.id}')">編集</button>
+          <button class="ib del" onclick="mc_delWT('${aId}','${t.id}')">削除</button>
+        </div>
+      </div>`).join('');
+    const emptyMsg=todos.length===0?`<div class="wt-empty">Todoなし</div>`:'';
+    const weekNum=weeks.indexOf(w)+1;
+    return `<div class="wt-week${isCurrent?' current':''}">
+      <div class="wt-week-head" onclick="mc_togWTWeek('${key}')">
+        <div>
+          <div class="wt-week-lbl" style="color:${isCurrent?c:'var(--dark)'}">${weekNum}週目</div>
+          <div class="wt-week-range">${mc_wtWeekLabel(w)}</div>
+        </div>
+        ${isCurrent?`<span class="wt-week-badge now">今週</span>`:past?'':''}
+        <div class="wt-week-stats">
+          <span>${done}/${todos.length} 完了</span>
+          ${todos.length?`<span class="wt-week-pct" style="color:${c}">${Math.round(done/todos.length*100)}%</span>`:''}
+        </div>
+        <div class="wt-week-chev${isOpen?' open':''}" id="wtchev-${key}">›</div>
+      </div>
+      <div class="mc-wt-body${isOpen?' open':''}" id="wtbody-${key}">
+        ${todoItems}${emptyMsg}
+        <div class="wt-add"><button class="wt-add-btn" onclick="mc_openAddWT('${aId}','${key}')">+ Todo 追加...</button></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="wt-wrap">${cards}</div>`;
+}
+
+function mc_togWTWeek(key){
+  const body=document.getElementById('wtbody-'+key);
+  const chev=document.getElementById('wtchev-'+key);
+  if(!body)return;
+  const open=body.classList.toggle('open');
+  if(chev)chev.classList.toggle('open',open);
+}
+
+function mc_togWT(aId,tId){
+  const area=MC_D.areas.find(a=>a.id===aId);if(!area)return;
+  const t=area.weekTodos.find(x=>x.id===tId);if(!t)return;
+  t.done=!t.done;
+  mc_save();
+  // Update DOM in place
+  const row=document.getElementById('wtrow-'+tId);
+  if(row){
+    const cb=row.querySelector('.wt-cb');
+    const nm=row.querySelector('.wt-name');
+    cb.classList.toggle('done',t.done);
+    cb.innerHTML=t.done?'<span class="wt-cb-check">✓</span>':'';
+    nm.classList.toggle('done',t.done);
+    // Update week stats
+    mc_rWeekTodoStats(aId);
+  }
+  logAction(t.done?'done':'undone',`週次Todo「${t.name}」`);
+}
+function mc_rWeekTodoStats(aId){
+  // Lightweight re-render of just the stats in each week head
+  // Full re-render is simplest
+  mc_rArea(aId);
+}
+
+let MC__wtModal=null;
+function mc_openAddWT(aId,weekKey){
+  MC__wtModal={aId,weekKey,tId:null};
+  document.getElementById('mc-wt-mttl').textContent='Todo 追加';
+  document.getElementById('mc-wt-del-btn').style.display='none';
+  ['wt-name','wt-res','wt-sup','wt-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mc-ov-wt').classList.add('open');
+  setTimeout(()=>document.getElementById('mc-wt-name').focus(),80);
+}
+function mc_openEditWT(aId,tId){
+  const area=MC_D.areas.find(a=>a.id===aId);if(!area)return;
+  const t=area.weekTodos.find(x=>x.id===tId);if(!t)return;
+  MC__wtModal={aId,weekKey:t.weekStart,tId};
+  document.getElementById('mc-wt-mttl').textContent='Todo 編集';
+  document.getElementById('mc-wt-del-btn').style.display='';
+  document.getElementById('mc-wt-name').value=t.name||'';
+  document.getElementById('mc-wt-res').value=t.res||'';
+  document.getElementById('wt-sup').value=t.sup||'';
+  document.getElementById('mc-wt-note').value=t.note||'';
+  document.getElementById('mc-ov-wt').classList.add('open');
+  setTimeout(()=>document.getElementById('mc-wt-name').focus(),80);
+}
+function mc_closeMWT(){document.getElementById('mc-ov-wt').classList.remove('open');MC__wtModal=null;}
+function mc_saveWT(){
+  if(!MC__wtModal)return;
+  const name=document.getElementById('mc-wt-name').value.trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const obj={name,res:document.getElementById('mc-wt-res').value.trim(),sup:document.getElementById('wt-sup').value.trim(),note:document.getElementById('mc-wt-note').value.trim(),weekStart:MC__wtModal.weekKey,done:false,_by:currentUser?.displayName||currentUser?.email||''};
+  const area=MC_D.areas.find(a=>a.id===MC__wtModal.aId);
+  if(!area.weekTodos)area.weekTodos=[];
+  if(MC__wtModal.tId){
+    const i=area.weekTodos.findIndex(x=>x.id===MC__wtModal.tId);
+    area.weekTodos[i]={...area.weekTodos[i],...obj,done:area.weekTodos[i].done};
+    logAction('edit',`週次Todo「${name}」を更新`);toast('更新しました');
+  } else {
+    area.weekTodos.push({id:gid(),...obj});
+    logAction('add',`週次Todo「${name}」を追加`);toast('追加しました');
+  }
+  mc_save();mc_closeMWT();mc_rArea(MC__wtModal?.aId||mc_aid);
+}
+function mc_delWT(aId,tId){
+  if(MC__wtModal&&!aId){aId=MC__wtModal.aId;tId=MC__wtModal.tId;}
+  if(!aId||!tId){if(MC__wtModal){aId=MC__wtModal.aId;tId=MC__wtModal.tId;}else return;}
+  if(!confirm('削除しますか？'))return;
+  const area=MC_D.areas.find(a=>a.id===aId);if(!area)return;
+  area.weekTodos=area.weekTodos.filter(x=>x.id!==tId);
+  mc_save();mc_closeMWT();mc_rArea(aId);
+  logAction('del','週次Todoを削除');toast('削除しました');
+}
+
+// ── DUPLICATE ──
+function mc_dupTask(aId,kId,tId,e){
+  if(e)e.stopPropagation();
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  const ti=k.tasks.findIndex(x=>x.id===tId);if(ti<0)return;
+  const orig=k.tasks[ti];
+  const copy={...JSON.parse(JSON.stringify(orig)),id:gid(),name:orig.name+'(コピー)',status:'NOT_STARTED',children:[]};
+  k.tasks.splice(ti+1,0,copy);
+  mc_save();mc_buildNav();mc_rArea(aId);
+  logAction('dup',`「${orig.name}」を複製`);toast('複製しました。編集ボタンで内容を変更できます');
+}
+function mc_dupGroup(aId,kId,grp,e){
+  if(e)e.stopPropagation();
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
+  const members=k.tasks.filter(t=>t.group===grp);if(!members.length)return;
+  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),name:t.name+'(コピー)',status:'NOT_STARTED',children:[]}));
+  k.tasks.push(...copies);
+  mc_save();mc_buildNav();mc_rArea(aId);
+  logAction('dup',`大タスク「${grp}」を複製`);toast(`「${grp}」を大タスクごと複製しました`);
+}
+function mc_dupFT(pId,tId,e){
+  if(e)e.stopPropagation();
+  const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
+  const ti=proj.tasks.findIndex(x=>x.id===tId);if(ti<0)return;
+  const orig=proj.tasks[ti];
+  const copy={...JSON.parse(JSON.stringify(orig)),id:gid(),name:orig.name+'(コピー)',status:'NOT_STARTED'};
+  proj.tasks.splice(ti+1,0,copy);
+  mc_save();mc_buildNav();
+  if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
+  logAction('dup',`[${proj.name}] 「${orig.name}」を複製`);toast('複製しました。編集ボタンで内容を変更できます');
+}
+function mc_dupFTGroup(pId,grp,e){
+  if(e)e.stopPropagation();
+  const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
+  const members=proj.tasks.filter(t=>t.group===grp);if(!members.length)return;
+  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),name:t.name+'(コピー)',status:'NOT_STARTED'}));
+  proj.tasks.push(...copies);
+  mc_save();mc_buildNav();
+  if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
+  logAction('dup',`[${proj.name}] 大タスク「${grp}」を複製`);toast(`「${grp}」を大タスクごと複製しました`);
+}
+
+// ── DRAG & DROP ──
+let MC__dg={type:null,scope:null,kid:null,tid:null,grp:null};
+function mc_dgRowStart(e){
+  const d=e.currentTarget.dataset;
+  MC__dg={type:d.dtype,scope:d.scope,kid:d.kid||null,tid:d.tid,grp:null};
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function mc_dgGrpStart(e){
+  const d=e.currentTarget.dataset;
+  MC__dg={type:d.dtype,scope:d.scope,kid:d.kid||null,tid:null,grp:d.grp};
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+}
+function mc_dgOver(e){
+  e.preventDefault();e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+function mc_dgLeave(e){e.currentTarget.classList.remove('drag-over');}
+function mc_dgEnd(e){
+  document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+}
+function mc_dgRowDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const target=e.currentTarget;target.classList.remove('drag-over');
+  const td=target.dataset;
+  if(!MC__dg.tid&&!MC__dg.grp)return;
+  // Same scope only
+  if(MC__dg.scope!==td.scope){toast('別エリア間の移動は未対応です','err');mc_dgEnd(e);return;}
+  if(MC__dg.type==='kpi'){
+    const a=MC_D.areas.find(x=>x.id===MC__dg.scope),k=a.kpis.find(x=>x.id===MC__dg.kid);
+    if(!k)return;
+    if(MC__dg.tid){
+      // single row move
+      const fromI=k.tasks.findIndex(x=>x.id===MC__dg.tid);
+      const toI=k.tasks.findIndex(x=>x.id===td.tid);
+      if(fromI<0||toI<0||fromI===toI)return;
+      const[item]=k.tasks.splice(fromI,1);
+      k.tasks.splice(toI,0,item);
+    } else {
+      // group move — move all group members before target task
+      const toI=k.tasks.findIndex(x=>x.id===td.tid);if(toI<0)return;
+      const members=k.tasks.filter(t=>t.group===MC__dg.grp);
+      k.tasks=k.tasks.filter(t=>t.group!==MC__dg.grp);
+      const insertAt=k.tasks.findIndex(x=>x.id===td.tid);
+      k.tasks.splice(insertAt>=0?insertAt:k.tasks.length,0,...members);
+    }
+    mc_save();mc_buildNav();mc_rArea(MC__dg.scope);
+  } else if(MC__dg.type==='ft'){
+    const proj=MC_D.freeProjects.find(x=>x.id===MC__dg.scope);if(!proj)return;
+    if(MC__dg.tid){
+      const fromI=proj.tasks.findIndex(x=>x.id===MC__dg.tid);
+      const toI=proj.tasks.findIndex(x=>x.id===td.tid);
+      if(fromI<0||toI<0||fromI===toI)return;
+      const[item]=proj.tasks.splice(fromI,1);
+      proj.tasks.splice(toI,0,item);
+    } else {
+      const members=proj.tasks.filter(t=>t.group===MC__dg.grp);
+      proj.tasks=proj.tasks.filter(t=>t.group!==MC__dg.grp);
+      const insertAt=proj.tasks.findIndex(x=>x.id===td.tid);
+      proj.tasks.splice(insertAt>=0?insertAt:proj.tasks.length,0,...members);
+    }
+    mc_save();mc_buildNav();
+    if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
+  }
+  MC__dg={type:null,scope:null,kid:null,tid:null,grp:null};
+}
+function mc_dgGrpDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const target=e.currentTarget;target.classList.remove('drag-over');
+  const td=target.dataset;
+  if(!MC__dg.grp||MC__dg.grp===td.grp)return;
+  if(MC__dg.scope!==td.scope){toast('別エリア間の移動は未対応です','err');mc_dgEnd(e);return;}
+  if(MC__dg.type==='kpi'){
+    const a=MC_D.areas.find(x=>x.id===MC__dg.scope),k=a.kpis.find(x=>x.id===MC__dg.kid);if(!k)return;
+    const members=k.tasks.filter(t=>t.group===MC__dg.grp);
+    k.tasks=k.tasks.filter(t=>t.group!==MC__dg.grp);
+    // Insert before the target group's first task
+    const insertAt=k.tasks.findIndex(t=>t.group===td.grp);
+    k.tasks.splice(insertAt>=0?insertAt:k.tasks.length,0,...members);
+    mc_save();mc_buildNav();mc_rArea(MC__dg.scope);
+  } else if(MC__dg.type==='ft'){
+    const proj=MC_D.freeProjects.find(x=>x.id===MC__dg.scope);if(!proj)return;
+    const members=proj.tasks.filter(t=>t.group===MC__dg.grp);
+    proj.tasks=proj.tasks.filter(t=>t.group!==MC__dg.grp);
+    const insertAt=proj.tasks.findIndex(t=>t.group===td.grp);
+    proj.tasks.splice(insertAt>=0?insertAt:proj.tasks.length,0,...members);
+    mc_save();mc_buildNav();
+    if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
+  }
+  MC__dg={type:null,scope:null,kid:null,tid:null,grp:null};
+}
+
+// ── GANTT ──
+const MC_G_START=new Date(2026,1,1),MC_G_END=new Date(2026,8,30),MC_G_MS=MC_G_END-MC_G_START;
+const MC_MONTH_DATA=[{name:'2月',days:28,mi:1},{name:'3月',days:31,mi:2},{name:'4月',days:30,mi:3},{name:'5月',days:31,mi:4},{name:'6月',days:30,mi:5},{name:'7月',days:31,mi:6},{name:'8月',days:31,mi:7},{name:'9月',days:30,mi:8}];
+function mc_gPct(s){if(!s)return null;const d=new Date(s);if(isNaN(d))return null;return Math.max(0,Math.min(100,(d-MC_G_START)/MC_G_MS*100));}
+function mc_buildDayTicks(){let h2='';const ticks=[1,5,10,15,20,25];MC_MONTH_DATA.forEach(m=>ticks.forEach(d=>{if(d>m.days)return;const p=mc_gPct(`2026-${String(m.mi).padStart(2,'0')}-${String(d).padStart(2,'0')}`);if(p===null)return;h2+=`<div class="g-day-tick" style="left:${p}%"><div class="g-day-tick-line"></div><div class="g-day-label">${d}</div></div>`;}));return h2;}
+
+function mc_rGantt(){
+  const todayPct=Math.max(0,Math.min(100,(new Date()-MC_G_START)/MC_G_MS*100));
+  const aFiltered=mc_gfil==='ALL'?MC_D.areas:MC_D.areas.filter(a=>a.id===mc_gfil);
+  const gridLines=MC_MONTH_DATA.map(m=>`<div class="g-grid-col" style="flex:${m.days}"></div>`).join('');
+  const aFilterBtns=`<div class="gantt-filter">
+    <button class="gfb ${mc_gfil==='ALL'?'active':''}" onclick="mc_setGF('ALL')">全エリア</button>
+    ${MC_D.areas.map(a=>`<button class="gfb ${mc_gfil===a.id?'active':''}" onclick="mc_setGF('${a.id}')">${a.id}</button>`).join('')}
+    ${MC_D.freeProjects.map(p=>`<button class="gfb ${mc_gfil==='mc-fp-'+p.id?'active':''}" onclick="mc_setGF('mc-fp-${p.id}')" style="border-color:${p.color}33">${p.name.slice(0,8)}</button>`).join('')}
+  </div>`;
+  function bar(t,c){
+    const r=mc_gPct(t.deadline);if(r===null)return null;
+    const tp=Math.max(0,Math.min(100,(new Date()-MC_G_START)/MC_G_MS*100));
+    if(t.status==='DONE'){const l=mc_gPct(t.start||t.deadline)||r;return `<div class="g-bar" style="left:${l}%;width:${Math.max(.4,r-l)}%;background:#00C16E;opacity:.7;top:50%;transform:translateY(-50%);height:12px" title="${h(t.name)}"></div>`;}
+    const over=r<tp;
+    if(over)return `<div class="g-bar" style="left:${r-.5}%;width:3px;background:#F85A40;opacity:.9;top:50%;transform:translateY(-50%);height:14px" title="${h(t.name)} 期限切れ"></div>`;
+    return `<div class="g-bar" style="left:${tp}%;width:${Math.max(.4,r-tp)}%;background:${t.status==='WIP'?c:'#CACCD1'};opacity:${t.status==='NOT_STARTED'?.5:1};top:50%;transform:translateY(-50%);height:14px" title="${h(t.name)}"></div>`;
+  }
+  let rows='';
+  aFiltered.forEach(a=>{
+    const c=MC_COLORS[a.id]||'#52565E';const st=mc_aStats(a);
+    rows+=`<div class="g-area-row" style="background:${c}">
+      <div class="g-area-hd" style="background:${c}"><span class="g-area-label" style="color:#fff">${a.id}</span><span class="g-area-count" style="color:rgba(255,255,255,.6)">${st.done}/${st.total}</span><span style="margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(255,255,255,.9)">${st.pct}%</span></div>
+      <div class="g-area-res" style="background:${c}88"></div>
+      <div class="g-area-chart" style="background:${c}18"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+    </div>`;
+    a.kpis.forEach(k=>k.tasks.forEach(t=>{
+      const b=bar(t,c);if(!b)return;
+      const over=isOver(t.deadline)&&t.status!=='DONE';
+      rows+=`<div class="g-row">
+        <div class="g-name" onclick="mc_goToTask('${a.id}','${k.id}','${t.id}')">
+          <span class="chip ${sc(t.status)}" style="font-size:9px;padding:2px 6px;flex-shrink:0">${mc_si(t.status)||'·'}</span>
+          <span class="g-name-txt" title="${h(t.name)}">${h(t.name)}</span>${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">！</span>':''}
+        </div>
+        <div class="g-res">${h(t.res||'—')}</div>
+        <div class="g-chart"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div>${b}</div>
+      </div>`;
+    }));
+  });
+  const fpFiltered=mc_gfil==='ALL'?MC_D.freeProjects:(mc_gfil.startsWith('mc-fp-')?MC_D.freeProjects.filter(p=>p.id===mc_gfil.replace('mc-fp-','')):[]); 
+  fpFiltered.forEach(proj=>{
+    const c=proj.color||'#037EF3';const ps=mc_pStats(proj);
+    rows+=`<div class="g-area-row" style="background:${c}">
+      <div class="g-area-hd" style="background:${c}"><span class="g-area-label" style="color:#fff;font-size:16px">${h(proj.name.slice(0,10))}</span><span style="margin-left:auto;font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(255,255,255,.9)">${ps.pct}%</span></div>
+      <div class="g-area-res" style="background:${c}88"></div>
+      <div class="g-area-chart" style="background:${c}18"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+    </div>`;
+    proj.tasks.forEach(t=>{
+      const b=bar(t,c);if(!b)return;
+      const over=isOver(t.deadline)&&t.status!=='DONE';
+      rows+=`<div class="g-row">
+        <div class="g-name" onclick="mc_sw('mc-fp-${proj.id}',null)">
+          <span class="chip ${sc(t.status)}" style="font-size:9px;padding:2px 6px;flex-shrink:0">${mc_si(t.status)||'·'}</span>
+          <span class="g-name-txt" title="${h(t.name)}">${h(t.name)}</span>${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">！</span>':''}
+        </div>
+        <div class="g-res">${h(t.res||'—')}</div>
+        <div class="g-chart"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div>${b}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('mc-ct').innerHTML=`
+    <div class="gantt-wrap">
+      <div class="gantt-toolbar">
+        <div class="gantt-legend">
+          <div class="gl-item"><div class="gl-dot" style="background:#00C16E"></div><span style="color:var(--done)">Done</span></div>
+          <div class="gl-item"><div class="gl-dot" style="background:#F48924"></div><span style="color:var(--wip)">WIP</span></div>
+          <div class="gl-item"><div class="gl-dot" style="background:#CACCD1"></div><span style="color:var(--dim)">NS</span></div>
+          <div class="gl-item"><div class="gl-dot" style="background:#F85A40;width:3px;height:16px;border-radius:1px"></div><span style="color:var(--danger)">今日</span></div>
+        </div>
+        ${aFilterBtns}
+      </div>
+      <div class="gantt-scroll"><div class="gantt-inner">
+        <div class="gantt-head">
+          <div class="g-name-hd">タスク名</div><div class="g-res-hd">担当者</div>
+          <div class="g-timeline-hd">
+            <div class="g-month-row">${MC_MONTH_DATA.map(m=>`<div class="g-month-hd" style="flex:${m.days}">${m.name}</div>`).join('')}</div>
+            <div class="g-day-row">${mc_buildDayTicks()}<div class="g-today" style="left:${todayPct}%;height:100%;opacity:.5"></div></div>
+          </div>
+        </div>
+        ${rows}
+      </div></div>
+    </div>`;
+}
+
+function mc_setGF(id){mc_gfil=id;mc_rGantt();}
+function mc_goToTask(aId,kId,tId){
+  mc_sw('area-'+aId,null);
+  setTimeout(()=>{
+    const b=document.getElementById('kb-'+kId),cv=document.getElementById('cv-'+kId);
+    if(b&&!b.classList.contains('open')){b.classList.add('open');if(cv)cv.classList.add('open');}
+    const row=document.getElementById('row-'+tId);
+    if(row){row.scrollIntoView({behavior:'smooth',block:'center'});const c=MC_COLORS[aId]||'#037EF3';row.style.transition='background .3s';row.style.background=c+'22';setTimeout(()=>{row.style.background='';},1800);}
+  },120);
+}
+
+// ── IMPORT / EXPORT ──
+function mc_exportD(){const b=new Blob([JSON.stringify(MC_D,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('エクスポートしました');}
+function mc_importD(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{MC_D=JSON.parse(ev.target.result);mc_migrate();mc_save();mc_buildNav();mc_sw('dashboard',null);toast('インポートしました');}catch(err){toast('ファイルエラー','err');}};r.readAsText(f);e.target.value='';}
+
+// function mc_toast_impl_unused(msg,t=''){const el=document.createElement('div');el.className='mc_toast'+(t?' '+t:'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600);}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('mc_si').focus();}
+});
+['ov','ov-kpi','ov-proj','ov-ft','ov-sub','ov-wt'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el)el.addEventListener('click',function(e){if(e.target===this){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}});
+});
+
+// ══════════════════════════════════════════════════════════════
+//  BOOT — タイムアウト付きで確実にローディングを解除する
+// ══════════════════════════════════════════════════════════════
+let MC_appInitialized=false;
+
+// mc_initApp: see patched version below
+
+(function boot(){
+  // Firebase初期化に失敗していた場合はすぐにログイン画面へ
+  if(!firebaseOk||!auth){
+    hideLoading();
+    showScreen('auth-screen');
+    setAuthError('Firebase の読み込みに失敗しました。ページを再読み込みしてください。');
+    return;
+  }
+
+  // ★ タイムアウト: 8秒以内にonAuthStateChangedが来なければログイン画面を表示
+  const bootTimeout=setTimeout(()=>{
+    console.warn('Auth timeout — showing login screen');
+    hideLoading();
+    showScreen('auth-screen');
+  }, 8000);
+
+  try {
+    auth.onAuthStateChanged(user=>{
+      clearTimeout(bootTimeout);
+      hideLoading();
+      if(user&&user.email&&user.email.endsWith('@'+ALLOWED_DOMAIN)){
+        currentUser=user;
+        showScreen('app-root');
+        document.getElementById('user-name').textContent=user.displayName||'—';
+        document.getElementById('user-email').textContent=user.email||'—';
+        const av=document.getElementById('user-avatar');
+        if(user.photoURL)av.innerHTML=`<img src="${user.photoURL}" alt="">`;
+        else av.textContent=(user.displayName||user.email||'?')[0].toUpperCase();
+        recordLogin(user);
+        mc_initApp();
+      } else {
+        currentUser=null;
+        showScreen('auth-screen');
+        MC_appInitialized=false;
+      }
+    });
+  } catch(e) {
+    clearTimeout(bootTimeout);
+    console.error('onAuthStateChanged error:', e);
+    hideLoading();
+    showScreen('auth-screen');
+    setAuthError('認証エラーが発生しました: '+e.message);
+  }
+})();
+
+
+// Patched mc_initApp - uses shared LC tracker Firebase
+function mc_initApp(){
+  if(!window._mcDb){
+    document.getElementById('mc-ct').innerHTML = 
+      '<div style="padding:40px;text-align:center;color:var(--dim)">Firebase接続エラー</div>';
+    return;
+  }
+  mc_load();
+  // Subscribe to Firestore updates
+  if(_mcSyncUnsub) _mcSyncUnsub();
+  if(window._mcSubscribe){
+    _mcSyncUnsub = window._mcSubscribe(data=>{
+      if(MC__saving) return;
+      MC_D = data;
+      mc_migrate();
+      mc_buildNav();
+      if(MC_D && window._mcView_current){
+        mc_sw(window._mcView_current, null);
+      }
+    });
+  }
+}
+
+
+/* ══════════════════════════════════════════════
+   MC TRACKER INTEGRATION
+══════════════════════════════════════════════ */
+let _mcView = 'lc'; // current top-level view: 'lc' or 'mc'
+let _mcInited = false;
+let _mcSyncUnsub = null;
+
+// Called after auth - show MC nav if user is MC
+function mcShowNav(show){
+  ['mc-nav-divider','mc-nav-label','mc-nav-items'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = show ? '' : 'none';
+  });
+}
+
+// Switch between LC and MC tracker views
+function mcSw(v, el){
+  // Check MC access
+  if(!isMC()){
+    toast('MC権限が必要です。MCメンバーのみアクセスできます。','err');
+    return;
+  }
+  
+  // Hide LC content, show MC content
+  _mcView = 'mc';
+  document.getElementById('mc-panel').style.display = '';
+  
+  // Hide LC tracker main content
+  const lcMain = document.querySelector('.main');
+  if(lcMain){
+    // Hide the LC topbar and content
+    const lcTopbar = lcMain.querySelector('.topbar');
+    const lcContent = lcMain.querySelector('#ct');
+    if(lcTopbar) lcTopbar.style.display = 'none';
+    if(lcContent) lcContent.style.display = 'none';
+  }
+  
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.view===v);
+  });
+  
+  // Init MC tracker if not done
+  if(!_mcInited){
+    mc_initApp();
+    _mcInited = true;
+  }
+  
+  // Route to MC view
+  mc_sw(v.replace('mc-',''), el);
+  closeSidebar();
+}
+
+function mcReturnToLC(){
+  _mcView = 'lc';
+  document.getElementById('mc-panel').style.display = 'none';
+  
+  const lcMain = document.querySelector('.main');
+  if(lcMain){
+    const lcTopbar = lcMain.querySelector('.topbar');
+    const lcContent = lcMain.querySelector('#ct');
+    if(lcTopbar) lcTopbar.style.display = '';
+    if(lcContent) lcContent.style.display = '';
+  }
+}
+
+// Override LC tracker's nav click - if MC nav is active and user clicks LC nav, switch back
+const _origSwLC = swLC;
+const _origSw = sw;
+
+function swLC(id, el, skipHistory){
+  mcReturnToLC();
+  _origSwLC(id, el, skipHistory);
+}
+
+// Override sw to also return to LC
+const _origSwFn = window.sw || sw;
+window.sw = function(v, el, skipHistory){
+  if(!v.startsWith('mc-')) mcReturnToLC();
+  _origSwFn(v, el, skipHistory);
+};
+
+// Hook into auth: show MC nav and init MC Firebase when user is MC
+const _origApplyUserUI = applyUserUI;
+function applyUserUI(){
+  _origApplyUserUI();
+  const u = getUser();
+  mcShowNav(u.role === 'mc');
+  // Set MC current user
+  window._mcCurrentUser = {
+    uid: u.email, // use email as UID for MC tracker
+    email: u.email,
+    displayName: u.displayName || u.email
+  };
+}
+
+// Add comment function (was missing)
+async function mc_addComment(){
+  const input = document.getElementById('mc-cp-input');
+  const text = (input?.value||'').trim();
+  if(!text || !window._mcCurrentUser) return;
+  const tid = window._mcDb ? window._cpTaskId_mc : null;
+  if(!tid) return;
+  
+  try {
+    await window._mcDb.collection('mc-comments').add({
+      taskId: tid,
+      text,
+      uid: window._mcCurrentUser.uid,
+      name: window._mcCurrentUser.displayName,
+      ts: Date.now()
+    });
+    input.value = '';
+    mc_loadComments(tid);
+  } catch(e) {
+    toast('コメントの送信に失敗しました','err');
+  }
+}
+
+async function mc_loadComments(tid){
+  window._cpTaskId_mc = tid;
+  const list = document.getElementById('mc-cp-list');
+  if(!list) return;
+  list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">読み込み中...</div>';
+  try {
+    const snap = await window._mcDb.collection('mc-comments')
+      .where('taskId','==',tid).orderBy('ts','asc').get();
+    if(snap.empty){
+      list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px;text-align:center">コメントなし</div>';
+      return;
+    }
+    list.innerHTML = snap.docs.map(d=>{
+      const c = d.data();
+      const dt = new Date(c.ts);
+      return `<div class="cp-item">
+        <div class="cp-meta">${h(c.name||c.uid)} · ${(dt.getMonth()+1)}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}</div>
+        <div class="cp-text">${h(c.text)}</div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px">読み込みに失敗しました</div>';
+  }
+}
+
+
+
 /* ── HISTORY (back button) ── */
 window.addEventListener('popstate', e=>{
   const s=e.state;
@@ -3872,6 +5817,194 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     <div class="mf">
       <button class="btn" onclick="mtlCloseMembers()">閉じる</button>
     </div>
+  </div>
+</div>
+
+<div class="overlay" id="mc-ov">
+<div class="modal">
+  <div class="mh" id="mc-mttl">タスク追加</div>
+  <div class="mb">
+    <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="mc-fn" placeholder="タスクを入力..."></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">エリア</label><select class="fs" id="mc-fa" onchange="mc_updK()"></select></div>
+      <div class="fg"><label class="fl2">KPI</label><select class="fs" id="mc-fk"></select></div>
+    </div>
+    <div class="fg">
+      <label class="fl2">大タスク（グループ名）</label>
+      <input class="fi" id="mc-fg-input" list="fg-list" placeholder="グループ名（空欄でもOK）" autocomplete="off">
+      <datalist id="mc-fg-list"></datalist>
+    </div>
+    <div class="fg"><label class="fl2">担当者</label><input class="fi" id="mc-fr" placeholder="名前..."></div>
+    <div class="fg"><label class="fl2">sup</label><input class="fi" id="fsup" placeholder="サポート担当者..."></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">開始日</label><input class="fi" type="date" id="mc-fs2"></div>
+      <div class="fg"><label class="fl2">締め切り</label><input class="fi" type="date" id="mc-fd"></div>
+    </div>
+    <div class="fg"><label class="fl2">備考</label><textarea class="fi" id="mc-fnote" rows="3" placeholder="メモ、リンク…"></textarea></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">優先度</label>
+        <select class="fs" id="fpri">
+          <option value="">なし</option>
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl2">ステータス</label>
+        <select class="fs" id="mc-fst">
+          <option value="NOT_STARTED">Not Started</option>
+          <option value="WIP">WIP</option>
+          <option value="DONE">DONE</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" id="task-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delEditingTask()">削除</button>
+    <button class="btn" onclick="mc_closeM()">キャンセル</button>
+    <button class="btn btn-fill" onclick="mc_saveT()">保存</button>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="mc-ov-kpi">
+<div class="modal">
+  <div class="mh" id="mc-kpi-mttl">KPI 追加</div>
+  <div class="mb">
+    <div class="fg"><label class="fl2">KPI 名</label><input class="fi" id="mc-kn" placeholder="KPI名..."></div>
+    <div class="fg"><label class="fl2">エリア</label><select class="fs" id="mc-ka"></select></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">Target</label><input class="fi" type="number" id="mc-kt" placeholder="100"></div>
+      <div class="fg"><label class="fl2">Actual</label><input class="fi" type="number" id="mc-kac" placeholder="0"></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" id="mc-kpi-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delKpi()">削除</button>
+    <button class="btn" onclick="mc_closeMKpi()">キャンセル</button>
+    <button class="btn btn-fill" onclick="mc_saveKpi()">保存</button>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="mc-ov-sub">
+  <div class="modal" style="width:440px">
+    <div class="mh" id="mc-sub-mttl">サブタスク追加</div>
+    <div class="mb">
+      <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="sub-fn" placeholder="サブタスク名..."></div>
+      <div class="fg"><label class="fl2">担当者</label><input class="fi" id="sub-res" placeholder="名前..."></div>
+      <div class="fg"><label class="fl2">sup</label><input class="fi" id="sub-sup" placeholder="サポート担当者..."></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl2">開始日</label><input class="fi" type="date" id="sub-start"></div>
+        <div class="fg"><label class="fl2">締め切り</label><input class="fi" type="date" id="sub-deadline"></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl2">優先度</label>
+          <select class="fs" id="sub-pri">
+            <option value="">なし</option>
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl2">ステータス</label>
+          <select class="fs" id="sub-status">
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="WIP">WIP</option>
+            <option value="DONE">DONE</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" id="sub-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="delSub(_subModal&&_subModal.aId,_subModal&&_subModal.kId,_subModal&&_subModal.tId,_subModal&&_subModal.chId)">削除</button>
+      <button class="btn" onclick="mc_closeMSub()">キャンセル</button>
+      <button class="btn btn-fill" onclick="mc_saveSub()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="mc-ov-proj">
+<div class="modal">
+  <div class="mh" id="mc-proj-mttl">プロジェクト追加</div>
+  <div class="mb">
+    <div class="fg"><label class="fl2">プロジェクト名</label><input class="fi" id="pj-name" placeholder="例: 新歓キャンペーン 2627"></div>
+    <div class="fg"><label class="fl2">説明</label><textarea class="fi" id="pj-desc" rows="2" placeholder="概要・目的など…"></textarea></div>
+    <div class="fg">
+      <label class="fl2">カラー</label>
+      <div class="color-picker" id="pj-color-picker"></div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" id="mc-proj-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delProject()">削除</button>
+    <button class="btn" onclick="mc_closeMProj()">キャンセル</button>
+    <button class="btn btn-fill" onclick="mc_saveProject()">保存</button>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="mc-ov-ft">
+<div class="modal">
+  <div class="mh" id="mc-ft-mttl">タスク追加</div>
+  <div class="mb">
+    <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="ft-name" placeholder="タスクを入力..."></div>
+    <div class="fg"><label class="fl2">グループ / フェーズ</label>
+      <input class="fi" id="ft-group" list="ft-group-list" placeholder="例: フェーズ1、設計、広報…（空欄でもOK）" autocomplete="off">
+      <datalist id="ft-group-list"></datalist>
+    </div>
+    <div class="fg"><label class="fl2">担当者</label><input class="fi" id="ft-res" placeholder="名前..."></div>
+    <div class="fg"><label class="fl2">sup</label><input class="fi" id="ft-sup" placeholder="サポート担当者..."></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">開始日</label><input class="fi" type="date" id="ft-start"></div>
+      <div class="fg"><label class="fl2">締め切り</label><input class="fi" type="date" id="ft-deadline"></div>
+    </div>
+    <div class="fg"><label class="fl2">備考</label><textarea class="fi" id="ft-note" rows="3" placeholder="メモ、リンク…"></textarea></div>
+    <div class="fg"><label class="fl2">ステータス</label>
+      <select class="fs" id="ft-status">
+        <option value="NOT_STARTED">Not Started</option>
+        <option value="WIP">WIP</option>
+        <option value="DONE">DONE</option>
+      </select>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn" id="mc-ft-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delEditingFreeTask()">削除</button>
+    <button class="btn" onclick="mc_closeMFT()">キャンセル</button>
+    <button class="btn btn-fill" onclick="mc_saveFT()">保存</button>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="mc-ov-wt">
+<div class="modal" style="width:460px">
+  <div class="mh" id="mc-wt-mttl">Todo 追加</div>
+  <div class="mb">
+    <div class="fg"><label class="fl2">タスク名</label><input class="fi" id="mc-wt-name" placeholder="今週やること..."></div>
+    <div class="fr2">
+      <div class="fg"><label class="fl2">担当者</label><input class="fi" id="mc-wt-res" placeholder="名前..."></div>
+      <div class="fg"><label class="fl2">sup</label><input class="fi" id="wt-sup" placeholder="サポート..."></div>
+    </div>
+    <div class="fg"><label class="fl2">メモ</label><textarea class="fi" id="mc-wt-note" rows="2" placeholder="備考・リンクなど..."></textarea></div>
+  </div>
+  <div class="mf">
+    <button class="btn" id="mc-wt-del-btn" style="margin-right:auto;display:none;color:var(--danger);border-color:var(--danger)" onclick="mc_delWT()">削除</button>
+    <button class="btn" onclick="mc_closeMWT()">キャンセル</button>
+    <button class="btn btn-fill" onclick="mc_saveWT()">保存</button>
+  </div>
+</div>
+</div>
+
+<!-- MC COMMENTS OVERLAY -->
+<div id="mc-ov-comments" style="position:fixed;inset:0;background:rgba(27,44,94,.48);z-index:1000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
+  <div class="modal" style="width:480px">
+    <div class="mh" id="mc-cp-title">コメント</div>
+    <div class="mb">
+      <div class="cp-list" id="mc-cp-list"></div>
+      <div style="display:flex;gap:8px">
+        <input class="fi" id="mc-cp-input" placeholder="コメントを入力..." style="flex:1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();mc_addComment();}">
+        <button class="btn btn-fill" onclick="mc_addComment()">送信</button>
+      </div>
+    </div>
+    <div class="mf"><button class="btn" onclick="mc_closeComments()">閉じる</button></div>
   </div>
 </div>
 
