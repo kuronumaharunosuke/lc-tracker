@@ -4500,7 +4500,7 @@ function mc_migrate(){
 
 // ── SYNC ──
 const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
-let MC__saving=false,MC__saveTimer=null,MC__syncUnsub=null;
+let MC__saving=false,MC__saveTimer=null,MC__syncUnsub=null,MC__dragging=false;
 
 function mc_setSyncDot(state){
   const d=document.getElementById('mc-sync-dot');
@@ -5707,30 +5707,47 @@ let MC__dg={type:null,scope:null,kid:null,tid:null,grp:null};
 function mc_dgRowStart(e){
   const d=e.currentTarget.dataset;
   MC__dg={type:d.dtype,scope:d.scope,kid:d.kid||null,tid:d.tid,grp:null};
-  e.currentTarget.classList.add('dragging');
+  MC__dragging=true;
   e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain', d.tid||'');
+  e.stopPropagation();
+  const el=e.currentTarget;
+  setTimeout(()=>el.classList.add('dragging'),0);
 }
 function mc_dgGrpStart(e){
   const d=e.currentTarget.dataset;
   MC__dg={type:d.dtype,scope:d.scope,kid:d.kid||null,tid:null,grp:d.grp};
-  e.currentTarget.classList.add('dragging');
+  MC__dragging=true;
   e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain', d.grp||'');
+  e.stopPropagation();
+  const el=e.currentTarget;
+  setTimeout(()=>el.classList.add('dragging'),0);
 }
 function mc_dgOver(e){
-  e.preventDefault();e.dataTransfer.dropEffect='move';
-  e.currentTarget.classList.add('drag-over');
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect='move';
+  // <tr>まで上がってdrag-overを付ける
+  const tr=e.currentTarget.closest('tr')||e.currentTarget;
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  tr.classList.add('drag-over');
 }
-function mc_dgLeave(e){e.currentTarget.classList.remove('drag-over');}
+function mc_dgLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
 function mc_dgEnd(e){
+  MC__dragging=false;
   document.querySelectorAll('.dragging').forEach(el=>el.classList.remove('dragging'));
   document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  MC__dg={type:null,scope:null,kid:null,tid:null,grp:null};
 }
 function mc_dgRowDrop(e){
   e.preventDefault();e.stopPropagation();
-  const target=e.currentTarget;target.classList.remove('drag-over');
-  const td=target.dataset;
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  const trEl=e.currentTarget.closest('tr')||e.currentTarget;
+  const td=trEl.dataset;
   if(!MC__dg.tid&&!MC__dg.grp)return;
-  // Same scope only
   if(MC__dg.scope!==td.scope){toast('別エリア間の移動は未対応です','err');mc_dgEnd(e);return;}
   if(MC__dg.type==='kpi'){
     const a=MC_D.areas.find(x=>x.id===MC__dg.scope),k=a.kpis.find(x=>x.id===MC__dg.kid);
@@ -5772,8 +5789,9 @@ function mc_dgRowDrop(e){
 }
 function mc_dgGrpDrop(e){
   e.preventDefault();e.stopPropagation();
-  const target=e.currentTarget;target.classList.remove('drag-over');
-  const td=target.dataset;
+  document.querySelectorAll('.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  const trEl=e.currentTarget.closest('td')||e.currentTarget;
+  const td=trEl.dataset;
   if(!MC__dg.grp||MC__dg.grp===td.grp)return;
   if(MC__dg.scope!==td.scope){toast('別エリア間の移動は未対応です','err');mc_dgEnd(e);return;}
   if(MC__dg.type==='kpi'){
@@ -5973,29 +5991,56 @@ function mc_initApp(){
   // 既存の購読を解除
   if(mc__syncUnsub){ mc__syncUnsub(); mc__syncUnsub=null; }
 
-  // Firestoreから直接読み込み（localStorageは使わない）
+  // まずlocalStorageから仮のデータをセット（ロード中の空白を防ぐ）
+  if(!MC_D){
+    try{
+      const s=localStorage.getItem(MC_SK);
+      if(s) MC_D=JSON.parse(s);
+    }catch(e){}
+  }
+  if(!MC_D) MC_D=JSON.parse(JSON.stringify(MC_SEED));
+  mc_migrate();
+  mc_buildNav();
+  mc_sw(mc_view||'dashboard', null);
+
+  // Firestoreからロード（常にマスター）
   if(window._mcLoad){
     window._mcLoad().then(data=>{
-      MC_D = data || JSON.parse(JSON.stringify(MC_SEED));
-      mc_migrate();
-      try{ localStorage.setItem(MC_SK, JSON.stringify(MC_D)); }catch(e){}
-      mc_buildNav();
-      mc_sw(mc_view||'dashboard', null);
-    }).catch(()=>{
-      MC_D = JSON.parse(JSON.stringify(MC_SEED));
-      mc_buildNav();
-      mc_sw(mc_view||'dashboard', null);
+      if(data){
+        // Firestoreにデータがある場合のみ上書き
+        MC_D = data;
+        mc_migrate();
+        try{ localStorage.setItem(MC_SK, JSON.stringify(MC_D)); }catch(e){}
+        mc_buildNav();
+        mc_sw(mc_view||'dashboard', null);
+      } else {
+        // Firestoreが空 → localStorageのデータをFirestoreに書き込む
+        const ls = localStorage.getItem(MC_SK);
+        if(ls){
+          try{
+            const lsData = JSON.parse(ls);
+            // SEEDより多いタスクがあれば本物のデータとみなして保存
+            const taskCount = (lsData.areas||[]).reduce((s,a)=>s+a.kpis.reduce((ss,k)=>ss+(k.tasks||[]).length,0),0);
+            if(taskCount > 50){
+              MC_D = lsData;
+              mc_migrate();
+              mc_buildNav();
+              mc_sw(mc_view||'dashboard', null);
+              mc_save(); // Firestoreに書き込む
+              toast('ローカルキャッシュからデータを復元しました');
+            }
+          }catch(e){}
+        }
+      }
+    }).catch(e=>{
+      console.warn('MC load error:', e);
     });
-  } else {
-    MC_D = JSON.parse(JSON.stringify(MC_SEED));
-    mc_buildNav();
-    mc_sw(mc_view||'dashboard', null);
   }
 
   // リアルタイム同期購読
   if(window._mcSubscribe){
     mc__syncUnsub = window._mcSubscribe(data=>{
-      if(MC__saving) return;
+      if(MC__saving || MC__dragging) return;
       MC_D = data;
       mc_migrate();
       try{ localStorage.setItem(MC_SK, JSON.stringify(MC_D)); }catch(e){}
