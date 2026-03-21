@@ -1160,6 +1160,12 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
       <input type="file" accept=".json" style="display:none" onchange="importD(event)">
     </label>
     <button id="backup-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);display:none" onclick="openBackupModal()">↩ バックアップ復元</button>
+    <!-- MC専用ボタン（MCビュー時のみ表示） -->
+    <button id="mc-export-btn" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);display:none" onclick="mc_exportD()">↓ MC エクスポート</button>
+    <label id="mc-import-btn" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer;display:none">
+      ↑ MC インポート
+      <input type="file" accept=".json" style="display:none" onchange="mc_importD(event)">
+    </label>
     <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="doLogout()">ログアウト</button>
   </div>
 </nav>
@@ -6072,6 +6078,11 @@ function mcSw(v, el){
   document.getElementById('mc-panel').style.display = '';
   document.getElementById('lc-topbar').style.display = 'none';
   document.getElementById('ct').style.display = 'none';
+  // MC専用ボタンを表示、LC用ボタンを非表示
+  document.getElementById('mc-export-btn').style.display = '';
+  document.getElementById('mc-import-btn').style.display = '';
+  var lcExport = document.querySelector('.sf-btn[onclick="exportD()"]');
+  if(lcExport) lcExport.style.display = 'none';
   document.querySelectorAll('.mc-nav-item').forEach(function(n){
     n.classList.toggle('active', n.dataset.mcview===v || n.dataset.mcview===v.replace(/^mc-/,''));
   });
@@ -6105,6 +6116,11 @@ function mcReturnToLC(){
   document.getElementById('mc-panel').style.display = 'none';
   document.getElementById('lc-topbar').style.display = '';
   document.getElementById('ct').style.display = '';
+  // MC専用ボタンを非表示、LC用ボタンを表示
+  document.getElementById('mc-export-btn').style.display = 'none';
+  document.getElementById('mc-import-btn').style.display = 'none';
+  var lcExport = document.querySelector('.sf-btn[onclick="exportD()"]');
+  if(lcExport) lcExport.style.display = '';
 }
 
 async function mc_addComment(){
