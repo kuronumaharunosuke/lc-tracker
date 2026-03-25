@@ -63,23 +63,10 @@
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/spreadsheets');
     provider.addScope('https://www.googleapis.com/auth/drive.file');
-    provider.setCustomParameters({ hd: 'aiesec.jp', prompt: 'none' });
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const cred = GoogleAuthProvider.credentialFromResult(result);
-      return cred?.accessToken || null;
-    } catch(e) {
-      // prompt:none失敗時はselect_accountで再試行
-      try {
-        const provider2 = new GoogleAuthProvider();
-        provider2.addScope('https://www.googleapis.com/auth/spreadsheets');
-        provider2.addScope('https://www.googleapis.com/auth/drive.file');
-        provider2.setCustomParameters({ hd: 'aiesec.jp' });
-        const result2 = await signInWithPopup(auth, provider2);
-        const cred2 = GoogleAuthProvider.credentialFromResult(result2);
-        return cred2?.accessToken || null;
-      } catch(e2) { return null; }
-    }
+    provider.setCustomParameters({ hd: 'aiesec.jp' });
+    const result = await signInWithPopup(auth, provider);
+    const cred = GoogleAuthProvider.credentialFromResult(result);
+    return cred?.accessToken || null;
   };
 
   // バックアップ保存（直近5世代）
@@ -3644,10 +3631,14 @@ async function exportToSheets(){
   const lc=D.lcs.find(x=>x.id===targetLcId);
   if(!lc){toast('LCデータが見つかりません','err');return;}
 
-  // ── トースト表示してトークン取得 ──
-  toast('Google Sheets 連携中... ポップアップを許可してください');
-  const token=await window._fsGetSheetsToken?.();
-  if(!token){toast('Google認証に失敗しました。ポップアップを許可してください','err');return;}
+  // ── ユーザージェスチャーが生きているうちにトークン取得（toastより先）──
+  let token;
+  try {
+    token = await window._fsGetSheetsToken?.();
+  } catch(e) {
+    toast('Google認証がキャンセルされました','err');return;
+  }
+  if(!token){toast('Google認証に失敗しました','err');return;}
 
   toast('スプレッドシートを作成中...');
 
