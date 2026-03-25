@@ -3128,9 +3128,9 @@ function rGantt(){
       </div>
     </div>`;
   // ヘッダーとボディの水平スクロールを同期
-  const sc=document.getElementById('lc-gantt-scroll');
-  const hd=document.getElementById('lc-gantt-hd');
-  if(sc&&hd) sc.addEventListener('scroll',()=>{hd.style.transform=`translateX(-${sc.scrollLeft}px)`;},{passive:true});
+  const ganttScrollEl=document.getElementById('lc-gantt-scroll');
+  const ganttHdEl=document.getElementById('lc-gantt-hd');
+  if(ganttScrollEl&&ganttHdEl) ganttScrollEl.addEventListener('scroll',()=>{ganttHdEl.style.transform=`translateX(-${ganttScrollEl.scrollLeft}px)`;},{passive:true});
 }
 function setGF(id){gfil=id;rGantt();}
 
