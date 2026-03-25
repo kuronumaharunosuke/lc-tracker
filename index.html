@@ -325,11 +325,15 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .kpi-lbl{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--faint);margin-bottom:2px;}
 .kpi-ttl{font-size:13px;font-weight:700;line-height:1.4;color:var(--dark);}
 .kpi-target{font-size:10px;color:var(--dim);margin-top:2px;}
-.kpi-r{padding:10px 14px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:4px;flex-shrink:0;}
+.kpi-r{padding:10px 14px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;flex-shrink:0;min-width:110px;}
 .kpi-pct{font-size:26px;font-weight:900;line-height:1;letter-spacing:-0.03em;}
+.kpi-actual{font-size:28px;font-weight:900;line-height:1;letter-spacing:-0.04em;}
+.kpi-actual-unit{font-size:11px;font-weight:400;color:var(--dim);}
+.kpi-ach{font-size:11px;font-weight:700;}
 .kpi-bar{width:76px;height:4px;background:var(--bg2);border-radius:2px;}
 .kpi-bar-f{height:100%;border-radius:2px;}
 .kpi-cnt{font-size:10px;color:var(--dim);}
+.kpi-tact{font-size:9px;color:var(--faint);display:flex;align-items:center;gap:5px;margin-top:2px;}
 .kpi-chev{width:36px;border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:17px;transition:transform 0.14s;flex-shrink:0;}
 .kpi-chev.open{transform:rotate(90deg);}
 .kpi-body{display:none;border-top:1px solid var(--border);}
@@ -827,11 +831,15 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .kpi-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin-bottom:3px;}
 #mc-panel .kpi-ttl{font-size:13px;font-weight:700;line-height:1.4;color:var(--dark);}
 #mc-panel .kpi-target{font-family:'Lato',sans-serif;font-size:10px;color:var(--dim);margin-top:3px;}
-#mc-panel .kpi-r{padding:12px 16px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:6px;flex-shrink:0;}
+#mc-panel .kpi-r{padding:12px 16px;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:3px;flex-shrink:0;min-width:120px;}
+#mc-panel .kpi-actual{font-family:'Lato',sans-serif;font-size:30px;font-weight:900;line-height:1;}
+#mc-panel .kpi-actual-unit{font-size:11px;font-weight:400;color:var(--dim);}
+#mc-panel .kpi-ach{font-size:11px;font-weight:700;}
 #mc-panel .kpi-pct{font-family:'Lato',sans-serif;font-size:28px;line-height:1;}
 #mc-panel .kpi-bar{width:80px;height:4px;background:var(--bg2);border-radius:2px;}
 #mc-panel .kpi-bar-f{height:100%;border-radius:2px;}
 #mc-panel .kpi-cnt{font-size:10px;color:var(--dim);}
+#mc-panel .kpi-tact{font-size:9px;color:var(--faint);display:flex;align-items:center;gap:5px;margin-top:2px;}
 #mc-panel .kpi-chev{width:40px;border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--faint);font-size:18px;transition:transform .14s;flex-shrink:0;}
 #mc-panel .kpi-chev.open{transform:rotate(90deg);}
 
@@ -1629,6 +1637,33 @@ function getLCAreaTypes(lId){
 function getAreaColor(lId,aId){const at=getLCAreaTypes(lId).find(x=>x.id===aId);return at?at.color:'#52565E';}
 
 function gid(){return 'x'+Date.now()+'_'+Math.random().toString(36).slice(2,5);}
+
+// ── KPI右側ブロック共通ヘルパー ──
+// target: 定量目標値, actual: 実績値, c: color, pct: タスク履行率%, done/total: タスク数
+function kpiRBlock(target, actual, c, pct, done, total){
+  if(target){
+    const achPct=Math.round((actual||0)/target*100);
+    const achColor=achPct>=100?'var(--done)':achPct>=60?c:'var(--danger)';
+    const barW=Math.min(100,achPct);
+    return `<div class="kpi-r">
+      <div style="display:flex;align-items:baseline;gap:3px">
+        <span class="kpi-actual" style="color:${c}">${actual||0}</span>
+        <span class="kpi-actual-unit">/ ${target}</span>
+      </div>
+      <div class="kpi-ach" style="color:${achColor}">${achPct}% 達成</div>
+      <div class="kpi-bar" style="width:72px"><div class="kpi-bar-f" style="width:${barW}%;background:${achColor}"></div></div>
+      <div class="kpi-tact">
+        <div style="width:36px;height:3px;background:var(--bg2);border-radius:2px;display:inline-block;vertical-align:middle"><div style="width:${pct}%;height:100%;background:${c};border-radius:2px"></div></div>
+        <span>タスク ${pct}% (${done}/${total})</span>
+      </div>
+    </div>`;
+  }
+  return `<div class="kpi-r">
+    <div class="kpi-pct" style="color:${c}">${pct}%</div>
+    <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
+    <div class="kpi-cnt">${done}/${total} done</div>
+  </div>`;
+}
 function h(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd(s){if(!s)return'—';const d=new Date(s);if(isNaN(d))return s;return(d.getMonth()+1)+'/'+(d.getDate());}
 function isOver(dl){if(!dl)return false;const d=new Date(dl);return !isNaN(d)&&d<new Date();}
@@ -1750,7 +1785,7 @@ function sw(v,el,skipHistory){
     rDash();closeSidebar();
   } else if(v==='gantt'){
     document.getElementById('ptitle').textContent='GANTT';
-    document.getElementById('psub').textContent='Feb - Sep 2026';
+    document.getElementById('psub').textContent='Feb 2026 - May 2027';
     if(!skipHistory) try{history.pushState({view:'gantt'},'',location.pathname+'#gantt');}catch(e){}
     rGantt();closeSidebar();
   } else if(v==='ranking'){
@@ -1857,14 +1892,9 @@ function rCross(aId){
               ${g?`<span style="background:${typeColor}22;color:${typeColor};border:1px solid ${typeColor}44;font-size:9px;font-weight:900;padding:1px 5px;border-radius:3px">${g.type}</span><span style="color:${typeColor}">${h(g.name)}</span>`:'<span>Ungrouped</span>'}
             </div>
             <div class="kpi-ttl">${h(k.name)}</div>
-            ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual||0}</div>`:''}
             ${k.memo?`<div class="kpi-target" style="color:var(--text)">${h(k.memo)}</div>`:''}
           </div>
-          <div class="kpi-r">
-            <div class="kpi-pct" style="color:${c}">${pct}%</div>
-            <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
-            <div class="kpi-cnt">${ks.done}/${ks.total} done</div>
-          </div>
+          ${kpiRBlock(k.target,k.actual||0,c,pct,ks.done,ks.total)}
           <div class="kpi-chev open" id="cv-cross_${lc.id}_${aId}_${k.id}">›</div>
         </div>
         <div class="kpi-body open" id="kb-cross_${lc.id}_${aId}_${k.id}">
@@ -2157,14 +2187,9 @@ function rLC(id){
           <div class="kpi-info">
             <div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}${(()=>{const goals=area.goals||[];const g=goals.find(x=>x.id===k.goalId);return g?` · <span class="goal-type-chip" style="background:${g.type==='KGI'?'#037EF322':'#7552CC22'};color:${g.type==='KGI'?'#037EF3':'#7552CC'};border:1px solid ${g.type==='KGI'?'#037EF344':'#7552CC44'};font-size:9px;padding:1px 5px;border-radius:3px">${g.type}</span> ${h(g.name)}`:'';})()}</div>
             <div class="kpi-ttl">${h(k.name)}</div>
-            ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
             ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">${h(k.memo)}</div>`:''}
           </div>
-          <div class="kpi-r">
-            <div class="kpi-pct" style="color:${c}">${pct}%</div>
-            <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
-            <div class="kpi-cnt">${dn}/${tot2} done</div>
-          </div>
+          ${kpiRBlock(k.target,k.actual,c,pct,dn,tot2)}
           ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
             <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${id}','${at.id}','${k.id}')">編集</button>
           </div>`:''}
@@ -2394,14 +2419,9 @@ function rArea(lId,aId){
         <div class="kpi-info">
           <div class="kpi-lbl">KPI ${i+1} / ${totalKpis}</div>
           <div class="kpi-ttl">${h(k.name)}</div>
-          ${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}
           ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">${h(k.memo)}</div>`:''}
         </div>
-        <div class="kpi-r">
-          <div class="kpi-pct" style="color:${c}">${pct}%</div>
-          <div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div>
-          <div class="kpi-cnt">${ks.done}/${ks.total} done</div>
-        </div>
+        ${kpiRBlock(k.target,k.actual,c,pct,ks.done,ks.total)}
         ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
           <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${lId}','${aId}','${k.id}')">Edit</button>
         </div>`:''}
@@ -2491,7 +2511,7 @@ function getWeeks(){
   // 2/1が日曜なら2/1から
   const start=new Date(2026,1,1);
   if(start.getDay()===1) d=start;
-  while(d<=new Date(2026,8,30)){
+  while(d<=new Date(2027,4,31)){
     const mon=new Date(d);
     const sun=new Date(d); sun.setDate(sun.getDate()+6);
     weeks.push({mon,sun,
@@ -2842,7 +2862,7 @@ function renderTaskTodosModal(){
   const taskEnd=t.deadline?new Date(t.deadline):null;
   const relevantWeeks=allWeeks.filter(w=>{
     const s=taskStart||new Date(2026,1,1);
-    const e=taskEnd||new Date(2026,8,30);
+    const e=taskEnd||new Date(2027,4,31);
     return w.sun>=s&&w.mon<=e;
   });
 
@@ -2976,12 +2996,15 @@ function delT(lId,aId,kId,tId,parentId){
 }
 
 const G_START=new Date(2026,1,1);
-const G_END=new Date(2026,8,30);
+const G_END=new Date(2027,4,31);
 const G_MS=G_END-G_START;
 const MONTH_DATA=[
-  {name:'Feb',days:28,mi:2},{name:'Mar',days:31,mi:3},{name:'Apr',days:30,mi:4},
-  {name:'May',days:31,mi:5},{name:'Jun',days:30,mi:6},{name:'Jul',days:31,mi:7},
-  {name:'Aug',days:31,mi:8},{name:'Sep',days:30,mi:9},
+  {name:'Feb',days:28,mi:2,yr:2026},{name:'Mar',days:31,mi:3,yr:2026},{name:'Apr',days:30,mi:4,yr:2026},
+  {name:'May',days:31,mi:5,yr:2026},{name:'Jun',days:30,mi:6,yr:2026},{name:'Jul',days:31,mi:7,yr:2026},
+  {name:'Aug',days:31,mi:8,yr:2026},{name:'Sep',days:30,mi:9,yr:2026},{name:'Oct',days:31,mi:10,yr:2026},
+  {name:'Nov',days:30,mi:11,yr:2026},{name:'Dec',days:31,mi:12,yr:2026},{name:'Jan',days:31,mi:1,yr:2027},
+  {name:'Feb',days:28,mi:2,yr:2027},{name:'Mar',days:31,mi:3,yr:2027},{name:'Apr',days:30,mi:4,yr:2027},
+  {name:'May',days:31,mi:5,yr:2027},
 ];
 function gPct(dateStr){if(!dateStr)return null;const d=new Date(dateStr);if(isNaN(d))return null;return Math.max(0,Math.min(100,(d-G_START)/G_MS*100));}
 
@@ -2991,7 +3014,8 @@ function buildDayTicks(){
   MONTH_DATA.forEach(m=>{
     tickDays.forEach(d=>{
       if(d>m.days)return;
-      const dateStr=`2026-${String(m.mi).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const yr=m.yr||2026;
+      const dateStr=`${yr}-${String(m.mi).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const pct=gPct(dateStr);if(pct===null)return;
       html+=`<div class="g-day-tick" style="left:${pct}%"><div class="g-day-tick-line"></div><div class="g-day-label">${d}</div></div>`;
     });
@@ -3608,7 +3632,11 @@ function exportD(){
 // ── SPREADSHEET EXPORT (ExcelJS) ──
 async function exportToSheets(){
   const u=getUser();
-  const targetLcId=u.role==='mc'?(lcId||u.lcId):u.lcId;
+  if(u.role==='mc'){
+    toast('この機能はLCメンバー専用です。MCの方はLCビューに切り替えてからご利用ください','err');
+    return;
+  }
+  const targetLcId=u.lcId;
   if(!targetLcId){toast('LC選択後にエクスポートしてください','err');return;}
   const lc=D.lcs.find(x=>x.id===targetLcId);
   if(!lc){toast('LCデータが見つかりません','err');return;}
@@ -3748,7 +3776,7 @@ async function exportToSheets(){
   // 週を生成（2026-02-02 〜 2026-09-28、月曜始まり）
   const ganttWeeks=[];
   let gd=new Date(2026,1,2);
-  while(gd<=new Date(2026,8,28)){ganttWeeks.push(new Date(gd));gd=new Date(gd);gd.setDate(gd.getDate()+7);}
+  while(gd<=new Date(2027,4,31)){ganttWeeks.push(new Date(gd));gd=new Date(gd);gd.setDate(gd.getDate()+7);}
 
   const FC=6; // 固定列数
   const todayMs=today.getTime();
@@ -5066,7 +5094,7 @@ function mc_sw(v,el){
     mc_rDash();
   } else if(v==='gantt'){
     document.getElementById('mc-ptitle').textContent='GANTT';
-    document.getElementById('mc-psub').textContent='Feb → Sep 2026';
+    document.getElementById('mc-psub').textContent='Feb 2026 → May 2027';
     mc_rGantt();
   } else if(v.startsWith('area-')){
     mc_aid=v.replace('area-','');
@@ -5194,7 +5222,7 @@ async function mc_rDash(){
     <div class="dash-hero">
       <div>
         <div class="dh-title">MC<br>ACTION<br><span>TRACKER</span></div>
-        <div class="dh-sub">2627 · Feb → Sep</div>
+        <div class="dh-sub">2627 · Feb 2026 → May 2027</div>
       </div>
       <div class="dh-right">
         <div class="dh-pct-lbl">OVERALL PROGRESS</div>
@@ -5221,6 +5249,9 @@ function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
   const over=isOver(t.deadline)&&t.status!=='DONE';
   const hasSub=(t.children||[]).length>0;
   const subToggle=hasSub?`<button class="sub-toggle" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)">›</button>`:'<span style="display:inline-block;width:14px"></span>';
+  const todoCount=(t.todos||[]).length;
+  const todoDone=(t.todos||[]).filter(x=>x.done).length;
+  const todoBadge=todoCount>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:2px;white-space:nowrap" onclick="mc_openTaskTodos('${aId}','${kId}','${t.id}')">Todo ${todoDone}/${todoCount}</span>`:'';
   return `<tr class="tr" id="row-${t.id}" draggable="true"
     data-dtype="kpi" data-scope="${aId}" data-kid="${kId}" data-tid="${t.id}"
     ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)"
@@ -5235,7 +5266,7 @@ function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
     <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="${onEdit}">+ メモ</span>`}</td>
     <td>${mc_ccBadge(t.id)}</td>
     <td class="tby">${h(t._by||'')}</td>
-    <td><div class="ta"><button class="ib" onclick="${onEdit}">編集</button><button class="ib" onclick="mc_dupTask('${aId}','${kId}','${t.id}',event)">複製</button><button class="ib del" onclick="${onDel}">削除</button>${hasSub?'':`<button class="ib" onclick="mc_addSubTask('${aId}','${kId}','${t.id}',event)">+ サブ</button>`}</div></td>
+    <td>${todoBadge}<div class="ta"><button class="ib" onclick="${onEdit}">編集</button><button class="ib" onclick="mc_dupTask('${aId}','${kId}','${t.id}',event)">複製</button><button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="mc_openTaskTodos('${aId}','${kId}','${t.id}')">Todo</button><button class="ib del" onclick="${onDel}">削除</button>${hasSub?'':`<button class="ib" onclick="mc_addSubTask('${aId}','${kId}','${t.id}',event)">+ サブ</button>`}</div></td>
   </tr>`;
 }
 
@@ -5318,8 +5349,8 @@ function mc_rArea(id){
     return `<div class="kpi-block">
       <div class="kpi-head" onclick="mc_togK('${k.id}')">
         <div class="kpi-idx" style="color:${c}">${String(i+1).padStart(2,'0')}</div>
-        <div class="kpi-info"><div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div><div class="kpi-ttl">${h(k.name)}</div>${k.target?`<div class="kpi-target">Target: ${k.target} · Actual: ${k.actual}</div>`:''}</div>
-        <div class="kpi-r"><div class="kpi-pct" style="color:${c}">${pct}%</div><div class="kpi-bar"><div class="kpi-bar-f" style="width:${pct}%;background:${c}"></div></div><div class="kpi-cnt">${dn}/${tot2} done</div></div>
+        <div class="kpi-info"><div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div><div class="kpi-ttl">${h(k.name)}</div>${k.memo?`<div class="kpi-target">${h(k.memo)}</div>`:''}</div>
+        ${kpiRBlock(k.target,k.actual,c,pct,dn,tot2)}
         <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0"><button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();mc_openEditKpi('${area.id}','${k.id}')">編集</button></div>
         <div class="kpi-chev open" id="cv-${k.id}">›</div>
       </div>
@@ -5950,11 +5981,11 @@ function mc_delFT(pId,tId,skipConfirm){
 }
 
 // ── WEEKLY TODO ──
-// Generate week start dates (Monday) from 2026-02-02 to 2026-09-28
+// Generate week start dates (Monday) from 2026-02-02 to 2027-05-31
 function mc_wtWeeks(){
   const weeks=[];
   let d=new Date(2026,1,2); // Feb 2, 2026 (Monday)
-  const end=new Date(2026,8,28);
+  const end=new Date(2027,4,31);
   while(d<=end){
     weeks.push(new Date(d));
     d=new Date(d);d.setDate(d.getDate()+7);
@@ -5983,17 +6014,29 @@ function mc_rWeekTodo(aId,c){
   const area=MC_D.areas.find(a=>a.id===aId);if(!area)return'';
   if(!area.weekTodos)area.weekTodos=[];
   const weeks=mc_wtWeeks();
-  const todayWk=weeks.find(w=>mc_wtIsCurrentWeek(w));
+  const checkSvg='<span class="wt-cb-check">✓</span>';
   const cards=weeks.map(w=>{
     const key=mc_wtWeekKey(w);
     const todos=area.weekTodos.filter(t=>t.weekStart===key);
     const done=todos.filter(t=>t.done).length;
     const past=mc_wtIsPast(w);
     const isCurrent=mc_wtIsCurrentWeek(w);
-    const isOpen=isCurrent||(!past&&todos.length>0);
+    // タスク連携ToDo収集
+    const linkedTodos=[];
+    area.kpis.forEach(k=>{
+      k.tasks.forEach(t=>{
+        (t.todos||[]).filter(td=>td.week===key).forEach(td=>{
+          linkedTodos.push({todo:td,task:t,kpiId:k.id});
+        });
+      });
+    });
+    const linkedDone=linkedTodos.filter(x=>x.todo.done).length;
+    const totalAll=todos.length+linkedTodos.length;
+    const doneAll=done+linkedDone;
+    const isOpen=isCurrent||(!past&&totalAll>0&&doneAll<totalAll);
     const todoItems=todos.map(t=>`
       <div class="mc-wt-item" id="wtrow-${t.id}">
-        <div class="wt-cb${t.done?' done':''}" onclick="mc_togWT('${aId}','${t.id}')">${t.done?'<span class="wt-cb-check">✓</span>':''}</div>
+        <div class="wt-cb${t.done?' done':''}" onclick="mc_togWT('${aId}','${t.id}')">${t.done?checkSvg:''}</div>
         <div class="wt-main">
           <div class="wt-name${t.done?' done':''}">${h(t.name)}</div>
           ${(t.res||t.sup)?`<div class="wt-meta">${t.res?`<span class="wt-res">${h(t.res)}</span>`:''}${t.sup?`<span class="wt-sup">sup: ${h(t.sup)}</span>`:''}</div>`:''}
@@ -6004,7 +6047,23 @@ function mc_rWeekTodo(aId,c){
           <button class="ib del" onclick="mc_delWT('${aId}','${t.id}')">削除</button>
         </div>
       </div>`).join('');
-    const emptyMsg=todos.length===0?`<div class="wt-empty">Todoなし</div>`:'';
+    const linkedHtml=linkedTodos.length>0?`
+      <div style="border-top:1px dashed ${c}44;margin:4px 0 0;padding-top:2px">
+        <div style="padding:4px 16px 4px;font-size:9px;font-weight:700;color:${c};letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px">
+          <span>タスク連携 Todo</span><span style="color:var(--faint);font-weight:400">${linkedDone}/${linkedTodos.length}</span>
+        </div>
+        ${linkedTodos.map(({todo,task,kpiId})=>`
+        <div class="mc-wt-item" id="wtrow-linked-${todo.id}">
+          <div class="wt-cb${todo.done?' done':''}" onclick="mc_togLinkedTodoDone('${aId}','${kpiId}','${task.id}','${todo.id}')">${todo.done?checkSvg:''}</div>
+          <div class="wt-main">
+            <div style="font-size:9px;font-weight:700;color:${c};background:${c}15;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(task.name)}</div>
+            <div class="wt-name${todo.done?' done':''}" style="${todo.done?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+          </div>
+          <div class="wt-actions"><button class="ib" style="font-size:9px;padding:2px 6px;color:#7552CC;border-color:#7552CC44" onclick="mc_openTaskTodos('${aId}','${kpiId}','${task.id}')">管理</button></div>
+        </div>`).join('')}
+      </div>`:''
+    ;
+    const emptyMsg=totalAll===0?`<div class="wt-empty">Todoなし</div>`:'';
     const weekNum=weeks.indexOf(w)+1;
     return `<div class="wt-week${isCurrent?' current':''}">
       <div class="wt-week-head" onclick="mc_togWTWeek('${key}')">
@@ -6014,13 +6073,13 @@ function mc_rWeekTodo(aId,c){
         </div>
         ${isCurrent?`<span class="wt-week-badge now">今週</span>`:past?'':''}
         <div class="wt-week-stats">
-          <span>${done}/${todos.length} 完了</span>
-          ${todos.length?`<span class="wt-week-pct" style="color:${c}">${Math.round(done/todos.length*100)}%</span>`:''}
+          <span>${doneAll}/${totalAll} 完了</span>
+          ${totalAll?`<span class="wt-week-pct" style="color:${c}">${Math.round(doneAll/totalAll*100)}%</span>`:''}
         </div>
         <div class="wt-week-chev${isOpen?' open':''}" id="wtchev-${key}">›</div>
       </div>
       <div class="mc-wt-body${isOpen?' open':''}" id="wtbody-${key}">
-        ${todoItems}${emptyMsg}
+        ${todoItems}${linkedHtml}${emptyMsg}
         <div class="wt-add"><button class="wt-add-btn" onclick="mc_openAddWT('${aId}','${key}')">+ Todo 追加...</button></div>
       </div>
     </div>`;
@@ -6108,6 +6167,115 @@ function mc_delWT(aId,tId){
   area.weekTodos=area.weekTodos.filter(x=>x.id!==tId);
   mc_save();mc_closeMWT();mc_rArea(aId);
   logAction('del','週次Todoを削除');toast('削除しました');
+}
+
+// ── MC TASK TODO ──
+let _mcTtCtx=null;
+
+function mc_openTaskTodos(aId,kId,tId){
+  const a=MC_D.areas.find(x=>x.id===aId);if(!a)return;
+  const k=a.kpis.find(x=>x.id===kId);if(!k)return;
+  const t=k.tasks.find(x=>x.id===tId);if(!t)return;
+  if(!t.todos)t.todos=[];
+  _mcTtCtx={aId,kId,tId};
+  mc_renderTaskTodosModal();
+  document.getElementById('mc-ov-task-todos').classList.add('open');
+}
+
+function mc_renderTaskTodosModal(){
+  if(!_mcTtCtx)return;
+  const{aId,kId,tId}=_mcTtCtx;
+  const a=MC_D.areas.find(x=>x.id===aId);
+  const k=a.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t)return;
+  if(!t.todos)t.todos=[];
+  const c=MC_COLORS[aId]||'#037EF3';
+  const checkSvg='<span class="wt-cb-check">✓</span>';
+  document.getElementById('mc-tt-mttl').textContent=t.name;
+  const allWeeks=mc_wtWeeks();
+  const taskStart=t.start?new Date(t.start):null;
+  const taskEnd=t.deadline?new Date(t.deadline):null;
+  const relevantWeeks=allWeeks.filter(w=>{
+    const s=taskStart||new Date(2026,1,1);
+    const e=taskEnd||new Date(2027,4,31);
+    const sun=new Date(w.getTime()+6*86400000);
+    return sun>=s&&w<=e;
+  });
+  let html=`<div style="padding:9px 18px;background:${c}15;border-bottom:1px solid ${c}22;font-size:11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:9px;font-weight:700;background:${c};color:#fff;padding:2px 7px;border-radius:3px">${aId}</span>
+    <span style="color:var(--dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(k.name)}</span>
+    ${t.res?`<span style="color:var(--dim)">担当: ${h(t.res)}</span>`:''}
+    ${t.start&&t.deadline?`<span style="color:var(--dim);white-space:nowrap">${fd(t.start)} → ${fd(t.deadline)}</span>`:''}
+    <span style="color:${c};font-weight:700">${t.todos.filter(x=>x.done).length}/${t.todos.length} done</span>
+  </div>`;
+  if(relevantWeeks.length===0){
+    html+=`<div style="padding:24px;text-align:center;color:var(--faint);font-size:12px;line-height:1.6">開始日・締め切りを設定すると<br>該当週のToDoを追加できます</div>`;
+  } else {
+    relevantWeeks.forEach(w=>{
+      const wKey=mc_wtWeekKey(w);
+      const wTodos=t.todos.filter(x=>x.week===wKey);
+      const isCur=mc_wtIsCurrentWeek(w);
+      html+=`<div style="border-bottom:1px solid var(--border);padding:10px 18px">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:${wTodos.length?'8px':'5px'}">
+          <span style="font-size:12px;font-weight:800;color:${isCur?c:'var(--text)'}">${w.getMonth()+1}/${w.getDate()} 〜 ${new Date(w.getTime()+6*86400000).toLocaleDateString('ja',{month:'numeric',day:'numeric'})}</span>
+          ${isCur?`<span style="font-size:8px;font-weight:700;background:${c};color:#fff;padding:1px 6px;border-radius:10px">今週</span>`:''}
+          ${wTodos.length?`<span style="font-size:10px;color:var(--dim);margin-left:auto">${wTodos.filter(x=>x.done).length}/${wTodos.length}</span>`:''}
+        </div>
+        ${wTodos.map(td=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2)">
+            <div class="wt-cb${td.done?' done':''}" onclick="mc_togTaskTodoDone('${aId}','${kId}','${tId}','${td.id}')">${td.done?checkSvg:''}</div>
+            <span style="flex:1;font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</span>
+            <button class="ib del" style="font-size:9px;padding:2px 6px" onclick="mc_delTaskTodo('${aId}','${kId}','${tId}','${td.id}')">削除</button>
+          </div>`).join('')}
+        <div style="display:flex;gap:6px;margin-top:7px">
+          <input class="fi" id="mc-tt-inp-${wKey}" placeholder="この週のToDoを追加..."
+            style="flex:1;font-size:11px;padding:5px 9px"
+            onkeydown="if(event.key==='Enter')mc_addTaskTodo('${aId}','${kId}','${tId}','${wKey}')">
+          <button class="btn btn-primary" style="font-size:10px;padding:4px 12px;flex-shrink:0"
+            onclick="mc_addTaskTodo('${aId}','${kId}','${tId}','${wKey}')">追加</button>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('mc-tt-body').innerHTML=html;
+}
+
+function mc_addTaskTodo(aId,kId,tId,wKey){
+  const inp=document.getElementById('mc-tt-inp-'+wKey);if(!inp)return;
+  const name=inp.value.trim();if(!name){inp.focus();return;}
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
+  if(!t)return;if(!t.todos)t.todos=[];
+  t.todos.push({id:gid(),week:wKey,name,done:false});
+  mc_save();mc_renderTaskTodosModal();
+  setTimeout(()=>{const i2=document.getElementById('mc-tt-inp-'+wKey);if(i2)i2.focus();},50);
+}
+
+function mc_togTaskTodoDone(aId,kId,tId,todoId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  td.done=!td.done;mc_save();mc_renderTaskTodosModal();
+}
+
+function mc_delTaskTodo(aId,kId,tId,todoId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  t.todos=t.todos.filter(x=>x.id!==todoId);mc_save();mc_renderTaskTodosModal();
+}
+
+function mc_togLinkedTodoDone(aId,kpiId,tId,todoId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kpiId),t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  td.done=!td.done;mc_save();
+  if(mc_aid)mc_rArea(mc_aid);
+}
+
+function mc_closeTaskTodos(){
+  document.getElementById('mc-ov-task-todos').classList.remove('open');
+  const prev=_mcTtCtx;_mcTtCtx=null;
+  if(prev&&mc_aid)mc_rArea(mc_aid);
 }
 
 // ── DUPLICATE ──
@@ -6265,10 +6433,17 @@ function mc_dgGrpDrop(e){
 }
 
 // ── GANTT ──
-const MC_G_START=new Date(2026,1,1),MC_G_END=new Date(2026,8,30),MC_G_MS=MC_G_END-MC_G_START;
-const MC_MONTH_DATA=[{name:'2月',days:28,mi:1},{name:'3月',days:31,mi:2},{name:'4月',days:30,mi:3},{name:'5月',days:31,mi:4},{name:'6月',days:30,mi:5},{name:'7月',days:31,mi:6},{name:'8月',days:31,mi:7},{name:'9月',days:30,mi:8}];
+const MC_G_START=new Date(2026,1,1),MC_G_END=new Date(2027,4,31),MC_G_MS=MC_G_END-MC_G_START;
+const MC_MONTH_DATA=[
+  {name:'2月',days:28,mi:1,yr:2026},{name:'3月',days:31,mi:2,yr:2026},{name:'4月',days:30,mi:3,yr:2026},
+  {name:'5月',days:31,mi:4,yr:2026},{name:'6月',days:30,mi:5,yr:2026},{name:'7月',days:31,mi:6,yr:2026},
+  {name:'8月',days:31,mi:7,yr:2026},{name:'9月',days:30,mi:8,yr:2026},{name:'10月',days:31,mi:9,yr:2026},
+  {name:'11月',days:30,mi:10,yr:2026},{name:'12月',days:31,mi:11,yr:2026},{name:'1月',days:31,mi:0,yr:2027},
+  {name:'2月',days:28,mi:1,yr:2027},{name:'3月',days:31,mi:2,yr:2027},{name:'4月',days:30,mi:3,yr:2027},
+  {name:'5月',days:31,mi:4,yr:2027},
+];
 function mc_gPct(s){if(!s)return null;const d=new Date(s);if(isNaN(d))return null;return Math.max(0,Math.min(100,(d-MC_G_START)/MC_G_MS*100));}
-function mc_buildDayTicks(){let h2='';const ticks=[1,5,10,15,20,25];MC_MONTH_DATA.forEach(m=>ticks.forEach(d=>{if(d>m.days)return;const p=mc_gPct(`2026-${String(m.mi).padStart(2,'0')}-${String(d).padStart(2,'0')}`);if(p===null)return;h2+=`<div class="g-day-tick" style="left:${p}%"><div class="g-day-tick-line"></div><div class="g-day-label">${d}</div></div>`;}));return h2;}
+function mc_buildDayTicks(){let h2='';const ticks=[1,5,10,15,20,25];MC_MONTH_DATA.forEach(m=>ticks.forEach(d=>{if(d>m.days)return;const yr=m.yr||2026;const p=mc_gPct(`${yr}-${String(m.mi+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`);if(p===null)return;h2+=`<div class="g-day-tick" style="left:${p}%"><div class="g-day-tick-line"></div><div class="g-day-label">${d}</div></div>`;}));return h2;}
 
 function mc_rGantt(){
   const todayPct=Math.max(0,Math.min(100,(new Date()-MC_G_START)/MC_G_MS*100));
@@ -6370,10 +6545,10 @@ function mc_importD(e){const f=e.target.files[0];if(!f)return;const r=new FileRe
 // function mc_toast_impl_unused(msg,t=''){const el=document.createElement('div');el.className='mc_toast'+(t?' '+t:'');el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2600);}
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}
+  if(e.key==='Escape'){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();mc_closeTaskTodos();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('mc-si').focus();}
 });
-['mc-ov','mc-ov-kpi','mc-ov-proj','mc-ov-ft','mc-ov-sub','mc-ov-wt'].forEach(id=>{
+['mc-ov','mc-ov-kpi','mc-ov-proj','mc-ov-ft','mc-ov-sub','mc-ov-wt','mc-ov-task-todos'].forEach(id=>{
   const el=document.getElementById(id);
   if(el)el.addEventListener('click',function(e){if(e.target===this){mc_closeM();mc_closeMKpi();mc_closeMProj();mc_closeMFT();mc_closeMWT();}});
 });
@@ -6840,6 +7015,14 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
       </div>
     </div>
     <div class="mf"><button class="btn" onclick="mc_closeComments()">閉じる</button></div>
+  </div>
+</div>
+<!-- MC TASK TODO MODAL -->
+<div class="overlay" id="mc-ov-task-todos" onclick="if(event.target===this)mc_closeTaskTodos()">
+  <div class="modal modal-wide" style="width:540px">
+    <div class="mh" id="mc-tt-mttl" style="font-size:12px;line-height:1.4"></div>
+    <div id="mc-tt-body" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="mf"><button class="btn" onclick="mc_closeTaskTodos()">閉じる</button></div>
   </div>
 </div>
 
