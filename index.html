@@ -3058,14 +3058,14 @@ function rGantt(){
     const rc=REGION_COLORS[lc.region]||'#037EF3';
     const ls=lcStats(lc.id);
     rowsHtml+=`
-      <div class="g-area-row" style="background:${rc}">
+      <div class="g-area-row" style="background:var(--white)">
         <div class="g-area-hd" style="background:${rc}">
           <span class="g-area-label" style="color:#fff">${lc.id}</span>
           <span class="g-area-count" style="color:rgba(255,255,255,0.7)">${ls.done}/${ls.total}</span>
           <span style="margin-left:auto;font-size:16px;font-weight:900;color:rgba(255,255,255,0.9)">${ls.pct}%</span>
         </div>
-        <div class="g-area-res" style="background:${rc}66"></div>
-        <div class="g-area-chart" style="background:${rc}18"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+        <div class="g-area-res" style="background:${rc}22"></div>
+        <div class="g-area-chart" style="background:${rc}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
       </div>`;
     getLCAreaTypes(lc.id).forEach(at=>{
       const area=getLCArea(lc.id,at.id);const c=at.color;
@@ -6465,10 +6465,10 @@ function mc_rGantt(){
   let rows='';
   aFiltered.forEach(a=>{
     const c=MC_COLORS[a.id]||'#52565E';const st=mc_aStats(a);
-    rows+=`<div class="g-area-row" style="background:${c}">
+    rows+=`<div class="g-area-row" style="background:var(--white)">
       <div class="g-area-hd" style="background:${c}"><span class="g-area-label" style="color:#fff">${a.id}</span><span class="g-area-count" style="color:rgba(255,255,255,.6)">${st.done}/${st.total}</span><span style="margin-left:auto;font-family:'Lato',sans-serif;font-size:16px;color:rgba(255,255,255,.9)">${st.pct}%</span></div>
-      <div class="g-area-res" style="background:${c}88"></div>
-      <div class="g-area-chart" style="background:${c}18"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+      <div class="g-area-res" style="background:${c}22"></div>
+      <div class="g-area-chart" style="background:${c}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
     </div>`;
     a.kpis.forEach(k=>k.tasks.forEach(t=>{
       const b=bar(t,c);if(!b)return;
@@ -6486,10 +6486,10 @@ function mc_rGantt(){
   const fpFiltered=mc_gfil==='ALL'?MC_D.freeProjects:(mc_gfil.startsWith('mc-fp-')?MC_D.freeProjects.filter(p=>p.id===mc_gfil.replace('mc-fp-','')):[]); 
   fpFiltered.forEach(proj=>{
     const c=proj.color||'#037EF3';const ps=mc_pStats(proj);
-    rows+=`<div class="g-area-row" style="background:${c}">
+    rows+=`<div class="g-area-row" style="background:var(--white)">
       <div class="g-area-hd" style="background:${c}"><span class="g-area-label" style="color:#fff;font-size:16px">${h(proj.name.slice(0,10))}</span><span style="margin-left:auto;font-family:'Lato',sans-serif;font-size:16px;color:rgba(255,255,255,.9)">${ps.pct}%</span></div>
-      <div class="g-area-res" style="background:${c}88"></div>
-      <div class="g-area-chart" style="background:${c}18"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+      <div class="g-area-res" style="background:${c}22"></div>
+      <div class="g-area-chart" style="background:${c}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
     </div>`;
     proj.tasks.forEach(t=>{
       const b=bar(t,c);if(!b)return;
