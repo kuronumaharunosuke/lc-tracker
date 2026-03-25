@@ -409,7 +409,7 @@ textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
 .goal-bar-mini{width:60px;height:4px;background:var(--border);border-radius:2px;flex-shrink:0;overflow:hidden;}
 .goal-group-body{display:none;padding-left:12px;border-left:2px solid var(--border);margin-bottom:4px;}
 .goal-group-body.open{display:block;}
-.gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:clip;}
 .gantt-toolbar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap;}
 .gantt-legend{display:flex;align-items:center;gap:12px;font-size:11px;font-weight:700;margin-right:auto;}
 .gl-item{display:flex;align-items:center;gap:4px;}
@@ -418,7 +418,7 @@ textarea.fi{resize:vertical;min-height:55px;font-size:12px;line-height:1.5;}
 .gfb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:4px 9px;border:1.5px solid var(--border);cursor:pointer;background:var(--white);color:var(--dim);transition:all 0.08s;border-radius:4px;}
 .gfb:hover{border-color:var(--text);color:var(--text);}
 .gfb.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-.gantt-scroll{overflow-x:auto;}
+.gantt-scroll{overflow-x:auto;overflow-y:visible;}
 .gantt-inner{min-width:800px;}
 .gantt-head{display:flex;position:sticky;top:54px;z-index:20;background:var(--bg);border-bottom:2px solid var(--border);}
 .g-name-hd{width:240px;min-width:240px;padding:9px 14px;font-size:9px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--dim);border-right:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;}
@@ -899,7 +899,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .fp-card-bar-f{height:100%;border-radius:2px;}
 
 /* ── GANTT ── */
-#mc-panel .gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+#mc-panel .gantt-wrap{background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:clip;}
 #mc-panel .gantt-toolbar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);flex-wrap:wrap;}
 #mc-panel .gantt-legend{display:flex;align-items:center;gap:14px;font-size:11px;font-weight:700;margin-right:auto;}
 #mc-panel .gl-item{display:flex;align-items:center;gap:5px;}
@@ -908,7 +908,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .gfb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border:1.5px solid var(--border);cursor:pointer;background:var(--white);color:var(--dim);transition:all .08s;border-radius:4px;}
 #mc-panel .gfb:hover{border-color:var(--text);color:var(--text);}
 #mc-panel .gfb.active{background:var(--dark);color:#fff;border-color:var(--dark);}
-#mc-panel .gantt-scroll{overflow-x:auto;}
+#mc-panel .gantt-scroll{overflow-x:auto;overflow-y:visible;}
 #mc-panel .gantt-inner{min-width:800px;}
 #mc-panel .gantt-head{display:flex;position:sticky;top:56px;z-index:20;background:var(--bg);border-bottom:2px solid var(--border);}
 #mc-panel .g-name-hd{width:260px;min-width:260px;padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--dim);border-right:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;}
@@ -3082,20 +3082,18 @@ function rGantt(){
         });
       });
     });
-    // タスク行がある場合のみ LC ヘッダーを前置して追加
-    if(lcTaskRows){
-      rowsHtml+=`
-        <div class="g-area-row" style="background:var(--white)">
-          <div class="g-area-hd" style="background:${rc}">
-            <span class="g-area-label" style="color:#fff">${lc.id}</span>
-            <span class="g-area-count" style="color:rgba(255,255,255,0.7)">${ls.done}/${ls.total}</span>
-            <span style="margin-left:auto;font-size:16px;font-weight:900;color:rgba(255,255,255,0.9)">${ls.pct}%</span>
-          </div>
-          <div class="g-area-res" style="background:${rc}22"></div>
-          <div class="g-area-chart" style="background:${rc}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
-        </div>`;
-      rowsHtml+=lcTaskRows;
-    }
+    // 常に LC ヘッダーを表示（タスクがなくてもセパレーターとして機能）
+    rowsHtml+=`
+      <div class="g-area-row" style="background:var(--white)">
+        <div class="g-area-hd" style="background:${rc}">
+          <span class="g-area-label" style="color:#fff">${lc.id}</span>
+          <span class="g-area-count" style="color:rgba(255,255,255,0.7)">${ls.done}/${ls.total}</span>
+          <span style="margin-left:auto;font-size:16px;font-weight:900;color:rgba(255,255,255,0.9)">${ls.pct}%</span>
+        </div>
+        <div class="g-area-res" style="background:${rc}22"></div>
+        <div class="g-area-chart" style="background:${rc}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+      </div>`;
+    rowsHtml+=lcTaskRows;
   });
 
   document.getElementById('ct').innerHTML=`
