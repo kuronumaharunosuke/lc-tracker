@@ -58,6 +58,30 @@
     await signOut(auth);
   };
 
+  // Sheets用トークン取得（別ポップアップでスコープを追加取得）
+  window._fsGetSheetsToken = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
+    provider.addScope('https://www.googleapis.com/auth/drive.file');
+    provider.setCustomParameters({ hd: 'aiesec.jp', prompt: 'none' });
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const cred = GoogleAuthProvider.credentialFromResult(result);
+      return cred?.accessToken || null;
+    } catch(e) {
+      // prompt:none失敗時はselect_accountで再試行
+      try {
+        const provider2 = new GoogleAuthProvider();
+        provider2.addScope('https://www.googleapis.com/auth/spreadsheets');
+        provider2.addScope('https://www.googleapis.com/auth/drive.file');
+        provider2.setCustomParameters({ hd: 'aiesec.jp' });
+        const result2 = await signInWithPopup(auth, provider2);
+        const cred2 = GoogleAuthProvider.credentialFromResult(result2);
+        return cred2?.accessToken || null;
+      } catch(e2) { return null; }
+    }
+  };
+
   // バックアップ保存（直近5世代）
   window._fsBackup = async (data) => {
     try {
@@ -1155,6 +1179,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
     <button id="area-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none" onclick="openAreaMgmt()">エリア管理</button>
     <button id="user-mgmt-btn" class="sf-btn btn-fill" style="font-size:10px;padding:6px 10px;border:none;display:none;background:#FFC845;color:#1B2C5E" onclick="openUserMgmt()">ユーザー管理</button>
     <button class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45)" onclick="exportD()">↓ エクスポート</button>
+    <button id="sheets-export-btn" class="sf-btn" style="background:rgba(0,168,99,0.2);border:1px solid rgba(0,168,99,0.5);color:#5fcb94;display:none" onclick="exportToSheets()">↗ Sheetsへ出力</button>
     <label id="import-btn-wrap" class="sf-btn" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.45);cursor:pointer;display:none">
       ↑ Import
       <input type="file" accept=".json" style="display:none" onchange="importD(event)">
@@ -1502,6 +1527,9 @@ function applyUserUI(){
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('import-btn-wrap').style.display=u.role==='mc'?'':'none';
   document.getElementById('backup-btn-wrap').style.display=u.role==='mc'?'':'none';
+  // SheetsエクスポートはLC+MCどちらも表示（LCが紐付いている場合）
+  const sheetsBtn=document.getElementById('sheets-export-btn');
+  if(sheetsBtn) sheetsBtn.style.display=(u.lcId||u.role==='mc')?'':'none';
   // MC tracker nav visibility
   if(typeof mcShowNav === 'function') mcShowNav(u.role==='mc');
   window._mcCurrentUser = { uid: u.email, email: u.email, displayName: u.displayName||u.email };
@@ -2075,10 +2103,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' !':''}</td>
       <td><span class="${chipClass}" ${chipOnClick}>${sl(t.status)}</span></td>
       <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
-      <td>${(t.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')">📋 ${(t.todos||[]).filter(x=>x.done).length}/${(t.todos||[]).length}</span>`:''}${cw?`<div class="ta">
+      <td>${(t.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')">Todo ${(t.todos||[]).filter(x=>x.done).length}/${(t.todos||[]).length}</span>`:''}${cw?`<div class="ta">
         <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
         <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${t.id}')" title="この行だけ複製">行複製</button>
-        <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')" title="タスクToDo">📋</button>
+        <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')" title="タスクToDo">Todo</button>
         <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
       </div>`:''}
       </td>
@@ -2097,10 +2125,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' !':''}</td>
         <td><span class="${chipClassJ}" ${chipOnClickJ}>${sl(tj.status)}</span></td>
         <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
-        <td>${(tj.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')">📋 ${(tj.todos||[]).filter(x=>x.done).length}/${(tj.todos||[]).length}</span>`:''}${cw?`<div class="ta">
+        <td>${(tj.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')">Todo ${(tj.todos||[]).filter(x=>x.done).length}/${(tj.todos||[]).length}</span>`:''}${cw?`<div class="ta">
           <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
           <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${tj.id}')" title="この行だけ複製">行複製</button>
-          <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')" title="タスクToDo">📋</button>
+          <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')" title="タスクToDo">Todo</button>
           <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
         </div>`:''}
         </td>
@@ -3599,6 +3627,182 @@ function exportD(){
   const b=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});
   const u=URL.createObjectURL(b);const a=document.createElement('a');
   a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('Exported');
+}
+
+// ── GOOGLE SHEETS EXPORT ──
+function hexToRgb(hex){
+  const m=hex.replace('#','').match(/.{2}/g);
+  if(!m)return{red:.2,green:.4,blue:.9};
+  return{red:parseInt(m[0],16)/255,green:parseInt(m[1],16)/255,blue:parseInt(m[2],16)/255};
+}
+
+async function exportToSheets(){
+  const u=getUser();
+  const targetLcId=u.role==='mc'?(lcId||u.lcId):u.lcId;
+  if(!targetLcId){toast('LC選択後にエクスポートしてください','err');return;}
+
+  const lc=D.lcs.find(x=>x.id===targetLcId);
+  if(!lc){toast('LCデータが見つかりません','err');return;}
+
+  // ── トースト表示してトークン取得 ──
+  toast('Google Sheets 連携中... ポップアップを許可してください');
+  const token=await window._fsGetSheetsToken?.();
+  if(!token){toast('Google認証に失敗しました。ポップアップを許可してください','err');return;}
+
+  toast('スプレッドシートを作成中...');
+
+  const today=new Date();
+  const dateStr=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const areas=getLCAreaTypes(targetLcId);
+
+  // ── シートデータ構築 ──
+  const sheets=[];
+
+  // 概要シート
+  const sumRows=[
+    ['AIESEC in Japan — LC Action Tracker 2627','','','','','',''],
+    [targetLcId,'',lc.name,'','出力日',dateStr,''],
+    ['','','','','','',''],
+    ['エリア','KPI数','タスク総数','Done','WIP','未着手','進捗率'],
+  ];
+  let grandDone=0,grandTotal=0;
+  areas.forEach(at=>{
+    const s=lcAreaStats(targetLcId,at.id);
+    const area=getLCArea(targetLcId,at.id);
+    sumRows.push([at.name,area.kpis.length,s.total,s.done,s.wip,s.ns,s.pct+'%']);
+    grandDone+=s.done;grandTotal+=s.total;
+  });
+  sumRows.push(['','','','','','','']);
+  sumRows.push(['合計','',grandTotal,grandDone,grandTotal-grandDone-((lcStats(targetLcId).wip)||0),(lcStats(targetLcId).ns)||0,grandTotal?Math.round(grandDone/grandTotal*100)+'%':'0%']);
+  sheets.push({id:0,title:'概要',rows:sumRows,isSum:true,color:{red:.11,green:.49,blue:.95}});
+
+  // エリア別シート
+  areas.forEach((at,ai)=>{
+    const area=getLCArea(targetLcId,at.id);
+    const aColor=hexToRgb(at.color);
+    const rows=[
+      [at.name,'','','','','','',''],
+      ['KPI名','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考'],
+    ];
+    let kpiGroup='';
+    area.kpis.forEach(k=>{
+      let first=true;
+      const kTasks=k.tasks;
+      if(kTasks.length===0){
+        rows.push([k.name,'(タスクなし)','','','','','','']);return;
+      }
+      kTasks.forEach(t=>{
+        const statusLabel=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
+        rows.push([first?k.name:'',t.group||'',t.name,t.res||'',t.start||'',t.deadline||'',statusLabel,t.note||'']);
+        first=false;
+        // ToDoがあれば展開
+        (t.todos||[]).forEach(td=>{
+          rows.push(['','','  ToDo: '+td.name,'','','',td.done?'Done':'未着手','(ToDo)']);
+        });
+      });
+      rows.push(['','','','','','','','']); // KPI間の空行
+    });
+    sheets.push({id:ai+1,title:at.id+' '+at.name,rows,isSum:false,color:aColor});
+  });
+
+  // ── スプレッドシート作成 ──
+  const createBody={
+    properties:{title:`AIESEC ${targetLcId} — Action Tracker 2627 (${dateStr})`},
+    sheets:sheets.map(s=>({
+      properties:{sheetId:s.id,title:s.title,index:s.id,
+        tabColor:s.color
+      }
+    }))
+  };
+
+  let spreadsheetId,spreadsheetUrl;
+  try{
+    const res=await fetch('https://sheets.googleapis.com/v4/spreadsheets',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body:JSON.stringify(createBody)
+    });
+    if(!res.ok){const e=await res.text();toast('作成失敗: '+e.slice(0,80),'err');return;}
+    const data=await res.json();
+    spreadsheetId=data.spreadsheetId;spreadsheetUrl=data.spreadsheetUrl;
+  }catch(e){toast('ネットワークエラー','err');return;}
+
+  // ── 値を書き込む ──
+  const valueRanges=sheets.map(s=>({
+    range:`'${s.title}'!A1`,
+    values:s.rows
+  }));
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({valueInputOption:'USER_ENTERED',data:valueRanges})
+  });
+
+  // ── フォーマット設定 ──
+  const fmtReqs=[];
+  sheets.forEach(s=>{
+    const hRow=s.isSum?3:1; // ヘッダー行（0-indexed）
+    // タイトル行（1行目）
+    if(!s.isSum){
+      fmtReqs.push({repeatCell:{
+        range:{sheetId:s.id,startRowIndex:0,endRowIndex:1,startColumnIndex:0,endColumnIndex:8},
+        cell:{userEnteredFormat:{
+          backgroundColor:s.color,
+          textFormat:{foregroundColor:{red:1,green:1,blue:1},bold:true,fontSize:13},
+          horizontalAlignment:'LEFT'
+        }},fields:'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
+      }});
+    }
+    // ヘッダー行
+    fmtReqs.push({repeatCell:{
+      range:{sheetId:s.id,startRowIndex:hRow,endRowIndex:hRow+1,startColumnIndex:0,endColumnIndex:8},
+      cell:{userEnteredFormat:{
+        backgroundColor:{red:s.color.red*.7+.3,green:s.color.green*.7+.3,blue:s.color.blue*.7+.3},
+        textFormat:{bold:true,fontSize:10,foregroundColor:{red:.1,green:.1,blue:.15}},
+        borders:{bottom:{style:'SOLID_MEDIUM',color:{red:s.color.red,green:s.color.green,blue:s.color.blue}}}
+      }},fields:'userEnteredFormat(backgroundColor,textFormat,borders)'
+    }});
+    // ヘッダー行を固定
+    fmtReqs.push({updateSheetProperties:{
+      properties:{sheetId:s.id,gridProperties:{frozenRowCount:hRow+1}},
+      fields:'gridProperties.frozenRowCount'
+    }});
+    // 列幅自動調整
+    fmtReqs.push({autoResizeDimensions:{
+      dimensions:{sheetId:s.id,dimension:'COLUMNS',startIndex:0,endIndex:8}
+    }});
+    // 概要シート: Done列に緑背景
+    if(s.isSum){
+      fmtReqs.push({repeatCell:{
+        range:{sheetId:s.id,startRowIndex:4,endRowIndex:4+areas.length,startColumnIndex:3,endColumnIndex:4},
+        cell:{userEnteredFormat:{backgroundColor:{red:.88,green:.98,blue:.92}}},
+        fields:'userEnteredFormat.backgroundColor'
+      }});
+    }
+  });
+
+  // ステータス列に条件付き色 (エリアシートのG列=index6)
+  sheets.filter(s=>!s.isSum).forEach(s=>{
+    fmtReqs.push({addConditionalFormatRule:{rule:{
+      ranges:[{sheetId:s.id,startRowIndex:2,startColumnIndex:6,endColumnIndex:7}],
+      booleanRule:{condition:{type:'TEXT_CONTAINS',values:[{userEnteredValue:'Done'}]},
+        format:{backgroundColor:{red:.88,green:.98,blue:.92}}}
+    },index:0}});
+    fmtReqs.push({addConditionalFormatRule:{rule:{
+      ranges:[{sheetId:s.id,startRowIndex:2,startColumnIndex:6,endColumnIndex:7}],
+      booleanRule:{condition:{type:'TEXT_CONTAINS',values:[{userEnteredValue:'WIP'}]},
+        format:{backgroundColor:{red:.99,green:.95,blue:.88}}}
+    },index:1}});
+  });
+
+  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,{
+    method:'POST',
+    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+    body:JSON.stringify({requests:fmtReqs})
+  });
+
+  window.open(spreadsheetUrl,'_blank');
+  toast('スプレッドシートを作成しました（新しいタブで開きました）');
 }
 
 function importD(e){
