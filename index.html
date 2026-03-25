@@ -3605,84 +3605,257 @@ function exportD(){
   a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('Exported');
 }
 
-// ── GOOGLE SHEETS EXPORT (SheetJS) ──
-function exportToSheets(){
+// ── SPREADSHEET EXPORT (ExcelJS) ──
+async function exportToSheets(){
   const u=getUser();
   const targetLcId=u.role==='mc'?(lcId||u.lcId):u.lcId;
   if(!targetLcId){toast('LC選択後にエクスポートしてください','err');return;}
   const lc=D.lcs.find(x=>x.id===targetLcId);
   if(!lc){toast('LCデータが見つかりません','err');return;}
 
-  // SheetJS CDN ロード済みかチェック
-  if(typeof XLSX==='undefined'){
-    toast('.xlsxライブラリ読み込み中...','');
+  if(typeof ExcelJS==='undefined'){
+    toast('ライブラリ読み込み中...');
     const s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js';
     s.onload=()=>exportToSheets();
     s.onerror=()=>toast('ライブラリの読み込みに失敗しました','err');
     document.head.appendChild(s);return;
   }
 
+  toast('ファイルを作成中...');
+  await new Promise(r=>setTimeout(r,10)); // trampoline for UI update
+
   const today=new Date();
   const dateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const areas=getLCAreaTypes(targetLcId);
-  const wb=XLSX.utils.book_new();
+
+  const wb=new ExcelJS.Workbook();
+  wb.creator='LC Action Tracker 2627';
+
+  // ── ヘルパー ──
+  const toARGB=hex=>'FF'+hex.replace('#','').toUpperCase().padStart(6,'0');
+  const fill=argb=>({type:'pattern',pattern:'solid',fgColor:{argb}});
+  const font=(argb='FF52565E',bold=false,sz=9)=>({color:{argb},bold,size:sz,name:'Calibri'});
+  const aln=(h='left',v='middle',wrap=false)=>({horizontal:h,vertical:v,wrapText:wrap});
+  const border=(style='thin',argb='FFDDE0E4')=>({style,color:{argb}});
+  const thinBorder=()=>({top:border(),bottom:border(),left:border(),right:border()});
+
+  const C_DARK='FF1B2C5E', C_WHITE='FFFFFFFF', C_DIM='FF8A8E96';
+  const C_DONE_BG='FFD6F5E5', C_DONE_FG='FF005830';
+  const C_WIP_BG='FFFEF3E8',  C_WIP_FG='FF7A4000';
+  const C_NS_BG='FFF3F4F7',   C_NS_FG='FF52565E';
+  const C_DONE_BAR='FF00C16E',C_WIP_BAR='FFF48924',C_NS_BAR='FFCACCD1';
+  const C_TODAY_HDR='FFF85A40',C_TODAY_COL='FFFFF5F5';
 
   // ── 概要シート ──
-  const sumData=[
-    ['AIESEC in Japan — LC Action Tracker 2627'],
-    [targetLcId, lc.name, '', '出力日', dateStr],
-    [],
-    ['エリア','KPI数','タスク総数','Done','WIP','未着手','進捗率'],
-  ];
+  const wsSu=wb.addWorksheet('概要');
+  wsSu.views=[{state:'frozen',ySplit:4}];
+  wsSu.columns=[{width:18},{width:7},{width:10},{width:8},{width:8},{width:8},{width:8}];
+
+  const suR1=wsSu.addRow(['AIESEC in Japan — LC Action Tracker 2627','','','','','','']);
+  suR1.height=22;
+  wsSu.mergeCells('A1:G1');
+  suR1.getCell(1).fill=fill(C_DARK);
+  suR1.getCell(1).font=font(C_WHITE,true,13);
+  suR1.getCell(1).alignment=aln('left');
+
+  const suR2=wsSu.addRow([targetLcId,lc.name,'','出力日',dateStr,'','']);
+  suR2.height=17;
+  wsSu.mergeCells('A2:B2');
+  [1,2,3,4,5,6,7].forEach(c=>{
+    suR2.getCell(c).fill=fill('FF243A7A');
+    suR2.getCell(c).font=font(c<=2?'FFFFC845':C_WHITE,c<=2,10);
+  });
+
+  wsSu.addRow([]).height=4;
+
+  const suHdr=wsSu.addRow(['エリア','KPI数','タスク総数','Done','WIP','未着手','進捗率']);
+  suHdr.height=16;
+  suHdr.eachCell(cell=>{
+    cell.fill=fill('FF2A3F73');cell.font=font(C_WHITE,true,9);
+    cell.alignment=aln('center');
+    cell.border={bottom:border('medium',C_DARK)};
+  });
+
   let grandDone=0,grandTotal=0;
   areas.forEach(at=>{
     const s=lcAreaStats(targetLcId,at.id);
     const area=getLCArea(targetLcId,at.id);
-    sumData.push([at.name, area.kpis.length, s.total, s.done, s.wip, s.ns, s.pct+'%']);
-    grandDone+=s.done; grandTotal+=s.total;
+    const r=wsSu.addRow([at.name,area.kpis.length,s.total,s.done,s.wip,s.ns,s.pct+'%']);
+    r.height=16;
+    r.getCell(1).fill=fill(toARGB(at.color));r.getCell(1).font=font(C_WHITE,true,9);r.getCell(1).alignment=aln('center');
+    r.getCell(4).fill=fill(C_DONE_BG);r.getCell(4).font=font(C_DONE_FG,true,9);r.getCell(4).alignment=aln('center');
+    if(s.wip>0){r.getCell(5).fill=fill(C_WIP_BG);r.getCell(5).font=font(C_WIP_FG,false,9);r.getCell(5).alignment=aln('center');}
+    r.getCell(7).font=font(s.pct>=80?C_DONE_FG:s.pct>=40?C_WIP_FG:C_DIM,true,9);r.getCell(7).alignment=aln('center');
+    grandDone+=s.done;grandTotal+=s.total;
   });
   const ls=lcStats(targetLcId);
-  sumData.push([]);
-  sumData.push(['合計', '', grandTotal, grandDone, ls.wip||0, ls.ns||0, grandTotal?Math.round(grandDone/grandTotal*100)+'%':'0%']);
-  const wsSummary=XLSX.utils.aoa_to_sheet(sumData);
-  // 列幅設定
-  wsSummary['!cols']=[{wch:16},{wch:8},{wch:10},{wch:8},{wch:8},{wch:8},{wch:8}];
-  XLSX.utils.book_append_sheet(wb, wsSummary, '概要');
+  wsSu.addRow([]).height=4;
+  const suTot=wsSu.addRow(['合計','',grandTotal,grandDone,ls.wip||0,ls.ns||0,grandTotal?Math.round(grandDone/grandTotal*100)+'%':'0%']);
+  suTot.height=16;
+  suTot.eachCell(cell=>{cell.font=font(C_DARK,true,9);cell.border={top:border('medium',C_DARK)};});
 
   // ── エリア別シート ──
   areas.forEach(at=>{
     const area=getLCArea(targetLcId,at.id);
-    const rows=[
-      [at.name+' — '+lc.id],
-      ['KPI名','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考'],
-    ];
+    const aARGB=toARGB(at.color);
+    const ws=wb.addWorksheet(at.id);
+    ws.views=[{state:'frozen',ySplit:2}];
+    ws.columns=[{width:26},{width:14},{width:28},{width:10},{width:10},{width:10},{width:10},{width:42}];
+
+    const aR1=ws.addRow([at.name+' — '+lc.id,'','','','','','','']);
+    aR1.height=18;
+    ws.mergeCells(`A1:H1`);
+    aR1.getCell(1).fill=fill(aARGB);aR1.getCell(1).font=font(C_WHITE,true,11);aR1.getCell(1).alignment=aln('left');
+
+    const aHdr=ws.addRow(['KPI名','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考']);
+    aHdr.height=15;
+    aHdr.eachCell(cell=>{
+      cell.fill=fill('FFF0F2F7');cell.font=font(C_DARK,true,9);
+      cell.alignment=aln('center');cell.border={bottom:border('medium',aARGB)};
+    });
+    ws.autoFilter={from:'A2',to:'H2'};
+
     area.kpis.forEach(k=>{
       if(k.tasks.length===0){
-        rows.push([k.name,'(タスクなし)','','','','','','']); return;
+        const r=ws.addRow([k.name,'(タスクなし)','','','','','','']);
+        r.getCell(1).font=font(aARGB,true,9);r.getCell(1).fill=fill('FFF8F9FA');return;
       }
-      let firstTask=true;
+      let first=true;
       k.tasks.forEach(t=>{
-        const st=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
-        rows.push([firstTask?k.name:'', t.group||'', t.name, t.res||'', t.start||'', t.deadline||'', st, t.note||'']);
-        firstTask=false;
+        const stLabel=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
+        const r=ws.addRow([first?k.name:'',t.group||'',t.name,t.res||'',t.start||'',t.deadline||'',stLabel,t.note||'']);
+        r.height=15;
+        if(first){r.getCell(1).font=font(aARGB,true,9);r.getCell(1).fill=fill('FFF8FAFF');}
+        const stC=r.getCell(7);
+        if(t.status==='DONE'){stC.fill=fill(C_DONE_BG);stC.font=font(C_DONE_FG,true,9);}
+        else if(t.status==='WIP'){stC.fill=fill(C_WIP_BG);stC.font=font(C_WIP_FG,true,9);}
+        stC.alignment=aln('center');
         (t.todos||[]).forEach(td=>{
-          rows.push(['','','  [Todo] '+td.name,'','','', td.done?'Done':'未着手','']);
+          const tr=ws.addRow(['','','  [Todo] '+td.name,'','','',td.done?'Done':'未着手','']);
+          tr.getCell(3).font=font(C_DIM,false,8);tr.getCell(3).fill=fill('FFFAFBFC');
+          tr.height=13;
         });
+        first=false;
       });
-      rows.push([]);
+      ws.addRow([]).height=4;
     });
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=[{wch:24},{wch:14},{wch:28},{wch:10},{wch:10},{wch:10},{wch:10},{wch:40}];
-    // ヘッダー行を固定（freeze）
-    ws['!freeze']={xSplit:0,ySplit:2};
-    // 列 G（ステータス）にフィルタ設定
-    ws['!autofilter']={ref:'A2:H2'};
-    XLSX.utils.book_append_sheet(wb, ws, at.id);
   });
 
-  // ── ダウンロード ──
-  XLSX.writeFile(wb, `LC_Tracker_${targetLcId}_${dateStr}.xlsx`);
+  // ── ガントチャート シート ──
+  const wsG=wb.addWorksheet('ガントチャート');
+
+  // 週を生成（2026-02-02 〜 2026-09-28、月曜始まり）
+  const ganttWeeks=[];
+  let gd=new Date(2026,1,2);
+  while(gd<=new Date(2026,8,28)){ganttWeeks.push(new Date(gd));gd=new Date(gd);gd.setDate(gd.getDate()+7);}
+
+  const FC=6; // 固定列数
+  const todayMs=today.getTime();
+
+  // 月ごとに週をグループ化
+  const monthGroups={};
+  const MONTH_NAMES=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep'];
+  ganttWeeks.forEach((w,i)=>{
+    const mk=`${w.getFullYear()}-${w.getMonth()}`;
+    if(!monthGroups[mk])monthGroups[mk]={name:MONTH_NAMES[w.getMonth()],indices:[]};
+    monthGroups[mk].indices.push(i);
+  });
+
+  // 列幅設定
+  wsG.columns=[
+    {width:7},{width:22},{width:12},{width:24},{width:9},{width:8},
+    ...ganttWeeks.map(()=>({width:3.2}))
+  ];
+
+  // 行1: 固定列ヘッダー（row1+2結合）+ 月ヘッダー
+  const mHdrVals=['エリア','KPI','大タスク','タスク名','担当者','ステータス'];
+  Object.values(monthGroups).forEach(mg=>{
+    mg.indices.forEach((wi,ii)=>mHdrVals.push(ii===0?mg.name:''));
+  });
+  const mHdrRow=wsG.addRow(mHdrVals);
+  mHdrRow.height=16;
+  for(let c=1;c<=FC;c++){
+    mHdrRow.getCell(c).fill=fill(C_DARK);mHdrRow.getCell(c).font=font(C_WHITE,true,9);mHdrRow.getCell(c).alignment=aln('center');
+  }
+  Object.values(monthGroups).forEach(mg=>{
+    const sc=FC+mg.indices[0]+1,ec=FC+mg.indices[mg.indices.length-1]+1;
+    if(sc<ec)wsG.mergeCells(1,sc,1,ec);
+    const cell=mHdrRow.getCell(sc);
+    cell.fill=fill('FF2A3F73');cell.font=font(C_WHITE,true,8);cell.alignment=aln('center');
+    cell.border={bottom:border('thin','FF3A5080'),right:border('medium','FF3A5080')};
+  });
+
+  // 行2: 週日付ヘッダー
+  const wHdrVals=['','','','','',''];
+  ganttWeeks.forEach(w=>{
+    const isTodayWeek=todayMs>=w.getTime()&&todayMs<w.getTime()+7*86400000;
+    wHdrVals.push(isTodayWeek?'TODAY':`${w.getMonth()+1}/${w.getDate()}`);
+  });
+  const wHdrRow=wsG.addRow(wHdrVals);
+  wHdrRow.height=13;
+  for(let c=1;c<=FC;c++)wsG.mergeCells(1,c,2,c); // 固定列は2行分結合
+  ganttWeeks.forEach((w,i)=>{
+    const isTodayWeek=todayMs>=w.getTime()&&todayMs<w.getTime()+7*86400000;
+    const cell=wHdrRow.getCell(FC+i+1);
+    cell.fill=fill(isTodayWeek?C_TODAY_HDR:'FF3A5080');
+    cell.font=font(C_WHITE,isTodayWeek,7);cell.alignment=aln('center');
+  });
+
+  wsG.views=[{state:'frozen',ySplit:2,xSplit:FC}];
+
+  // タスク行
+  const statusBarColor={DONE:C_DONE_BAR,WIP:C_WIP_BAR,NOT_STARTED:C_NS_BAR};
+
+  areas.forEach(at=>{
+    const area=getLCArea(targetLcId,at.id);
+    const aARGB=toARGB(at.color);
+    area.kpis.forEach(k=>{
+      k.tasks.forEach(t=>{
+        const stLabel=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
+        const rowVals=[at.id,k.name.slice(0,25),t.group||'',t.name,t.res||'',stLabel];
+        ganttWeeks.forEach(()=>rowVals.push(''));
+        const r=wsG.addRow(rowVals);
+        r.height=14;
+
+        // 固定列スタイル
+        r.getCell(1).fill=fill(aARGB);r.getCell(1).font=font(C_WHITE,true,8);r.getCell(1).alignment=aln('center');
+        for(let c=2;c<=5;c++){r.getCell(c).font=font(C_DARK,false,8);r.getCell(c).alignment=aln('left');}
+        const stCell=r.getCell(6);
+        if(t.status==='DONE'){stCell.fill=fill(C_DONE_BG);stCell.font=font(C_DONE_FG,true,8);}
+        else if(t.status==='WIP'){stCell.fill=fill(C_WIP_BG);stCell.font=font(C_WIP_FG,true,8);}
+        else{stCell.font=font(C_DIM,false,8);}
+        stCell.alignment=aln('center');
+
+        // ガントバー
+        const taskStart=t.start?new Date(t.start):null;
+        const taskEnd=t.deadline?new Date(t.deadline):null;
+        ganttWeeks.forEach((w,i)=>{
+          const isTodayWeek=todayMs>=w.getTime()&&todayMs<w.getTime()+7*86400000;
+          const weekSun=new Date(w.getTime()+6*86400000);
+          const inRange=taskStart&&taskEnd&&w<=taskEnd&&weekSun>=taskStart;
+          const cell=r.getCell(FC+i+1);
+          if(inRange){
+            const barColor=statusBarColor[t.status]||C_NS_BAR;
+            cell.fill=fill(barColor);
+          } else {
+            if(isTodayWeek) cell.fill=fill(C_TODAY_COL);
+          }
+          // 月境界に縦線
+          const isMonthEnd=i<ganttWeeks.length-1&&ganttWeeks[i+1].getMonth()!==w.getMonth();
+          if(isMonthEnd) cell.border={right:border('thin','FFAAAAAA')};
+        });
+      });
+    });
+  });
+
+  // ダウンロード
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`LC_Tracker_${targetLcId}_${dateStr}.xlsx`;
+  a.click();URL.revokeObjectURL(url);
   toast('ダウンロードしました。Google Driveにアップロードするとシートとして開けます');
 }
 
