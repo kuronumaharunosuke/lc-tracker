@@ -58,17 +58,6 @@
     await signOut(auth);
   };
 
-  // Sheets用トークン取得（別ポップアップでスコープを追加取得）
-  window._fsGetSheetsToken = async () => {
-    const provider = new GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-    provider.addScope('https://www.googleapis.com/auth/drive.file');
-    provider.setCustomParameters({ hd: 'aiesec.jp' });
-    const result = await signInWithPopup(auth, provider);
-    const cred = GoogleAuthProvider.credentialFromResult(result);
-    return cred?.accessToken || null;
-  };
-
   // バックアップ保存（直近5世代）
   window._fsBackup = async (data) => {
     try {
@@ -3616,184 +3605,85 @@ function exportD(){
   a.href=u;a.download='lc-action-tracker-2627.json';a.click();URL.revokeObjectURL(u);toast('Exported');
 }
 
-// ── GOOGLE SHEETS EXPORT ──
-function hexToRgb(hex){
-  const m=hex.replace('#','').match(/.{2}/g);
-  if(!m)return{red:.2,green:.4,blue:.9};
-  return{red:parseInt(m[0],16)/255,green:parseInt(m[1],16)/255,blue:parseInt(m[2],16)/255};
-}
-
-async function exportToSheets(){
+// ── GOOGLE SHEETS EXPORT (SheetJS) ──
+function exportToSheets(){
   const u=getUser();
   const targetLcId=u.role==='mc'?(lcId||u.lcId):u.lcId;
   if(!targetLcId){toast('LC選択後にエクスポートしてください','err');return;}
-
   const lc=D.lcs.find(x=>x.id===targetLcId);
   if(!lc){toast('LCデータが見つかりません','err');return;}
 
-  // ── ユーザージェスチャーが生きているうちにトークン取得（toastより先）──
-  let token;
-  try {
-    token = await window._fsGetSheetsToken?.();
-  } catch(e) {
-    toast('Google認証がキャンセルされました','err');return;
+  // SheetJS CDN ロード済みかチェック
+  if(typeof XLSX==='undefined'){
+    toast('.xlsxライブラリ読み込み中...','');
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=()=>exportToSheets();
+    s.onerror=()=>toast('ライブラリの読み込みに失敗しました','err');
+    document.head.appendChild(s);return;
   }
-  if(!token){toast('Google認証に失敗しました','err');return;}
-
-  toast('スプレッドシートを作成中...');
 
   const today=new Date();
-  const dateStr=`${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+  const dateStr=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
   const areas=getLCAreaTypes(targetLcId);
+  const wb=XLSX.utils.book_new();
 
-  // ── シートデータ構築 ──
-  const sheets=[];
-
-  // 概要シート
-  const sumRows=[
-    ['AIESEC in Japan — LC Action Tracker 2627','','','','','',''],
-    [targetLcId,'',lc.name,'','出力日',dateStr,''],
-    ['','','','','','',''],
+  // ── 概要シート ──
+  const sumData=[
+    ['AIESEC in Japan — LC Action Tracker 2627'],
+    [targetLcId, lc.name, '', '出力日', dateStr],
+    [],
     ['エリア','KPI数','タスク総数','Done','WIP','未着手','進捗率'],
   ];
   let grandDone=0,grandTotal=0;
   areas.forEach(at=>{
     const s=lcAreaStats(targetLcId,at.id);
     const area=getLCArea(targetLcId,at.id);
-    sumRows.push([at.name,area.kpis.length,s.total,s.done,s.wip,s.ns,s.pct+'%']);
-    grandDone+=s.done;grandTotal+=s.total;
+    sumData.push([at.name, area.kpis.length, s.total, s.done, s.wip, s.ns, s.pct+'%']);
+    grandDone+=s.done; grandTotal+=s.total;
   });
-  sumRows.push(['','','','','','','']);
-  sumRows.push(['合計','',grandTotal,grandDone,grandTotal-grandDone-((lcStats(targetLcId).wip)||0),(lcStats(targetLcId).ns)||0,grandTotal?Math.round(grandDone/grandTotal*100)+'%':'0%']);
-  sheets.push({id:0,title:'概要',rows:sumRows,isSum:true,color:{red:.11,green:.49,blue:.95}});
+  const ls=lcStats(targetLcId);
+  sumData.push([]);
+  sumData.push(['合計', '', grandTotal, grandDone, ls.wip||0, ls.ns||0, grandTotal?Math.round(grandDone/grandTotal*100)+'%':'0%']);
+  const wsSummary=XLSX.utils.aoa_to_sheet(sumData);
+  // 列幅設定
+  wsSummary['!cols']=[{wch:16},{wch:8},{wch:10},{wch:8},{wch:8},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, wsSummary, '概要');
 
-  // エリア別シート
-  areas.forEach((at,ai)=>{
+  // ── エリア別シート ──
+  areas.forEach(at=>{
     const area=getLCArea(targetLcId,at.id);
-    const aColor=hexToRgb(at.color);
     const rows=[
-      [at.name,'','','','','','',''],
+      [at.name+' — '+lc.id],
       ['KPI名','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考'],
     ];
-    let kpiGroup='';
     area.kpis.forEach(k=>{
-      let first=true;
-      const kTasks=k.tasks;
-      if(kTasks.length===0){
-        rows.push([k.name,'(タスクなし)','','','','','','']);return;
+      if(k.tasks.length===0){
+        rows.push([k.name,'(タスクなし)','','','','','','']); return;
       }
-      kTasks.forEach(t=>{
-        const statusLabel=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
-        rows.push([first?k.name:'',t.group||'',t.name,t.res||'',t.start||'',t.deadline||'',statusLabel,t.note||'']);
-        first=false;
-        // ToDoがあれば展開
+      let firstTask=true;
+      k.tasks.forEach(t=>{
+        const st=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
+        rows.push([firstTask?k.name:'', t.group||'', t.name, t.res||'', t.start||'', t.deadline||'', st, t.note||'']);
+        firstTask=false;
         (t.todos||[]).forEach(td=>{
-          rows.push(['','','  ToDo: '+td.name,'','','',td.done?'Done':'未着手','(ToDo)']);
+          rows.push(['','','  [Todo] '+td.name,'','','', td.done?'Done':'未着手','']);
         });
       });
-      rows.push(['','','','','','','','']); // KPI間の空行
+      rows.push([]);
     });
-    sheets.push({id:ai+1,title:at.id+' '+at.name,rows,isSum:false,color:aColor});
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:24},{wch:14},{wch:28},{wch:10},{wch:10},{wch:10},{wch:10},{wch:40}];
+    // ヘッダー行を固定（freeze）
+    ws['!freeze']={xSplit:0,ySplit:2};
+    // 列 G（ステータス）にフィルタ設定
+    ws['!autofilter']={ref:'A2:H2'};
+    XLSX.utils.book_append_sheet(wb, ws, at.id);
   });
 
-  // ── スプレッドシート作成 ──
-  const createBody={
-    properties:{title:`AIESEC ${targetLcId} — Action Tracker 2627 (${dateStr})`},
-    sheets:sheets.map(s=>({
-      properties:{sheetId:s.id,title:s.title,index:s.id,
-        tabColor:s.color
-      }
-    }))
-  };
-
-  let spreadsheetId,spreadsheetUrl;
-  try{
-    const res=await fetch('https://sheets.googleapis.com/v4/spreadsheets',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-      body:JSON.stringify(createBody)
-    });
-    if(!res.ok){const e=await res.text();toast('作成失敗: '+e.slice(0,80),'err');return;}
-    const data=await res.json();
-    spreadsheetId=data.spreadsheetId;spreadsheetUrl=data.spreadsheetUrl;
-  }catch(e){toast('ネットワークエラー','err');return;}
-
-  // ── 値を書き込む ──
-  const valueRanges=sheets.map(s=>({
-    range:`'${s.title}'!A1`,
-    values:s.rows
-  }));
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values:batchUpdate`,{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({valueInputOption:'USER_ENTERED',data:valueRanges})
-  });
-
-  // ── フォーマット設定 ──
-  const fmtReqs=[];
-  sheets.forEach(s=>{
-    const hRow=s.isSum?3:1; // ヘッダー行（0-indexed）
-    // タイトル行（1行目）
-    if(!s.isSum){
-      fmtReqs.push({repeatCell:{
-        range:{sheetId:s.id,startRowIndex:0,endRowIndex:1,startColumnIndex:0,endColumnIndex:8},
-        cell:{userEnteredFormat:{
-          backgroundColor:s.color,
-          textFormat:{foregroundColor:{red:1,green:1,blue:1},bold:true,fontSize:13},
-          horizontalAlignment:'LEFT'
-        }},fields:'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
-      }});
-    }
-    // ヘッダー行
-    fmtReqs.push({repeatCell:{
-      range:{sheetId:s.id,startRowIndex:hRow,endRowIndex:hRow+1,startColumnIndex:0,endColumnIndex:8},
-      cell:{userEnteredFormat:{
-        backgroundColor:{red:s.color.red*.7+.3,green:s.color.green*.7+.3,blue:s.color.blue*.7+.3},
-        textFormat:{bold:true,fontSize:10,foregroundColor:{red:.1,green:.1,blue:.15}},
-        borders:{bottom:{style:'SOLID_MEDIUM',color:{red:s.color.red,green:s.color.green,blue:s.color.blue}}}
-      }},fields:'userEnteredFormat(backgroundColor,textFormat,borders)'
-    }});
-    // ヘッダー行を固定
-    fmtReqs.push({updateSheetProperties:{
-      properties:{sheetId:s.id,gridProperties:{frozenRowCount:hRow+1}},
-      fields:'gridProperties.frozenRowCount'
-    }});
-    // 列幅自動調整
-    fmtReqs.push({autoResizeDimensions:{
-      dimensions:{sheetId:s.id,dimension:'COLUMNS',startIndex:0,endIndex:8}
-    }});
-    // 概要シート: Done列に緑背景
-    if(s.isSum){
-      fmtReqs.push({repeatCell:{
-        range:{sheetId:s.id,startRowIndex:4,endRowIndex:4+areas.length,startColumnIndex:3,endColumnIndex:4},
-        cell:{userEnteredFormat:{backgroundColor:{red:.88,green:.98,blue:.92}}},
-        fields:'userEnteredFormat.backgroundColor'
-      }});
-    }
-  });
-
-  // ステータス列に条件付き色 (エリアシートのG列=index6)
-  sheets.filter(s=>!s.isSum).forEach(s=>{
-    fmtReqs.push({addConditionalFormatRule:{rule:{
-      ranges:[{sheetId:s.id,startRowIndex:2,startColumnIndex:6,endColumnIndex:7}],
-      booleanRule:{condition:{type:'TEXT_CONTAINS',values:[{userEnteredValue:'Done'}]},
-        format:{backgroundColor:{red:.88,green:.98,blue:.92}}}
-    },index:0}});
-    fmtReqs.push({addConditionalFormatRule:{rule:{
-      ranges:[{sheetId:s.id,startRowIndex:2,startColumnIndex:6,endColumnIndex:7}],
-      booleanRule:{condition:{type:'TEXT_CONTAINS',values:[{userEnteredValue:'WIP'}]},
-        format:{backgroundColor:{red:.99,green:.95,blue:.88}}}
-    },index:1}});
-  });
-
-  await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`,{
-    method:'POST',
-    headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
-    body:JSON.stringify({requests:fmtReqs})
-  });
-
-  window.open(spreadsheetUrl,'_blank');
-  toast('スプレッドシートを作成しました（新しいタブで開きました）');
+  // ── ダウンロード ──
+  XLSX.writeFile(wb, `LC_Tracker_${targetLcId}_${dateStr}.xlsx`);
+  toast('ダウンロードしました。Google Driveにアップロードするとシートとして開けます');
 }
 
 function importD(e){
