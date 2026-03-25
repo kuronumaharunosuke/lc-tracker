@@ -1377,6 +1377,17 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
   </div>
 </div>
 
+<!-- TASK TODO MODAL -->
+<div class="overlay" id="ov-task-todos" onclick="if(event.target===this)closeTaskTodos()">
+  <div class="modal modal-wide" style="width:540px">
+    <div class="mh" id="tt-mttl" style="font-size:12px;line-height:1.4"></div>
+    <div id="tt-body" style="max-height:60vh;overflow-y:auto"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeTaskTodos()">閉じる</button>
+    </div>
+  </div>
+</div>
+
 <!-- AREA MGMT MODAL -->
 <div class="overlay" id="ov-area">
   <div class="modal modal-wide">
@@ -2048,7 +2059,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
     const dragAttrs=cw?`draggable="true" ondragstart="onTaskDragStart(event,'${lId}','${aId}','${kId}','${t.id}')" ondragend="onTaskDragEnd(event)" ondragover="onTaskDragOver(event,'${lId}','${aId}','${kId}','${t.id}')" ondrop="onTaskDrop(event,'${lId}','${aId}','${kId}','${t.id}')"`:''
     rows+=`<tr class="tr" id="row-${t.id}" ${dragAttrs}>
       ${cw?`<td class="drag-handle-td" title="ドラッグで並び替え">⠿</td>`:''}
-      <td class="group-cell${grp?'':' empty'}" rowspan="${span}">
+      <td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` data-grp="${h(grp)}"`:''}>
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
           <span class="group-cell-label" style="border-left:3px solid ${c}">${h(grp)}</span>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
@@ -2064,9 +2075,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' !':''}</td>
       <td><span class="${chipClass}" ${chipOnClick}>${sl(t.status)}</span></td>
       <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
-      <td>${cw?`<div class="ta">
+      <td>${(t.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')">📋 ${(t.todos||[]).filter(x=>x.done).length}/${(t.todos||[]).length}</span>`:''}${cw?`<div class="ta">
         <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
         <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${t.id}')" title="この行だけ複製">行複製</button>
+        <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')" title="タスクToDo">📋</button>
         <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${t.id}',null)">削除</button>
       </div>`:''}
       </td>
@@ -2085,9 +2097,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' !':''}</td>
         <td><span class="${chipClassJ}" ${chipOnClickJ}>${sl(tj.status)}</span></td>
         <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
-        <td>${cw?`<div class="ta">
+        <td>${(tj.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')">📋 ${(tj.todos||[]).filter(x=>x.done).length}/${(tj.todos||[]).length}</span>`:''}${cw?`<div class="ta">
           <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
           <button class="ib" onclick="dupTask('${lId}','${aId}','${kId}','${tj.id}')" title="この行だけ複製">行複製</button>
+          <button class="ib" style="color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')" title="タスクToDo">📋</button>
           <button class="ib del" onclick="delT('${lId}','${aId}','${kId}','${tj.id}',null)">削除</button>
         </div>`:''}
         </td>
@@ -2495,26 +2508,58 @@ function rWeeklyTodo(lId,aId,cw){
   const todos=(area.weekTodos||[]);
   const weeks=getWeeks();
   const now=new Date();
+  const c=getAreaColor(lId,aId);
+  const checkSvg=`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
   let html='';
   weeks.forEach((w,wi)=>{
     const wKey=`${w.mon.getFullYear()}-${String(w.mon.getMonth()+1).padStart(2,'0')}-${String(w.mon.getDate()).padStart(2,'0')}`;
     const wTodos=todos.filter(t=>t.week===wKey);
+    // タスク連携ToDo収集
+    const linkedTodos=[];
+    area.kpis.forEach(k=>{
+      k.tasks.forEach(t=>{
+        (t.todos||[]).filter(td=>td.week===wKey).forEach(td=>{
+          linkedTodos.push({todo:td,task:t,kpiId:k.id,kpiName:k.name});
+        });
+      });
+    });
     const isCur=isCurrentWeek(w.mon,w.sun);
     const isPast=w.sun<now;
-    const doneCount=wTodos.filter(t=>t.done).length;
-    const open=isCur||(wTodos.length>0&&doneCount<wTodos.length);
+    const manualDone=wTodos.filter(t=>t.done).length;
+    const linkedDone=linkedTodos.filter(x=>x.todo.done).length;
+    const totalAll=wTodos.length+linkedTodos.length;
+    const doneAll=manualDone+linkedDone;
+    const open=isCur||(totalAll>0&&doneAll<totalAll);
+    const linkedHtml=linkedTodos.length>0?`
+      <div style="border-top:1px dashed ${c}44;margin:4px 0 0;padding-top:2px">
+        <div style="padding:4px 14px 4px;font-size:9px;font-weight:700;color:${c};letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px">
+          <span>↓ タスク連携 ToDo</span><span style="color:var(--faint);font-weight:400">${linkedDone}/${linkedTodos.length}</span>
+        </div>
+        ${linkedTodos.map(({todo,task,kpiId})=>`
+        <div class="wt-item${todo.done?' done-item':''}" id="wt-item-linked-${todo.id}">
+          <div class="wt-check${todo.done?' checked':''}" onclick="togLinkedTodoDone('${lId}','${aId}','${kpiId}','${task.id}','${todo.id}')">
+            ${todo.done?checkSvg:''}
+          </div>
+          <div class="wt-item-main">
+            <div style="font-size:9px;font-weight:700;color:${c};background:${c}15;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:2px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(task.name)}</div>
+            <div class="wt-name${todo.done?' ':''}" style="${todo.done?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+          </div>
+          ${cw?`<div class="wt-item-actions"><button class="ib" style="font-size:9px;padding:2px 6px;color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kpiId}','${task.id}')">管理</button></div>`:''}
+        </div>`).join('')}
+      </div>`:''
+    ;
     html+=`<div class="wt-week">
       <div class="wt-week-hd${isCur?' current':''}" onclick="togWT('wt-body-${wi}')">
         <span class="wt-week-label">${w.label}</span>
         ${isCur?`<span class="wt-week-badge">今週</span>`:''}
-        <span class="wt-week-cnt">${wTodos.length>0?`${doneCount}/${wTodos.length} done`:isPast?'':''}
+        <span class="wt-week-cnt">${totalAll>0?`${doneAll}/${totalAll} done`:isPast?'':''}
         </span>
         ${cw?`<button class="ib" style="font-size:10px;flex-shrink:0" onclick="event.stopPropagation();openWT('${lId}','${aId}','${wKey}',null)">+ 追加</button>`:''}
         <span style="color:var(--dim);font-size:12px;transition:transform 0.15s" id="wt-chev-${wi}">${open?'▾':'›'}</span>
       </div>
       <div class="wt-week-body${open?' open':''}" id="wt-body-${wi}">
-        ${wTodos.length===0?`<div style="padding:10px 14px;font-size:11px;color:var(--dim)">タスクなし</div>`:''}
+        ${wTodos.length===0&&linkedTodos.length===0?`<div style="padding:10px 14px;font-size:11px;color:var(--dim)">タスクなし</div>`:''}
         ${wTodos.map(t=>`
         <div class="wt-item${t.done?' done-item':''}" id="wt-item-${t.id}">
           <div class="wt-check${t.done?' checked':''}" onclick="togWTDone('${lId}','${aId}','${t.id}')">
@@ -2529,6 +2574,7 @@ function rWeeklyTodo(lId,aId,cw){
             <button class="ib del" style="font-size:10px" onclick="delWT('${lId}','${aId}','${t.id}')">削除</button>
           </div>`:''}
         </div>`).join('')}
+        ${linkedHtml}
       </div>
     </div>`;
   });
@@ -2759,6 +2805,146 @@ function dupGroup(lId,aId,kId,grp){
   if(view==='area'&&lcId&&areaId)rArea(lId,aId);
   else if(view==='lc'&&lcId)rLC(lId);
   toast(`「${grp}」を${copies.length}件まとめて複製しました`);
+}
+
+// ── TASK TODO (タスク連携週次ToDo) ──
+let _ttCtx=null;
+
+function openTaskTodos(lId,aId,kId,tId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  const t=k.tasks.find(x=>x.id===tId);if(!t)return;
+  if(!t.todos)t.todos=[];
+  _ttCtx={lId,aId,kId,tId};
+  renderTaskTodosModal();
+  document.getElementById('ov-task-todos').classList.add('open');
+}
+
+function renderTaskTodosModal(){
+  if(!_ttCtx)return;
+  const{lId,aId,kId,tId}=_ttCtx;
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t)return;
+  if(!t.todos)t.todos=[];
+  const c=getAreaColor(lId,aId);
+  const checkSvg=`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  // タスク期間の週を絞り込む
+  const allWeeks=getWeeks();
+  const taskStart=t.start?new Date(t.start):null;
+  const taskEnd=t.deadline?new Date(t.deadline):null;
+  const relevantWeeks=allWeeks.filter(w=>{
+    const s=taskStart||new Date(2026,1,1);
+    const e=taskEnd||new Date(2026,8,30);
+    return w.sun>=s&&w.mon<=e;
+  });
+
+  document.getElementById('tt-mttl').textContent=t.name;
+
+  let html=`<div style="padding:10px 18px;background:${c}15;border-bottom:1px solid ${c}22;font-size:11px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span style="font-size:9px;font-weight:700;background:${c};color:#fff;padding:2px 7px;border-radius:3px">${aId}</span>
+    <span style="color:var(--dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(k.name)}</span>
+    ${t.res?`<span style="color:var(--dim)">担当: ${h(t.res)}</span>`:''}
+    ${t.start&&t.deadline?`<span style="color:var(--dim);white-space:nowrap">${fd(t.start)} → ${fd(t.deadline)}</span>`:''}
+    <span style="color:${c};font-weight:700">${t.todos.filter(x=>x.done).length}/${t.todos.length} done</span>
+  </div>`;
+
+  if(relevantWeeks.length===0){
+    html+=`<div style="padding:24px;text-align:center;color:var(--faint);font-size:12px;line-height:1.6">開始日・締め切りを設定すると<br>該当週のToDoを追加できます</div>`;
+  } else {
+    relevantWeeks.forEach(w=>{
+      const wKey=`${w.mon.getFullYear()}-${String(w.mon.getMonth()+1).padStart(2,'0')}-${String(w.mon.getDate()).padStart(2,'0')}`;
+      const wTodos=t.todos.filter(x=>x.week===wKey);
+      const isCur=isCurrentWeek(w.mon,w.sun);
+      const doneCount=wTodos.filter(x=>x.done).length;
+      html+=`<div style="border-bottom:1px solid var(--border);padding:10px 18px;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:${wTodos.length>0?'8px':'5px'}">
+          <span style="font-size:12px;font-weight:800;color:${isCur?c:'var(--text)'}">${w.mon.getMonth()+1}/${w.mon.getDate()} 〜 ${w.sun.getMonth()+1}/${w.sun.getDate()}</span>
+          ${isCur?`<span style="font-size:8px;font-weight:700;background:${c};color:#fff;padding:1px 6px;border-radius:10px">今週</span>`:''}
+          ${wTodos.length>0?`<span style="font-size:10px;color:var(--dim);margin-left:auto">${doneCount}/${wTodos.length}</span>`:''}
+        </div>
+        ${wTodos.map(td=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2)">
+            <div class="wt-check${td.done?' checked':''}" onclick="togTaskTodoDone('${lId}','${aId}','${kId}','${tId}','${td.id}')">
+              ${td.done?checkSvg:''}
+            </div>
+            <span style="flex:1;font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</span>
+            <button class="ib del" style="font-size:9px;padding:2px 6px" onclick="delTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">削除</button>
+          </div>`).join('')}
+        <div style="display:flex;gap:6px;margin-top:7px">
+          <input class="fi" id="tt-inp-${wKey}" placeholder="この週のToDoを追加..."
+            style="flex:1;font-size:11px;padding:5px 9px"
+            onkeydown="if(event.key==='Enter')addTaskTodo('${lId}','${aId}','${kId}','${tId}','${wKey}')">
+          <button class="btn btn-primary" style="font-size:10px;padding:4px 12px;flex-shrink:0"
+            onclick="addTaskTodo('${lId}','${aId}','${kId}','${tId}','${wKey}')">追加</button>
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('tt-body').innerHTML=html;
+}
+
+function addTaskTodo(lId,aId,kId,tId,wKey){
+  const inp=document.getElementById('tt-inp-'+wKey);
+  if(!inp)return;
+  const name=inp.value.trim();
+  if(!name){inp.focus();return;}
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t)return;
+  if(!t.todos)t.todos=[];
+  t.todos.push({id:gid(),week:wKey,name,done:false});
+  save();
+  renderTaskTodosModal();
+  setTimeout(()=>{const i2=document.getElementById('tt-inp-'+wKey);if(i2)i2.focus();},50);
+}
+
+function togTaskTodoDone(lId,aId,kId,tId,todoId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  td.done=!td.done;
+  save();
+  renderTaskTodosModal();
+}
+
+function delTaskTodo(lId,aId,kId,tId,todoId){
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  t.todos=t.todos.filter(x=>x.id!==todoId);
+  save();
+  renderTaskTodosModal();
+}
+
+function togLinkedTodoDone(lId,aId,kpiId,tId,todoId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kpiId);if(!k)return;
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  td.done=!td.done;
+  save();
+  if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
+  else if(view==='lc'&&lcId)rLC(lcId);
+}
+
+function closeTaskTodos(){
+  document.getElementById('ov-task-todos').classList.remove('open');
+  const prev=_ttCtx;_ttCtx=null;
+  if(prev){
+    if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
+    else if(view==='lc'&&lcId)rLC(lcId);
+  }
 }
 
 function delT(lId,aId,kId,tId,parentId){
@@ -3674,7 +3860,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();mtlCloseAdd();mtlCloseMembers();}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
