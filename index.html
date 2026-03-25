@@ -3057,23 +3057,14 @@ function rGantt(){
   lcsToShow.forEach(lc=>{
     const rc=REGION_COLORS[lc.region]||'#037EF3';
     const ls=lcStats(lc.id);
-    rowsHtml+=`
-      <div class="g-area-row" style="background:var(--white)">
-        <div class="g-area-hd" style="background:${rc}">
-          <span class="g-area-label" style="color:#fff">${lc.id}</span>
-          <span class="g-area-count" style="color:rgba(255,255,255,0.7)">${ls.done}/${ls.total}</span>
-          <span style="margin-left:auto;font-size:16px;font-weight:900;color:rgba(255,255,255,0.9)">${ls.pct}%</span>
-        </div>
-        <div class="g-area-res" style="background:${rc}22"></div>
-        <div class="g-area-chart" style="background:${rc}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
-      </div>`;
+    let lcTaskRows='';
     getLCAreaTypes(lc.id).forEach(at=>{
       const area=getLCArea(lc.id,at.id);const c=at.color;
       area.kpis.forEach(k=>{
         k.tasks.forEach(t=>{
           const barHtml=renderGBar(t,c,false);if(barHtml===null)return;
           const over=isOver(t.deadline)&&t.status!=='DONE';
-          rowsHtml+=`
+          lcTaskRows+=`
             <div class="g-row">
               <div class="g-name" style="cursor:pointer" onclick="swLC('${lc.id}',null)" title="${lc.id} · ${at.id}">
                 <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${t.status==='DONE'?'var(--done)':t.status==='WIP'?'var(--wip)':'var(--faint)'}"></div>
@@ -3091,6 +3082,20 @@ function rGantt(){
         });
       });
     });
+    // タスク行がある場合のみ LC ヘッダーを前置して追加
+    if(lcTaskRows){
+      rowsHtml+=`
+        <div class="g-area-row" style="background:var(--white)">
+          <div class="g-area-hd" style="background:${rc}">
+            <span class="g-area-label" style="color:#fff">${lc.id}</span>
+            <span class="g-area-count" style="color:rgba(255,255,255,0.7)">${ls.done}/${ls.total}</span>
+            <span style="margin-left:auto;font-size:16px;font-weight:900;color:rgba(255,255,255,0.9)">${ls.pct}%</span>
+          </div>
+          <div class="g-area-res" style="background:${rc}22"></div>
+          <div class="g-area-chart" style="background:${rc}0D"><div class="g-grid">${gridLines}</div><div class="g-today" style="left:${todayPct}%"></div></div>
+        </div>`;
+      rowsHtml+=lcTaskRows;
+    }
   });
 
   document.getElementById('ct').innerHTML=`
