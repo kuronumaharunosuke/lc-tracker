@@ -3132,6 +3132,7 @@ function rGantt(){
   const hd=document.getElementById('lc-gantt-hd');
   if(sc&&hd) sc.addEventListener('scroll',()=>{hd.style.transform=`translateX(-${sc.scrollLeft}px)`;},{passive:true});
 }
+function setGF(id){gfil=id;rGantt();}
 
 /* ── TASK MODAL ── */
 function openAdd(lId,aId,kId){
