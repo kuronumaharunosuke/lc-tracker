@@ -2504,6 +2504,14 @@ function rArea(lId,aId){
 let _areaTab = 'wbs'; // 'wbs' | 'wt'
 function setAreaTab(tab, lId, aId){
   _areaTab = tab;
+  if(tab==='mktl' && window._mktTLSubscribe){
+    // まず既存購読を解除してから再購読（別LCに移動した場合も対応）
+    if(window._mktTLUnsubscribe && _mtlCurrentLC !== lId) window._mktTLUnsubscribe();
+    if(!window._mktTLCache[lId]){
+      // キャッシュが空なら購読開始→データ取得後に再描画
+      window._mktTLSubscribe(lId, ()=>{ mtlRerender(lId, canWrite(lId)); });
+    }
+  }
   rArea(lId, aId);
 }
 
