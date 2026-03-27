@@ -228,6 +228,25 @@
       throw e;
     }
   };
+
+  // ── EB TASK SHEET FIRESTORE BRIDGE ──
+  window._ebCache = {};
+  window._ebUnsubs = {};
+
+  window._ebSubscribe = (lcId, cb) => {
+    if(window._ebUnsubs[lcId]){ window._ebUnsubs[lcId](); delete window._ebUnsubs[lcId]; }
+    const ref = doc(db, 'lc-eb', lcId);
+    window._ebUnsubs[lcId] = onSnapshot(ref, snap => {
+      window._ebCache[lcId] = snap.exists() ? snap.data() : { members:[], tasks:{} };
+      if(typeof cb === 'function') cb();
+    });
+  };
+
+  window._ebSave = async (lcId, data) => {
+    try {
+      await setDoc(doc(db, 'lc-eb', lcId), data);
+    } catch(e) { console.error('EB save error:', e); throw e; }
+  };
 </script>
 <style>
 :root{
@@ -1558,6 +1577,7 @@ const DEFAULT_AREA_TYPES = [
   {id:'BD',  name:'BD',  color:'#7552CC'},
   {id:'F',   name:'F',   color:'#E9518A'},
   {id:'TM',  name:'TM',  color:'#FFC845'},
+  {id:'EB',  name:'EB',  color:'#1B2C5E'},
 ];
 const REGION_COLORS = {East:'#037EF3', Central:'#F48924', West:'#7552CC'};
 const COLOR_PALETTE = ['#F85A40','#0CB9C1','#F48924','#7552CC','#E9518A','#FFC845','#00C16E','#037EF3','#52565E'];
@@ -1994,6 +2014,7 @@ function swArea(lId,aId,skipHistory){
   if((aId!=='Mkt'||lId!==_mtlCurrentLC) && window._mktTLUnsubscribe) window._mktTLUnsubscribe();
   if(aId!=='Mkt') { _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all'; }
   if(aId!=='Mkt') _areaTab='wbs';
+  if(aId!=='EB') _ebSelectedMember=null;
   view='area';lcId=lId;areaId=aId;fil='ALL';
   const lc=D.lcs.find(x=>x.id===lId);
   const at=getLCAreaTypes(lId).find(x=>x.id===aId)||{color:'#037EF3'};
@@ -2490,26 +2511,40 @@ function rArea(lId,aId){
     </div>
     ${readonlyNotice}
     <div class="area-tabs">
-      <div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
+      <div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl'&&_areaTab!=='eb')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
       <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
       ${aId==='Mkt'?`<div class="area-tab" style="color:${_areaTab==='mktl'?'#F48924':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mktl'?'#F48924':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mktl','${lId}','${aId}')">Mkt TL</div>`:''}
+      ${aId==='EB'?`<div class="area-tab" style="color:${_areaTab==='eb'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab==='eb'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
     </div>
     <div id="area-tab-body">
-      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : _areaTab==='eb'&&aId==='EB' ? rEBSheet(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
     </div>`;
   applyNoteColW(getNoteColW());
 }
 
 // ── AREA TAB STATE ──
-let _areaTab = 'wbs'; // 'wbs' | 'wt'
+let _areaTab = 'wbs'; // 'wbs' | 'wt' | 'mktl' | 'eb'
+let _ebCurrentLC = null;
+let _ebSelectedMember = null; // 選択中のEBメンバー
+
 function setAreaTab(tab, lId, aId){
   _areaTab = tab;
   if(tab==='mktl' && window._mktTLSubscribe){
-    // まず既存購読を解除してから再購読（別LCに移動した場合も対応）
     if(window._mktTLUnsubscribe && _mtlCurrentLC !== lId) window._mktTLUnsubscribe();
     if(!window._mktTLCache[lId]){
-      // キャッシュが空なら購読開始→データ取得後に再描画
       window._mktTLSubscribe(lId, ()=>{ mtlRerender(lId, canWrite(lId)); });
+    }
+  }
+  if(tab==='eb' && window._ebSubscribe){
+    if(_ebCurrentLC !== lId){
+      _ebCurrentLC = lId;
+      _ebSelectedMember = null;
+    }
+    if(!window._ebCache[lId]){
+      window._ebSubscribe(lId, ()=>{
+        const body=document.getElementById('area-tab-body');
+        if(body && _areaTab==='eb') body.innerHTML = rEBSheet(lId, canWrite(lId));
+      });
     }
   }
   rArea(lId, aId);
@@ -4193,7 +4228,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
@@ -4297,6 +4332,294 @@ function mtlSaveData(lId, updated){
 }
 
 /* ── Main render ── */
+// ══════════════════════════════════════════════
+//  EB タスク管理シート
+// ══════════════════════════════════════════════
+const EB_STATUSES = ['開始前','処理中','完了'];
+const EB_PRIORITIES = ['P0','P1','P2','P3'];
+const EB_AREAS = ['OGX','ICX','Mkt','BD','F','TM','全体'];
+const EB_STATUS_COLORS = {
+  '開始前': {bg:'#F3F4F7', color:'#52565E', border:'#CACCD1'},
+  '処理中': {bg:'#FEF3E8', color:'#7A4000', border:'#F48924'},
+  '完了':   {bg:'#D6F5E5', color:'#005830', border:'#00C16E'},
+};
+const EB_PRI_COLORS = {P0:'#F85A40',P1:'#F48924',P2:'#037EF3',P3:'#8A8E96'};
+
+function ebGetData(lcId){
+  return (window._ebCache && window._ebCache[lcId])
+    ? window._ebCache[lcId]
+    : {members:[], tasks:{}};
+}
+
+function ebSaveData(lcId, updated){
+  if(window._ebCache) window._ebCache[lcId]=updated;
+  if(window._ebSave) window._ebSave(lcId, updated).catch(e=>toast('EB保存エラー: '+e.message,'err'));
+}
+
+function rEBSheet(lId, cw){
+  const data = ebGetData(lId);
+  const members = data.members||[];
+  const tasks = data.tasks||{};
+  const sel = _ebSelectedMember;
+
+  // メンバーが未設定の場合
+  if(members.length===0&&!cw){
+    return `<div style="padding:32px;text-align:center;color:var(--faint);font-size:13px">EBメンバーが登録されていません</div>`;
+  }
+
+  // ── メンバー一覧 (タブ) ──
+  const memberTabs = `
+    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #1B2C5E22">
+      ${members.map(m=>`
+        <button onclick="ebSelectMember('${lId}','${m.replace(/'/g,"\\'")}')"
+          style="padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;transition:all 0.1s;
+            background:${sel===m?'#1B2C5E':'var(--white)'};color:${sel===m?'#fff':'var(--dim)'};
+            border:1.5px solid ${sel===m?'#1B2C5E':'var(--border)'}">
+          ${h(m)}
+        </button>`).join('')}
+      ${cw?`<button onclick="ebOpenAddMember('${lId}')"
+        style="padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;
+          background:transparent;color:#1B2C5E;border:1.5px dashed #1B2C5E88">
+        + メンバー追加
+      </button>`:''}
+    </div>`;
+
+  if(!sel){
+    // メンバー未選択：全員の統計を表示
+    const overviewRows = members.map(m=>{
+      const mt = (tasks[m]||[]);
+      const done = mt.filter(t=>t.status==='完了').length;
+      const wip  = mt.filter(t=>t.status==='処理中').length;
+      const ns   = mt.filter(t=>t.status==='開始前').length;
+      const tot  = mt.length;
+      const pct  = tot?Math.round(done/tot*100):0;
+      return `<tr style="cursor:pointer" onclick="ebSelectMember('${lId}','${m.replace(/'/g,"\\'")}')">
+        <td style="padding:12px 16px;font-size:13px;font-weight:700;color:#1B2C5E">${h(m)}</td>
+        <td style="padding:12px 16px;text-align:center;font-size:12px;color:var(--dim)">${tot}</td>
+        <td style="padding:12px 16px;text-align:center"><span style="background:#D6F5E5;color:#005830;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px">${done}</span></td>
+        <td style="padding:12px 16px;text-align:center"><span style="background:#FEF3E8;color:#7A4000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px">${wip}</span></td>
+        <td style="padding:12px 16px;text-align:center;color:var(--faint);font-size:12px">${ns}</td>
+        <td style="padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:4px;background:var(--bg2);border-radius:2px">
+              <div style="width:${pct}%;height:100%;background:#1B2C5E;border-radius:2px"></div>
+            </div>
+            <span style="font-size:11px;font-weight:700;color:#1B2C5E;min-width:32px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    return `${memberTabs}
+      <table style="width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <thead>
+          <tr style="background:var(--bg)">
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;border-bottom:1px solid var(--border)">メンバー</th>
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center;border-bottom:1px solid var(--border)">タスク数</th>
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#00C16E;text-align:center;border-bottom:1px solid var(--border)">完了</th>
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#F48924;text-align:center;border-bottom:1px solid var(--border)">処理中</th>
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:center;border-bottom:1px solid var(--border)">開始前</th>
+            <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)">進捗</th>
+          </tr>
+        </thead>
+        <tbody>${overviewRows||`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--faint);font-size:12px">メンバーが登録されていません</td></tr>`}</tbody>
+      </table>`;
+  }
+
+  // ── 個人タスクシート ──
+  const mt = (tasks[sel]||[]);
+  const stFilter = window._ebStFilter||'all';
+  const filtered = stFilter==='all' ? mt : mt.filter(t=>t.status===stFilter);
+
+  const filterBtns = ['all','開始前','処理中','完了'].map(s=>{
+    const cnt = s==='all'?mt.length:mt.filter(t=>t.status===s).length;
+    const active = stFilter===s;
+    return `<button onclick="ebSetFilter('${s}','${lId}')"
+      style="padding:5px 12px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;
+        background:${active?'#1B2C5E':'var(--white)'};color:${active?'#fff':'var(--dim)'};
+        border:1.5px solid ${active?'#1B2C5E':'var(--border)'}">
+      ${s==='all'?'すべて':s} (${cnt})
+    </button>`;
+  }).join('');
+
+  const rows = filtered.map((t,i)=>{
+    const stC = EB_STATUS_COLORS[t.status]||EB_STATUS_COLORS['開始前'];
+    const priC = EB_PRI_COLORS[t.priority]||'#8A8E96';
+    const over = t.deadline&&t.status!=='完了'&&new Date(t.deadline)<new Date();
+    return `<tr style="border-bottom:1px solid var(--border);transition:background 0.07s" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+      <td style="padding:10px 12px;font-size:12px;font-weight:600;color:var(--dark);min-width:180px">${h(t.name)}</td>
+      <td style="padding:10px 12px;text-align:center">
+        <span style="background:${priC}22;color:${priC};border:1px solid ${priC}44;font-size:9px;font-weight:900;padding:2px 7px;border-radius:3px">${h(t.priority||'—')}</span>
+      </td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--dim)">${h(t.area||'—')}</td>
+      <td style="padding:10px 12px">
+        ${cw?`<select onchange="ebCycStatus('${lId}','${sel.replace(/'/g,"\\'")}',${i+mt.indexOf(t)-filtered.indexOf(t)},'${t.id}',this.value)"
+          style="font-size:10px;font-weight:700;padding:3px 6px;border-radius:4px;cursor:pointer;border:1.5px solid ${stC.border};background:${stC.bg};color:${stC.color};font-family:'Lato',sans-serif">
+          ${EB_STATUSES.map(s=>`<option value="${s}"${t.status===s?' selected':''}>${s}</option>`).join('')}
+        </select>`
+        :`<span style="background:${stC.bg};color:${stC.color};border:1px solid ${stC.border};font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px">${t.status}</span>`}
+      </td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--dim)">${t.start||'—'}</td>
+      <td style="padding:10px 12px;font-size:11px;${over?'color:#F85A40;font-weight:700':''}">${t.deadline||'—'}${over?' !':''}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(t.comment||'—')}</td>
+      <td style="padding:10px 12px;font-size:11px;color:var(--dim)">${t.result?`<a href="${h(t.result)}" target="_blank" rel="noopener" style="color:#037EF3;text-decoration:none">リンク</a>`:'—'}</td>
+      <td style="padding:10px 12px;font-size:10px;color:var(--dim)">${h(t.note||'')}</td>
+      ${cw?`<td style="padding:10px 8px">
+        <div style="display:flex;gap:4px;opacity:0;transition:opacity 0.1s" class="eb-row-actions">
+          <button onclick="ebOpenEdit('${lId}','${sel.replace(/'/g,"\\'")}','${t.id}')" style="font-size:10px;padding:3px 7px;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:transparent;color:var(--dim)">編集</button>
+          <button onclick="ebDelTask('${lId}','${sel.replace(/'/g,"\\'")}','${t.id}')" style="font-size:10px;padding:3px 7px;border:1px solid var(--danger);border-radius:3px;cursor:pointer;background:transparent;color:var(--danger)">削除</button>
+        </div>
+      </td>`:''}
+    </tr>`;
+  }).join('');
+
+  const colStyle = 'padding:9px 12px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-align:left;border-bottom:2px solid #1B2C5E33;background:var(--bg)';
+  return `${memberTabs}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${filterBtns}</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${cw?`<button onclick="ebOpenEdit('${lId}','${sel.replace(/'/g,"\\'")}',null)"
+          style="padding:7px 14px;background:#1B2C5E;color:#fff;border:none;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif">
+          + タスク追加
+        </button>`:''}
+        ${cw?`<button onclick="ebDelMember('${lId}','${sel.replace(/'/g,"\\'")}');_ebSelectedMember=null;rArea('${lId}','EB')"
+          style="padding:7px 12px;background:transparent;color:var(--danger);border:1.5px solid var(--danger);border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif">
+          メンバー削除
+        </button>`:''}
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-width:900px">
+        <thead>
+          <tr>
+            <th style="${colStyle}">タスク</th>
+            <th style="${colStyle};text-align:center">優先度</th>
+            <th style="${colStyle}">エリア</th>
+            <th style="${colStyle}">ステータス</th>
+            <th style="${colStyle}">開始日</th>
+            <th style="${colStyle}">締切/終了日</th>
+            <th style="${colStyle}">一言コメント</th>
+            <th style="${colStyle}">成果(doc等)</th>
+            <th style="${colStyle}">備考</th>
+            ${cw?`<th style="${colStyle}"></th>`:''}
+          </tr>
+        </thead>
+        <tbody onmouseenter="this.querySelectorAll('.eb-row-actions').forEach(a=>a.style.opacity='0')">${rows||`<tr><td colspan="${cw?10:9}" style="padding:24px;text-align:center;color:var(--faint);font-size:12px">タスクなし。「+ タスク追加」から追加できます</td></tr>`}</tbody>
+      </table>
+    </div>
+    <style>tr:hover .eb-row-actions{opacity:1!important}</style>`;
+}
+
+function ebSelectMember(lId, member){
+  _ebSelectedMember = member;
+  window._ebStFilter = 'all';
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rEBSheet(lId, canWrite(lId));
+}
+
+function ebSetFilter(f, lId){
+  window._ebStFilter = f;
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML = rEBSheet(lId, canWrite(lId));
+}
+
+function ebCycStatus(lId, member, idx, tId, newStatus){
+  const data=ebGetData(lId);
+  const memberTasks=(data.tasks||{})[member]||[];
+  const t=memberTasks.find(x=>x.id===tId);
+  if(!t)return;
+  t.status=newStatus;
+  ebSaveData(lId,{...data,tasks:{...data.tasks,[member]:memberTasks}});
+  toast('ステータス: '+newStatus);
+}
+
+function ebDelTask(lId, member, tId){
+  if(!confirm('このタスクを削除しますか？'))return;
+  const data=ebGetData(lId);
+  const memberTasks=((data.tasks||{})[member]||[]).filter(x=>x.id!==tId);
+  ebSaveData(lId,{...data,tasks:{...data.tasks,[member]:memberTasks}});
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML=rEBSheet(lId,canWrite(lId));
+  toast('削除しました');
+}
+
+function ebDelMember(lId, member){
+  if(!confirm(`「${member}」を削除しますか？タスクも全て削除されます。`))return;
+  const data=ebGetData(lId);
+  const newTasks={...data.tasks};delete newTasks[member];
+  const newMembers=(data.members||[]).filter(m=>m!==member);
+  ebSaveData(lId,{members:newMembers,tasks:newTasks});
+  toast(`「${member}」を削除しました`);
+}
+
+// ── EB メンバー追加モーダル ──
+let _ebAddMemberLC=null;
+function ebOpenAddMember(lId){
+  _ebAddMemberLC=lId;
+  const inp=document.getElementById('eb-member-inp');
+  if(inp)inp.value='';
+  const ov=document.getElementById('ov-eb-member');
+  if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
+}
+function ebAddMember(){
+  const lId=_ebAddMemberLC;if(!lId)return;
+  const name=(document.getElementById('eb-member-inp')?.value||'').trim();
+  if(!name){toast('名前を入力してください','err');return;}
+  const data=ebGetData(lId);
+  if((data.members||[]).includes(name)){toast('既に存在します','err');return;}
+  const newMembers=[...(data.members||[]),name];
+  ebSaveData(lId,{...data,members:newMembers});
+  document.getElementById('ov-eb-member').classList.remove('open');
+  _ebSelectedMember=name;
+  rArea(lId,'EB');
+  toast(`「${name}」を追加しました`);
+}
+
+// ── EB タスク編集モーダル ──
+let _ebEditCtx=null;
+function ebOpenEdit(lId, member, tId){
+  _ebEditCtx={lId,member,tId};
+  const data=ebGetData(lId);
+  const t=tId?(((data.tasks||{})[member]||[]).find(x=>x.id===tId)):null;
+  document.getElementById('eb-task-mttl').textContent=t?'タスク編集':'タスク追加';
+  document.getElementById('eb-task-name').value=t?t.name:'';
+  document.getElementById('eb-task-pri').value=t?t.priority:'P2';
+  document.getElementById('eb-task-area').value=t?t.area:'';
+  document.getElementById('eb-task-status').value=t?t.status:'開始前';
+  document.getElementById('eb-task-start').value=t?t.start:'';
+  document.getElementById('eb-task-deadline').value=t?t.deadline:'';
+  document.getElementById('eb-task-comment').value=t?t.comment:'';
+  document.getElementById('eb-task-result').value=t?t.result:'';
+  document.getElementById('eb-task-note').value=t?t.note:'';
+  document.getElementById('ov-eb-task').classList.add('open');
+  setTimeout(()=>document.getElementById('eb-task-name')?.focus(),80);
+}
+function ebSaveTask(){
+  if(!_ebEditCtx)return;
+  const{lId,member,tId}=_ebEditCtx;
+  const name=(document.getElementById('eb-task-name')?.value||'').trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const obj={
+    id:tId||gid(), name,
+    priority:document.getElementById('eb-task-pri').value,
+    area:document.getElementById('eb-task-area').value,
+    status:document.getElementById('eb-task-status').value,
+    start:document.getElementById('eb-task-start').value,
+    deadline:document.getElementById('eb-task-deadline').value,
+    comment:document.getElementById('eb-task-comment').value.trim(),
+    result:document.getElementById('eb-task-result').value.trim(),
+    note:document.getElementById('eb-task-note').value.trim(),
+  };
+  const data=ebGetData(lId);
+  const memberTasks=[...((data.tasks||{})[member]||[])];
+  if(tId){const i=memberTasks.findIndex(x=>x.id===tId);if(i>=0)memberTasks[i]=obj;else memberTasks.push(obj);}
+  else memberTasks.push(obj);
+  ebSaveData(lId,{...data,tasks:{...(data.tasks||{}),[member]:memberTasks}});
+  document.getElementById('ov-eb-task').classList.remove('open');
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML=rEBSheet(lId,canWrite(lId));
+  toast(tId?'更新しました':'追加しました');
+}
+
 function rMktTL(lId, cw){
   _mtlCurrentLC = lId;
   const data = mtlGetData(lId);
@@ -7070,6 +7393,67 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     <div class="mf"><button class="btn" onclick="mc_closeComments()">閉じる</button></div>
   </div>
 </div>
+<!-- EB メンバー追加モーダル -->
+<div class="overlay" id="ov-eb-member" onclick="if(event.target===this)document.getElementById('ov-eb-member').classList.remove('open')">
+  <div class="modal" style="width:380px">
+    <div class="mh" style="background:#1B2C5E">EBメンバーを追加</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2">メンバー名</label>
+        <input class="fi" id="eb-member-inp" placeholder="例: 黒沼春之介"
+          onkeydown="if(event.key==='Enter')ebAddMember()">
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="document.getElementById('ov-eb-member').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-fill" style="background:#1B2C5E;border-color:#1B2C5E" onclick="ebAddMember()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- EB タスク編集モーダル -->
+<div class="overlay" id="ov-eb-task" onclick="if(event.target===this)document.getElementById('ov-eb-task').classList.remove('open')">
+  <div class="modal modal-wide">
+    <div class="mh" id="eb-task-mttl" style="background:#1B2C5E">タスク追加</div>
+    <div class="mb">
+      <div class="fg"><label class="fl2">タスク名 *</label><input class="fi" id="eb-task-name" placeholder="タスク内容を入力..."></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl2">優先度</label>
+          <select class="fs" id="eb-task-pri">
+            <option value="P0">P0</option><option value="P1">P1</option>
+            <option value="P2" selected>P2</option><option value="P3">P3</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl2">エリア担当</label>
+          <select class="fs" id="eb-task-area">
+            <option value="">—</option>
+            <option>OGX</option><option>ICX</option><option>Mkt</option>
+            <option>BD</option><option>F</option><option>TM</option><option>全体</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl2">開始日</label><input class="fi" type="date" id="eb-task-start"></div>
+        <div class="fg"><label class="fl2">締切/終了日</label><input class="fi" type="date" id="eb-task-deadline"></div>
+      </div>
+      <div class="fg"><label class="fl2">ステータス</label>
+        <select class="fs" id="eb-task-status">
+          <option value="開始前">開始前</option>
+          <option value="処理中">処理中</option>
+          <option value="完了">完了</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl2">一言コメント</label><input class="fi" id="eb-task-comment" placeholder="進捗や状況のメモ..."></div>
+      <div class="fg"><label class="fl2">成果 (doc/URL等)</label><input class="fi" id="eb-task-result" placeholder="https://..."></div>
+      <div class="fg"><label class="fl2">備考</label><textarea class="fi" id="eb-task-note" rows="2" placeholder="補足など..."></textarea></div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="document.getElementById('ov-eb-task').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-fill" style="background:#1B2C5E;border-color:#1B2C5E" onclick="ebSaveTask()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- MC TASK TODO MODAL -->
 <div class="overlay" id="mc-ov-task-todos" onclick="if(event.target===this)mc_closeTaskTodos()">
   <div class="modal modal-wide" style="width:540px">
