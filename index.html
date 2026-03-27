@@ -2018,6 +2018,7 @@ function swArea(lId,aId,skipHistory){
   if((aId!=='Mkt'||lId!==_mtlCurrentLC) && window._mktTLUnsubscribe) window._mktTLUnsubscribe();
   if(aId!=='Mkt') { _mtlExp=null; _mtlSearch=''; _mtlFilterStatus='all'; }
   if(aId!=='Mkt') _areaTab='wbs';
+  if(aId==='EB') _areaTab='eb';
   if(aId!=='EB') _ebSelectedMember=null;
   view='area';lcId=lId;areaId=aId;fil='ALL';
   const lc=D.lcs.find(x=>x.id===lId);
@@ -2030,8 +2031,9 @@ function swArea(lId,aId,skipHistory){
     </span>`;
   document.getElementById('psub').textContent=lc.name;
   const cw=canWrite(lId);
-  document.getElementById('addbtn').style.display=cw?'':'none';
-  document.getElementById('addkpibtn').style.display=cw?'':'none';
+  // EBエリアはKPI/タスク追加ボタン不要
+  document.getElementById('addbtn').style.display=(cw&&aId!=='EB')?'':'none';
+  document.getElementById('addkpibtn').style.display=(cw&&aId!=='EB')?'':'none';
   if(!skipHistory) try{history.pushState({view:'area',lcId:lId,areaId:aId},'',location.pathname+'#area-'+lId+'-'+aId);}catch(e){}
   buildNav();rArea(lId,aId);closeSidebar();
 }
@@ -2515,13 +2517,13 @@ function rArea(lId,aId){
     </div>
     ${readonlyNotice}
     <div class="area-tabs">
-      <div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl'&&_areaTab!=='eb')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>
+      ${aId!=='EB'?`<div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl'&&_areaTab!=='eb')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>`:''}
       <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
       ${aId==='Mkt'?`<div class="area-tab" style="color:${_areaTab==='mktl'?'#F48924':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mktl'?'#F48924':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mktl','${lId}','${aId}')">Mkt TL</div>`:''}
-      ${aId==='EB'?`<div class="area-tab" style="color:${_areaTab==='eb'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab==='eb'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
+      ${aId==='EB'?`<div class="area-tab" style="color:${_areaTab!=='wt'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab!=='wt'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
     </div>
     <div id="area-tab-body">
-      ${_areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : _areaTab==='eb'&&aId==='EB' ? rEBSheet(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+      ${aId==='EB'&&_areaTab!=='wt' ? rEBSheet(lId,cw) : _areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
     </div>`;
   applyNoteColW(getNoteColW());
 }
@@ -7405,7 +7407,7 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
       <div class="fg">
         <label class="fl2">メンバー名</label>
         <input class="fi" id="eb-member-inp" placeholder="例: 黒沼春之介"
-          onkeydown="if(event.key==='Enter')ebAddMember()">
+          onkeydown="if(event.key==='Enter'&&!event.isComposing)ebAddMember()">
       </div>
     </div>
     <div class="mf">
