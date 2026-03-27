@@ -1627,6 +1627,10 @@ function save(){
 
 function ensureAreas(){
   if(!D.areaTypes) D.areaTypes=JSON.parse(JSON.stringify(DEFAULT_AREA_TYPES));
+  // DEFAULT_AREA_TYPES に追加されたエリア（EBなど）を既存データにマージ
+  DEFAULT_AREA_TYPES.forEach(def=>{
+    if(!D.areaTypes.find(x=>x.id===def.id)) D.areaTypes.push({...def});
+  });
   if(!D.lcs) D.lcs=makeSeed().lcs;
   LC_META.forEach(meta=>{
     if(!D.lcs.find(x=>x.id===meta.id))
