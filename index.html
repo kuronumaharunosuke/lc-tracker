@@ -3078,10 +3078,12 @@ function rGantt(){
           const over=isOver(t.deadline)&&t.status!=='DONE';
           lcTaskRows+=`
             <div class="g-row g-lc-row-${lc.id}">
-              <div class="g-name" style="cursor:pointer" onclick="swLC('${lc.id}',null)" title="${lc.id} · ${at.id}">
-                <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:${t.status==='DONE'?'var(--done)':t.status==='WIP'?'var(--wip)':'var(--faint)'}"></div>
-                <span style="font-size:9px;font-weight:900;color:${c};flex-shrink:0">${at.id}</span>
-                <span class="g-name-txt" title="${h(t.name)}">${h(t.name)}</span>
+              <div class="g-name" title="${lc.id} · ${at.id}">
+                <div style="width:14px;height:14px;border-radius:50%;flex-shrink:0;border:2px solid ${t.status==='DONE'?'var(--done)':t.status==='WIP'?'var(--wip)':'var(--faint)'};background:${t.status==='DONE'?'var(--done)':'transparent'};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s" onclick="ganttCycTask('${lc.id}','${at.id}','${k.id}','${t.id}',event)" title="${t.status==='DONE'?'Done':'クリックでDone'}">
+                  ${t.status==='DONE'?`<svg width="8" height="8" viewBox="0 0 8 8"><polyline points="1,4 3,6.5 7,1.5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+                </div>
+                <span style="font-size:9px;font-weight:900;color:${c};flex-shrink:0;cursor:pointer" onclick="swLC('${lc.id}',null)">${at.id}</span>
+                <span class="g-name-txt" style="cursor:pointer" onclick="swLC('${lc.id}',null)" title="${h(t.name)}">${h(t.name)}</span>
                 ${over?'<span style="color:var(--danger);font-size:10px;flex-shrink:0">!</span>':''}
               </div>
               <div class="g-res">${h(t.res||'—')}</div>
@@ -3149,6 +3151,21 @@ function togGanttLC(lcId){
   const isHidden=rows[0].style.display==='none';
   rows.forEach(r=>r.style.display=isHidden?'':'none');
   if(chev) chev.style.transform=isHidden?'':'rotate(-90deg)';
+}
+
+function ganttCycTask(lId,aId,kId,tId,e){
+  if(e)e.stopPropagation();
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  const t=k.tasks.find(x=>x.id===tId);if(!t)return;
+  // Not Started → WIP → Done → Not Started
+  const ord=['NOT_STARTED','WIP','DONE'];
+  t.status=ord[(ord.indexOf(t.status)+1)%3];
+  save();buildNav();
+  toast('Status: '+sl(t.status));
+  // ガントを再描画（バー色も更新）
+  rGantt();
 }
 
 /* ── TASK MODAL ── */
@@ -5602,7 +5619,7 @@ function mc_openAdd(aId,kId){
   mc_editing=null;
   document.getElementById('mc-mttl').textContent='タスク追加';
   document.getElementById('task-del-btn').style.display='none';
-  ['fn','fr','fsup','fs2','mc_fd','fnote'].forEach(id=>document.getElementById(id).value='');
+  ['mc-fn','mc-fr','fsup','mc-fs2','mc_fd','mc-fnote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('mc-fg-input').value='';
   document.getElementById('mc-fst').value='NOT_STARTED';
   document.getElementById('fpri').value='';
