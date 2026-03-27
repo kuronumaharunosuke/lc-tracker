@@ -597,7 +597,7 @@ html{font-size:13px;}
 .wt-add-row{padding:8px 14px;}
 /* ── RANKING ── */
 .rank-pg{padding:24px;}
-.rank-hero{background:var(--navy);color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px;}
+.rank-hero{background:var(--dark);color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:20px;}
 .rank-hero-title{font-size:22px;font-weight:900;letter-spacing:0.06em;}
 .rank-section{margin-bottom:28px;}
 .rank-section-title{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
@@ -1337,7 +1337,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 <!-- BACKUP RESTORE MODAL -->
 <div id="backup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:1100;align-items:center;justify-content:center">
   <div style="background:var(--white);border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;gap:12px">
-    <div style="font-size:15px;font-weight:900;color:var(--navy)">↩ バックアップから復元</div>
+    <div style="font-size:15px;font-weight:900;color:var(--dark)">↩ バックアップから復元</div>
     <div style="font-size:11px;color:var(--dim)">保存ボタンを押すたびに最新5件が自動保存されます。復元すると現在のデータは上書きされます。</div>
     <div id="backup-list" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;min-height:80px">
       <div style="color:var(--dim);font-size:11px;text-align:center;padding:16px">読み込み中...</div>
@@ -4097,7 +4097,7 @@ async function openBackupModal(){
       }catch(e){}
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:var(--navy)">${i===0?'[最新] ':''}${dtStr}</div>
+          <div style="font-size:13px;font-weight:700;color:var(--dark)">${i===0?'[最新] ':''}${dtStr}</div>
           <div style="font-size:10px;color:var(--dim)">タスク合計: ${taskCount}件 · 保存者: ${data.savedBy||'不明'}</div>
         </div>
         <button class="btn btn-primary" style="font-size:11px;padding:5px 12px" onclick="restoreBackup('${d.id}')">復元</button>
