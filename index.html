@@ -5708,13 +5708,13 @@ function mc_rArea(id){
       const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
       const collapsed=grp&&MC__collapsedGroups[grpKey];
       const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
-        <div style="display:flex;align-items:flex-start;gap:4px">
-          <span class="group-cell-label" style="border-left:3px solid ${c};flex:1"><span class="drag-handle">⠿</span>${h(grp)}</span>
-          <button onclick="mc_togGrp('${grpKey}','${area.id}','${k.id}')" title="${collapsed?'展開':'折りたたむ'}"
-            style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--faint);font-size:14px;padding:0 2px;line-height:1;transition:transform 0.15s;transform:rotate(${collapsed?'-90':'0'}deg)"
-            id="mc-grp-chev-${grpKey}">▾</button>
-        </div>
-        <div style="margin-top:4px;display:flex;gap:3px">
+        <span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span>
+        <div style="margin-top:5px;display:flex;gap:3px;flex-wrap:wrap">
+          ${span>1?`<button onclick="mc_togGrp('${grpKey}','${area.id}','${k.id}')"
+            id="mc-grp-chev-${grpKey}"
+            style="font-size:9px;padding:2px 8px;border:1.5px solid ${c}55;border-radius:3px;background:${c}11;color:${c};cursor:pointer;font-family:'Lato',sans-serif;font-weight:700;display:flex;align-items:center;gap:3px">
+            <span id="mc-grp-chev-txt-${grpKey}">${collapsed?'› 展開':'▾ 折りたたむ'}</span>
+          </button>`:''}
           <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
         </div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,span,c,
@@ -6682,12 +6682,11 @@ function mc_dupTask(aId,kId,tId,e){
 function mc_togGrp(grpKey, aId, kId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
   const collapsed = MC__collapsedGroups[grpKey];
-  // DOM直接操作（再描画なし）
   document.querySelectorAll(`tr.mc-grp-row[data-mcgrp="${grpKey}"]`).forEach(r=>{
     r.style.display = collapsed ? 'none' : '';
   });
-  const chev = document.getElementById('mc-grp-chev-'+grpKey);
-  if(chev) chev.style.transform = `rotate(${collapsed?'-90':'0'}deg)`;
+  const txt = document.getElementById('mc-grp-chev-txt-'+grpKey);
+  if(txt) txt.textContent = collapsed ? '› 展開' : '▾ 折りたたむ';
 }
 function mc_dupGroup(aId,kId,grp,e){
   if(e)e.stopPropagation();
