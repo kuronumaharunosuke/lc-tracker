@@ -2129,9 +2129,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       ${cw?`<td class="drag-handle-td" title="ドラッグで並び替え">⠿</td>`:''}
       <td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}"`:''}>
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start">
-          <span class="group-cell-label" style="border-left:3px solid ${c};cursor:pointer" onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'展開':'折りたたみ'}">
-            <span style="font-size:10px;margin-right:2px">${lcCollapsed?'›':'▾'}</span>${h(grp)}${lcCollapsed?`<span style="font-size:9px;color:var(--dim);margin-left:3px">(${span}件)</span>`:''}
-          </span>
+          <div onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'展開':'折りたたみ'}" style="cursor:pointer;display:flex;align-items:center;gap:3px">
+            <span style="font-size:11px;font-weight:900;color:${c};flex-shrink:0">${lcCollapsed?'›':'▾'}</span>
+            <span class="group-cell-label" style="border-left:3px solid ${c};min-width:0;flex:1">${h(grp)}${lcCollapsed?` (${span})`:''}</span>
+          </div>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all;max-width:95px">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
           ${cw?`<div class="gc-actions" style="display:flex;flex-direction:column;gap:2px">
             <button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}',this.closest('[data-grp]').dataset.grp)">${grpNote?'編集':'＋備考'}</button>
@@ -5715,11 +5716,11 @@ function mc_rArea(id){
       const collapsed=grp&&span>1&&MC__collapsedGroups[grpKey];
       const renderSpan=collapsed?1:span;
       const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
-        <span class="group-cell-label" style="border-left:3px solid ${c};cursor:pointer"
-          onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'展開':'折りたたみ'}">
-          <span style="font-size:10px;margin-right:2px">${collapsed?'›':'▾'}</span>${h(grp)}${collapsed?`<span style="font-size:9px;color:var(--dim);margin-left:3px">(${span}件)</span>`:''}
-        </span>
-        <div style="margin-top:4px">
+        <div onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'展開':'折りたたみ'}" style="cursor:pointer;display:flex;align-items:center;gap:3px;margin-bottom:3px">
+          <span style="font-size:11px;font-weight:900;color:${c};flex-shrink:0">${collapsed?'›':'▾'}</span>
+          <span class="group-cell-label" style="border-left:3px solid ${c};flex:1;min-width:0">${h(grp)}${collapsed?` (${span})`:''}</span>
+        </div>
+        <div style="margin-top:2px">
           <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
         </div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,renderSpan,c,
