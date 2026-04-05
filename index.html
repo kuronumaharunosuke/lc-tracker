@@ -5706,31 +5706,33 @@ function mc_rArea(id){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
-      const collapsed=grp&&MC__collapsedGroups[grpKey];
-      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
-        <span class="group-cell-label" style="border-left:3px solid ${c};cursor:${span>1?'pointer':'default'}" ${span>1?`onclick="mc_togGrp('${grpKey}','${area.id}','${k.id}')" title="${collapsed?'クリックで展開':'クリックで折りたたみ'}"`:''}>
+      const collapsed=grp&&span>1&&MC__collapsedGroups[grpKey];
+      const renderSpan=collapsed?1:span;
+      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
+        <span class="group-cell-label" style="border-left:3px solid ${c}"
+          ${span>1?`onclick="mc_togGrp('${grpKey}','${area.id}')" style="border-left:3px solid ${c};cursor:pointer" title="${collapsed?'展開':'折りたたみ'}"`:''}>
           <span class="drag-handle">⠿</span>
-          <span id="mc-grp-chev-${grpKey}" style="font-size:10px;margin-right:2px;display:inline-block;transition:transform 0.15s;transform:rotate(${collapsed?'-90':'0'}deg)">${span>1?'▾':''}</span>${h(grp)}
+          ${span>1?`<span style="font-size:10px;margin-right:2px">${collapsed?'›':'▾'}</span>`:''}${h(grp)}${collapsed?`<span style="font-size:9px;color:var(--dim);margin-left:4px">(${span}件)</span>`:''}
         </span>
         <div style="margin-top:4px">
           <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
         </div>`:''}</td>`;
-      rows+=mc_taskRow(t,area.id,k.id,grpHtml,span,c,
+      rows+=mc_taskRow(t,area.id,k.id,grpHtml,renderSpan,c,
         `mc_cycTask('${area.id}','${k.id}','${t.id}',event)`,
         `mc_openEdit('${area.id}','${k.id}','${t.id}')`,
         `mc_delT('${area.id}','${k.id}','${t.id}')`
       );
       rows+=mc_subRows(t,area.id,k.id,c);
-      for(let j=1;j<span;j++){
-        const tj=tasks[i2+j];
-        const collRow=mc_taskRow(tj,area.id,k.id,'',1,c,
-          `mc_cycTask('${area.id}','${k.id}','${tj.id}',event)`,
-          `mc_openEdit('${area.id}','${k.id}','${tj.id}')`,
-          `mc_delT('${area.id}','${k.id}','${tj.id}')`
-        );
-        const collStyle=collapsed?'display:none':'';
-        rows+=collRow.replace('<tr class="tr"','<tr class="tr mc-grp-row" data-mcgrp="'+grpKey+'" style="'+collStyle+'"');
-        rows+=mc_subRows(tj,area.id,k.id,c);
+      if(!collapsed){
+        for(let j=1;j<span;j++){
+          const tj=tasks[i2+j];
+          rows+=mc_taskRow(tj,area.id,k.id,'',1,c,
+            `mc_cycTask('${area.id}','${k.id}','${tj.id}',event)`,
+            `mc_openEdit('${area.id}','${k.id}','${tj.id}')`,
+            `mc_delT('${area.id}','${k.id}','${tj.id}')`
+          );
+          rows+=mc_subRows(tj,area.id,k.id,c);
+        }
       }
       i2+=span;
     }
@@ -6677,14 +6679,9 @@ function mc_dupTask(aId,kId,tId,e){
   mc_save();mc_buildNav();mc_rArea(aId);
   logAction('dup',`「${orig.name}」を複製`);toast('複製しました。編集ボタンで内容を変更できます');
 }
-function mc_togGrp(grpKey, aId, kId){
+function mc_togGrp(grpKey, aId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
-  const collapsed = MC__collapsedGroups[grpKey];
-  document.querySelectorAll(`tr.mc-grp-row[data-mcgrp="${grpKey}"]`).forEach(r=>{
-    r.style.display = collapsed ? 'none' : '';
-  });
-  const chev = document.getElementById('mc-grp-chev-'+grpKey);
-  if(chev) chev.style.transform = `rotate(${collapsed?'-90':'0'}deg)`;
+  mc_rArea(aId);
 }
 function mc_dupGroup(aId,kId,grp,e){
   if(e)e.stopPropagation();
