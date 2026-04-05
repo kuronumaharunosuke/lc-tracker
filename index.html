@@ -4342,14 +4342,14 @@ function mtlSaveData(lId, updated){
 //  EB タスク管理シート
 // ══════════════════════════════════════════════
 const EB_STATUSES = ['開始前','処理中','完了'];
-const EB_PRIORITIES = ['P0','P1','P2','P3'];
+const EB_PRIORITIES = ['緊急','重要','通常','低'];
 const EB_AREAS = ['OGX','ICX','Mkt','BD','F','TM','全体'];
 const EB_STATUS_COLORS = {
   '開始前': {bg:'#F3F4F7', color:'#52565E', border:'#CACCD1'},
   '処理中': {bg:'#FEF3E8', color:'#7A4000', border:'#F48924'},
   '完了':   {bg:'#D6F5E5', color:'#005830', border:'#00C16E'},
 };
-const EB_PRI_COLORS = {P0:'#F85A40',P1:'#F48924',P2:'#037EF3',P3:'#8A8E96'};
+const EB_PRI_COLORS = {'緊急':'#F85A40','重要':'#F48924','通常':'#037EF3','低':'#8A8E96'};
 
 function ebGetData(lcId){
   return (window._ebCache && window._ebCache[lcId])
@@ -4588,7 +4588,7 @@ function ebOpenEdit(lId, member, tId){
   const t=tId?(((data.tasks||{})[member]||[]).find(x=>x.id===tId)):null;
   document.getElementById('eb-task-mttl').textContent=t?'タスク編集':'タスク追加';
   document.getElementById('eb-task-name').value=t?t.name:'';
-  document.getElementById('eb-task-pri').value=t?t.priority:'P2';
+  document.getElementById('eb-task-pri').value=t?t.priority:'通常';
   document.getElementById('eb-task-area').value=t?t.area:'';
   document.getElementById('eb-task-status').value=t?t.status:'開始前';
   document.getElementById('eb-task-start').value=t?t.start:'';
@@ -5354,7 +5354,8 @@ function mc_migrate(){
 
 // ── SYNC ──
 const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
-let MC__saving=false,MC__saveTimer=null,MC__syncUnsub=null,MC__dragging=false;
+let MC__saving=false,MC__saveTimer=null,MC__dragging=false;
+const MC__collapsedGroups={}; // key: `${aId}__${kId}__${grp}` → true/false
 
 function mc_setSyncDot(state){
   const d=document.getElementById('mc-sync-dot');
@@ -5376,7 +5377,7 @@ function mc_save(){
       console.error('MC save error',e);
       mc_setSyncDot('err');
     }
-    setTimeout(()=>{MC__saving=false;},600);
+    MC__saving=false; // 即座にリセット（保存完了後にonSnapshotが来ても処理できるように）
   },800);
 }
 
@@ -5704,7 +5705,18 @@ function mc_rArea(id){
     while(i2<tasks.length){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
-      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`<span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div>`:''}</td>`;
+      const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
+      const collapsed=grp&&MC__collapsedGroups[grpKey];
+      const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${span}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
+        <div style="display:flex;align-items:flex-start;gap:4px">
+          <span class="group-cell-label" style="border-left:3px solid ${c};flex:1"><span class="drag-handle">⠿</span>${h(grp)}</span>
+          <button onclick="mc_togGrp('${grpKey}','${area.id}','${k.id}')" title="${collapsed?'展開':'折りたたむ'}"
+            style="flex-shrink:0;background:none;border:none;cursor:pointer;color:var(--faint);font-size:14px;padding:0 2px;line-height:1;transition:transform 0.15s;transform:rotate(${collapsed?'-90':'0'}deg)"
+            id="mc-grp-chev-${grpKey}">▾</button>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:3px">
+          <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
+        </div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,span,c,
         `mc_cycTask('${area.id}','${k.id}','${t.id}',event)`,
         `mc_openEdit('${area.id}','${k.id}','${t.id}')`,
@@ -5713,11 +5725,13 @@ function mc_rArea(id){
       rows+=mc_subRows(t,area.id,k.id,c);
       for(let j=1;j<span;j++){
         const tj=tasks[i2+j];
-        rows+=mc_taskRow(tj,area.id,k.id,'',1,c,
+        const collRow=mc_taskRow(tj,area.id,k.id,'',1,c,
           `mc_cycTask('${area.id}','${k.id}','${tj.id}',event)`,
           `mc_openEdit('${area.id}','${k.id}','${tj.id}')`,
           `mc_delT('${area.id}','${k.id}','${tj.id}')`
         );
+        const collStyle=collapsed?'display:none':'';
+        rows+=collRow.replace('<tr class="tr"','<tr class="tr mc-grp-row" data-mcgrp="'+grpKey+'" style="'+collStyle+'"');
         rows+=mc_subRows(tj,area.id,k.id,c);
       }
       i2+=span;
@@ -6665,6 +6679,16 @@ function mc_dupTask(aId,kId,tId,e){
   mc_save();mc_buildNav();mc_rArea(aId);
   logAction('dup',`「${orig.name}」を複製`);toast('複製しました。編集ボタンで内容を変更できます');
 }
+function mc_togGrp(grpKey, aId, kId){
+  MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
+  const collapsed = MC__collapsedGroups[grpKey];
+  // DOM直接操作（再描画なし）
+  document.querySelectorAll(`tr.mc-grp-row[data-mcgrp="${grpKey}"]`).forEach(r=>{
+    r.style.display = collapsed ? 'none' : '';
+  });
+  const chev = document.getElementById('mc-grp-chev-'+grpKey);
+  if(chev) chev.style.transform = `rotate(${collapsed?'-90':'0'}deg)`;
+}
 function mc_dupGroup(aId,kId,grp,e){
   if(e)e.stopPropagation();
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
@@ -7426,8 +7450,8 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
       <div class="fr2">
         <div class="fg"><label class="fl2">優先度</label>
           <select class="fs" id="eb-task-pri">
-            <option value="P0">P0</option><option value="P1">P1</option>
-            <option value="P2" selected>P2</option><option value="P3">P3</option>
+            <option value="緊急">緊急</option><option value="重要">重要</option>
+            <option value="通常" selected>通常</option><option value="低">低</option>
           </select>
         </div>
         <div class="fg"><label class="fl2">エリア担当</label>
