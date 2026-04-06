@@ -26,6 +26,7 @@
   window._fsDoc = (path, id) => doc(db, path, id);
   const auth = getAuth(app);
   const REF = doc(db, 'lc-tracker-2627', 'main');
+  const MC_REF = doc(db, 'mc-tracker-2627', 'main');
 
   window._fsCheckPassword = async (key, pw) => {
     try {
