@@ -375,7 +375,8 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 .add-btn{font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:color 0.08s;background:none;border:none;}
 .add-btn:hover{color:var(--text);}
 .group-cell{font-size:11px;font-weight:700;color:var(--dark);background:var(--bg);border-right:1px solid var(--border);padding:9px 10px;vertical-align:top;max-width:120px;}
-.group-cell-label{text-align:center;background:var(--bg2);border-radius:4px;padding:3px 7px;font-size:10px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;cursor:pointer;}
+.group-cell-label{text-align:left;background:var(--bg2);border-radius:4px;padding:3px 7px;font-size:10px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px;cursor:pointer;user-select:none;transition:background 0.1s;}
+.group-cell-label:hover{background:var(--border);}
 .group-cell.empty{background:transparent;}
 .tnote{font-size:11px;color:var(--dim);line-height:1.4;word-break:break-all;}
 .group-cell .gc-actions{opacity:0;transition:opacity 0.08s;}
@@ -2138,7 +2139,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       ${cw?`<td class="drag-handle-td" title="ドラッグで並び替え">⠿</td>`:''}
       <td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}"`:''}>
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">
-          <span class="group-cell-label" style="border-left:3px solid ${c}" onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'展開':'折りたたみ'}">${lcCollapsed?'› ':'▾ '}${h(grp)}${lcCollapsed?` (${span})`:''}
+          <span class="group-cell-label" style="border-left:3px solid ${c};background:${lcCollapsed?c+'18':'var(--bg2)'}" onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'クリックで展開':'クリックで折りたたみ'}">${lcCollapsed?'▶ ':'▼ '}${h(grp)}${lcCollapsed?` (${span}件)`:''}
           </span>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
           ${cw?`<div class="gc-actions" style="display:flex;flex-direction:column;gap:2px">
@@ -2261,8 +2262,10 @@ function rLC(id){
         <div class="area-section-hd-title" style="color:${c}">${h(at.name)}</div>
         <span style="font-size:11px;color:var(--dim);margin-left:8px">${as.total} tasks · ${area.kpis.length} KPIs</span>
         <button onclick="swArea('${id}','${at.id}')" style="margin-left:8px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif">詳細 ›</button>
-        <button onclick="collapseAllKpis('${id}','${at.id}')" style="margin-left:4px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="全KPIを折りたたむ">━ 折りたたむ</button>
-        <button onclick="expandAllKpis('${id}','${at.id}')" style="margin-left:2px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="全KPIを展開">▾ 展開</button>
+        <button onclick="collapseAllKpis('${id}','${at.id}')" style="margin-left:4px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="全KPI折りたたむ">━ KPI折りたたむ</button>
+        <button onclick="expandAllKpis('${id}','${at.id}')" style="margin-left:2px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="全KPI展開">▼ KPI展開</button>
+        <button onclick="collapseAllGroups('${id}','${at.id}')" style="margin-left:4px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="大タスク全折りたたむ">━ 大タスク折りたたむ</button>
+        <button onclick="expandAllGroups('${id}','${at.id}')" style="margin-left:2px;font-size:9px;font-weight:700;color:var(--dim);letter-spacing:0.08em;background:var(--bg);padding:2px 8px;border-radius:3px;border:1px solid var(--border);cursor:pointer;font-family:'Lato',sans-serif" title="大タスク全展開">▼ 大タスク展開</button>
         <div class="area-section-pct" style="color:${c}">${as.pct}%</div>
       </div>
       <div class="area-section-body">
@@ -2327,9 +2330,7 @@ function togGoal(id){
 function collapseAllKpis(lId, aId){
   const area=getLCArea(lId,aId);if(!area)return;
   area.kpis.forEach(k=>{
-    // rLC key format
     const k1=lId+'_'+aId+'_'+k.id;
-    // rArea key format
     const k2='area_'+aId+'_'+k.id;
     _collapsedKpis[k1]=true; _collapsedKpis[k2]=true;
     document.getElementById('kb-'+k1)?.classList.remove('open');
@@ -2337,6 +2338,56 @@ function collapseAllKpis(lId, aId){
     document.getElementById('kb-'+k2)?.classList.remove('open');
     document.getElementById('cv-'+k2)?.classList.remove('open');
   });
+}
+
+// 特定KPIの大タスクを折りたたむ
+function collapseAllGroupsInKpi(lId, aId, kId){
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+  groups.forEach(grp=>{
+    const key=`lc__${lId}__${aId}__${kId}__${encodeURIComponent(grp)}`;
+    MC__collapsedGroups[key]=true;
+  });
+  if(view==='lc'&&lcId) rLC(lId); else rArea(lId,aId);
+}
+function expandAllGroupsInKpi(lId, aId, kId){
+  const area=getLCArea(lId,aId);if(!area)return;
+  const k=area.kpis.find(x=>x.id===kId);if(!k)return;
+  const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+  groups.forEach(grp=>{
+    const key=`lc__${lId}__${aId}__${kId}__${encodeURIComponent(grp)}`;
+    MC__collapsedGroups[key]=false;
+  });
+  if(view==='lc'&&lcId) rLC(lId); else rArea(lId,aId);
+}
+
+// 大タスク（グループ）を全て折りたたむ
+function collapseAllGroups(lId, aId){
+  const area=getLCArea(lId,aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+    groups.forEach(grp=>{
+      const key=`lc__${lId}__${aId}__${k.id}__${encodeURIComponent(grp)}`;
+      MC__collapsedGroups[key]=true;
+    });
+  });
+  if(view==='lc'&&lcId) rLC(lId);
+  else rArea(lId,aId);
+}
+
+// 大タスク（グループ）を全て展開
+function expandAllGroups(lId, aId){
+  const area=getLCArea(lId,aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+    groups.forEach(grp=>{
+      const key=`lc__${lId}__${aId}__${k.id}__${encodeURIComponent(grp)}`;
+      MC__collapsedGroups[key]=false;
+    });
+  });
+  if(view==='lc'&&lcId) rLC(lId);
+  else rArea(lId,aId);
 }
 
 function expandAllKpis(lId, aId){
@@ -2499,8 +2550,10 @@ function rArea(lId,aId){
           ${k.memo?`<div class="kpi-target" style="color:var(--text);margin-top:2px">${h(k.memo)}</div>`:''}
         </div>
         ${kpiRBlock(k.target,k.actual,c,pct,ks.done,ks.total)}
-        ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
-          <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();openEditKpi('${lId}','${aId}','${k.id}')">Edit</button>
+        ${cw?`<div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0;gap:2px;padding:0 4px">
+          <button class="ib" style="font-size:10px" onclick="event.stopPropagation();openEditKpi('${lId}','${aId}','${k.id}')">Edit</button>
+          <button class="ib" style="font-size:9px;padding:2px 5px" onclick="event.stopPropagation();collapseAllGroupsInKpi('${lId}','${aId}','${k.id}')" title="この KPI の大タスクを全折りたたむ">━ 大タスク</button>
+          <button class="ib" style="font-size:9px;padding:2px 5px" onclick="event.stopPropagation();expandAllGroupsInKpi('${lId}','${aId}','${k.id}')" title="この KPI の大タスクを全展開">▼ 大タスク</button>
         </div>`:''}
         <div class="kpi-chev ${_collapsedKpis['area_'+aId+'_'+k.id]?'':'open'}" id="cv-area_${aId}_${k.id}">›</div>
       </div>
@@ -7022,7 +7075,9 @@ function mc_dupTask(aId,kId,tId,e){
 }
 function lcTogGrp(grpKey, lId, aId, kId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
-  rArea(lId, aId);
+  // 現在のビューに合わせて再レンダリング（rAreaを誤って呼ぶとビューが切り替わるバグを修正）
+  if(view==='lc' && lcId) rLC(lId);
+  else rArea(lId, aId);
 }
 function mc_togFPGrp(grpKey, projId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
