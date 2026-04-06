@@ -4275,6 +4275,83 @@ async function exportToSheets(){
     });
   });
 
+  // ── 週次ToDo シート ──
+  const wsWT = wb.addWorksheet('週次ToDo');
+  wsWT.views = [{state:'frozen', ySplit:2}];
+  wsWT.columns = [
+    {width:14},{width:8},{width:8},{width:36},{width:14},{width:10},{width:20}
+  ];
+
+  const wtR1 = wsWT.addRow(['週次 ToDo — '+targetLcId,'','','','','','']);
+  wtR1.height = 18;
+  wsWT.mergeCells('A1:G1');
+  wtR1.getCell(1).fill = fill(C_DARK);
+  wtR1.getCell(1).font = font(C_WHITE,true,11);
+
+  const wtHdr = wsWT.addRow(['週','エリア','種別','ToDo内容','担当者','完了','リンクタスク']);
+  wtHdr.height = 15;
+  wtHdr.eachCell(cell=>{
+    cell.fill = fill('FFF0F2F7'); cell.font = font(C_DARK,true,9);
+    cell.alignment = aln('center'); cell.border = {bottom:border('medium','FF1B2C5E')};
+  });
+  wsWT.autoFilter = {from:'A2', to:'G2'};
+
+  // 全週を取得
+  const wtWeeks = getWeeks();
+
+  wtWeeks.forEach(w => {
+    const wKey = `${w.mon.getFullYear()}-${String(w.mon.getMonth()+1).padStart(2,'0')}-${String(w.mon.getDate()).padStart(2,'0')}`;
+    const wLabel = `${w.mon.getMonth()+1}/${w.mon.getDate()}〜${w.sun.getMonth()+1}/${w.sun.getDate()}`;
+    let hasAny = false;
+
+    areas.forEach(at => {
+      const area = getLCArea(targetLcId, at.id);
+      const aARGB = toARGB(at.color);
+
+      // 手動追加のToDo
+      const manualTodos = (area.weekTodos||[]).filter(t=>t.week===wKey);
+      manualTodos.forEach(t => {
+        hasAny = true;
+        const r = wsWT.addRow([wLabel, at.id, '手動', t.name, t.res||'', t.done?'✓':'', '']);
+        r.height = 14;
+        r.getCell(1).font = font(C_DARK,false,8);
+        r.getCell(2).fill = fill(aARGB); r.getCell(2).font = font(C_WHITE,true,8); r.getCell(2).alignment = aln('center');
+        r.getCell(3).font = font(C_DIM,false,8);
+        r.getCell(4).font = font(C_DARK,false,9);
+        r.getCell(5).font = font(C_DIM,false,8);
+        if(t.done){ r.getCell(6).fill=fill(C_DONE_BG); r.getCell(6).font=font(C_DONE_FG,true,9); r.getCell(6).alignment=aln('center'); }
+        else { r.getCell(6).font=font(C_DIM,false,9); r.getCell(6).alignment=aln('center'); }
+        r.eachCell(cell=>cell.border=thinBorder());
+      });
+
+      // タスク連携ToDo
+      area.kpis.forEach(k => {
+        k.tasks.forEach(t => {
+          const linked = (t.todos||[]).filter(td=>td.week===wKey);
+          linked.forEach(td => {
+            hasAny = true;
+            const r = wsWT.addRow([wLabel, at.id, 'タスク連携', td.name, td.res||'', td.done?'✓':'', t.name]);
+            r.height = 14;
+            r.getCell(1).font = font(C_DARK,false,8);
+            r.getCell(2).fill = fill(aARGB); r.getCell(2).font = font(C_WHITE,true,8); r.getCell(2).alignment = aln('center');
+            r.getCell(3).fill = fill('FFF3EEFF'); r.getCell(3).font = font('FF7552CC',false,8); r.getCell(3).alignment = aln('center');
+            r.getCell(4).font = font(C_DARK,false,9);
+            r.getCell(5).font = font(C_DIM,false,8);
+            if(td.done){ r.getCell(6).fill=fill(C_DONE_BG); r.getCell(6).font=font(C_DONE_FG,true,9); r.getCell(6).alignment=aln('center'); }
+            else { r.getCell(6).font=font(C_DIM,false,9); r.getCell(6).alignment=aln('center'); }
+            r.getCell(7).font = font(C_DIM,false,8);
+            r.eachCell(cell=>cell.border=thinBorder());
+          });
+        });
+      });
+    });
+
+    if(hasAny){
+      const sep = wsWT.addRow(['','','','','','','']);
+      sep.height = 4;
+    }
+  });
+
   // ダウンロード
   const buf=await wb.xlsx.writeBuffer();
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
