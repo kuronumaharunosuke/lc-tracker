@@ -4900,12 +4900,33 @@ function mtDelTask(lId, member, tId, aId, cw){
 
 // メンバータスク追加・編集モーダル
 let _mtModal=null;
+function ebMemberSelChange(){
+  const sel=document.getElementById('eb-member-sel');
+  const inp=document.getElementById('eb-member-inp');
+  if(!sel||!inp)return;
+  if(sel.value==='__custom__'){
+    inp.style.display='';
+    setTimeout(()=>inp.focus(),50);
+  } else {
+    inp.style.display='none';
+    inp.value='';
+  }
+}
 let _mtAddContext = null; // {lId, aId} エリア追加の場合のコンテキスト
 function mtOpenAddMember(lId, aId){
   _mtAddContext = {lId, aId}; // エリアから追加フラグ
   _ebAddMemberLC = lId;
+  // LCメンバーリストをセレクトに反映
+  const memberSel2=document.getElementById('eb-member-sel');
+  if(memberSel2){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const members=(lc&&lc.members)||[];
+    memberSel2.innerHTML='<option value="">-- メンバーを選択 --</option>'+
+      members.map(m=>`<option value="${h(m)}">${h(m)}</option>`).join('')+
+      '<option value="__custom__">+ 直接入力...</option>';
+  }
   const inp=document.getElementById('eb-member-inp');
-  if(inp)inp.value='';
+  if(inp){inp.value='';inp.style.display='none';}
   const areaSel=document.getElementById('eb-member-area');
   if(areaSel){
     const lc=D.lcs.find(x=>x.id===lId);
@@ -5362,6 +5383,17 @@ function ebOpenAddMember(lId){
   _ebAddMemberLC=lId;
   const inp=document.getElementById('eb-member-inp');
   if(inp)inp.value='';
+  // LCメンバーリストをセレクトに反映
+  const memberSel=document.getElementById('eb-member-sel');
+  if(memberSel){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const members=(lc&&lc.members)||[];
+    memberSel.innerHTML='<option value="">-- メンバーを選択 --</option>'+
+      members.map(m=>`<option value="${h(m)}">${h(m)}</option>`).join('')+
+      '<option value="__custom__">+ 直接入力...</option>';
+  }
+  document.getElementById('eb-member-inp').style.display='none';
+  document.getElementById('eb-member-inp').value='';
   // エリアドロップダウンをそのLCのエリアで埋める
   const areaSel=document.getElementById('eb-member-area');
   if(areaSel){
@@ -5383,7 +5415,10 @@ function ebOpenAddMember(lId){
 }
 function ebAddMember(){
   const lId=_ebAddMemberLC;if(!lId)return;
-  const name=(document.getElementById('eb-member-inp')?.value||'').trim();
+  const selVal=document.getElementById('eb-member-sel')?.value||'';
+  const name=selVal==='__custom__'||(selVal===''&&document.getElementById('eb-member-inp').style.display!=='none')
+    ?(document.getElementById('eb-member-inp')?.value||'').trim()
+    :selVal;
   if(!name){toast('名前を入力してください','err');return;}
   const area=(document.getElementById('eb-member-area')?.value||'');
   const data=ebGetData(lId);
@@ -8326,7 +8361,11 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     <div class="mb">
       <div class="fg">
         <label class="fl2">メンバー名</label>
-        <input class="fi" id="eb-member-inp" placeholder="例: 黒沼春之介"
+        <select class="fi" id="eb-member-sel" style="height:36px" onchange="ebMemberSelChange()">
+          <option value="">-- メンバーを選択 --</option>
+          <option value="__custom__">+ 直接入力...</option>
+        </select>
+        <input class="fi" id="eb-member-inp" placeholder="例: 黒沼春之介" style="display:none;margin-top:6px"
           onkeydown="if(event.key==='Enter'&&!event.isComposing)ebAddMember()">
       </div>
       <div class="fg" style="margin-top:10px">
