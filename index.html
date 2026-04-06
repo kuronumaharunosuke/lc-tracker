@@ -1529,6 +1529,14 @@ let _currentUser = null;
 function getUser(){ return _currentUser || {role:'lc',lcId:null}; }
 function isMC(){ return getUser().role==='mc'; }
 function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId; }
+function canViewEB(lId){
+  const u=getUser();
+  if(u.role==='mc') return true;
+  if(u.lcId===lId) return true;
+  const lc=D&&D.lcs&&D.lcs.find(x=>x.id===lId);
+  const viewers=(lc&&lc.ebViewerLCs)||[];
+  return viewers.includes(u.lcId);
+}
 
 /* ── AUTH CALLBACKS ── */
 window._fsOnSignIn = function(userData) {
@@ -1808,6 +1816,7 @@ function buildNav(){
           <div class="nav-sub-divider"></div>
           ${getLCAreaTypes(lc.id).map(at=>{
             const as=lcAreaStats(lc.id,at.id);if(as.total===0)return'';
+            if(at.id==='EB'&&!canViewEB(lc.id))return'';
             const aActive=view==='area'&&areaId===at.id&&lcId===lc.id;
             return `<div class="nav-sub-item${aActive?' active':''}" onclick="swArea('${lc.id}','${at.id}')"
               style="border-left-color:${aActive?at.color:'transparent'}">
@@ -2048,6 +2057,7 @@ function swLC(id,el,skipHistory){
 }
 
 function swArea(lId,aId,skipHistory){
+  if(aId==='EB'&&!canViewEB(lId)){toast('EBエリアへのアクセス権がありません','err');return;}
   if(typeof mcReturnToLC === 'function') mcReturnToLC();
   // Unsubscribe mkt-tl listener if navigating away from Mkt TL
   if((aId!=='Mkt'||lId!==_mtlCurrentLC) && window._mktTLUnsubscribe) window._mktTLUnsubscribe();
@@ -2650,10 +2660,10 @@ function rArea(lId,aId){
       <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
       ${aId!=='EB'?`<div class="area-tab" style="color:${_areaTab==='mt'?'var(--aiesec)':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mt'?'var(--aiesec)':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mt','${lId}','${aId}')">メンバータスク</div>`:''}
       ${aId==='Mkt'?`<div class="area-tab" style="color:${_areaTab==='mktl'?'#F48924':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mktl'?'#F48924':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mktl','${lId}','${aId}')">Mkt TL</div>`:''}
-      ${aId==='EB'?`<div class="area-tab" style="color:${_areaTab!=='wt'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab!=='wt'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
+      ${aId==='EB'&&canViewEB(lId)?`<div class="area-tab" style="color:${_areaTab!=='wt'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab!=='wt'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
     </div>
     <div id="area-tab-body">
-      ${aId==='EB'&&_areaTab!=='wt' ? rEBMain(lId,cw) : _areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mt' ? rAreaMemberTasks(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+      ${aId==='EB'&&canViewEB(lId)&&_areaTab!=='wt' ? rEBMain(lId,cw) : _areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mt' ? rAreaMemberTasks(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
     </div>`;
   applyNoteColW(getNoteColW());
 }
@@ -5012,7 +5022,55 @@ function rEBMain(lId, cw){
   if(_ebView==='members')    bodyHtml = rEBSheet(lId, cw);
   else if(_ebView==='calendar') bodyHtml = rEBCalendar(lId, tasks, members);
   else if(_ebView==='capacity') bodyHtml = rEBCapacity(lId, members, capData, cw);
-  return `<div>${navHtml}${bodyHtml}</div>`;
+
+  // MC専用：閲覧許可LC管理
+  let ebAccessHtml = '';
+  if(isMC()){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const viewers=(lc&&lc.ebViewerLCs)||[];
+    const allLCs=D.lcs.map(x=>x.id).filter(id=>id!==lId);
+    ebAccessHtml=`<div style="margin-top:20px;padding:14px 16px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">EBタブ閲覧許可 LC（MC設定）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${viewers.length===0?'<span style="font-size:11px;color:var(--faint)">追加済みLCなし</span>':''}
+        ${viewers.map(lcId2=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;font-weight:700;color:var(--dark)">
+          ${lcId2}
+          <span onclick="ebRemoveViewer('${lId}','${lcId2}')" style="cursor:pointer;color:var(--faint);font-size:12px;font-weight:400;line-height:1">×</span>
+        </span>`).join('')}
+      </div>
+      <div style="display:flex;gap:6px">
+        <select id="eb-viewer-sel-${lId}" class="fi" style="height:32px;font-size:11px;flex:1">
+          <option value="">LCを選択...</option>
+          ${allLCs.filter(id=>!viewers.includes(id)).map(id=>`<option value="${id}">${id}</option>`).join('')}
+        </select>
+        <button onclick="ebAddViewer('${lId}')" style="padding:4px 14px;border-radius:5px;font-size:11px;font-weight:700;background:#1B2C5E;color:#fff;border:none;cursor:pointer;font-family:'Lato',sans-serif;white-space:nowrap">追加</button>
+      </div>
+    </div>`;
+  }
+
+  return `<div>${navHtml}${bodyHtml}${ebAccessHtml}</div>`;
+}
+
+function ebAddViewer(lId){
+  const sel=document.getElementById('eb-viewer-sel-'+lId);
+  if(!sel||!sel.value)return;
+  const lcId2=sel.value;
+  const lc=D.lcs.find(x=>x.id===lId);if(!lc)return;
+  if(!lc.ebViewerLCs)lc.ebViewerLCs=[];
+  if(lc.ebViewerLCs.includes(lcId2))return;
+  lc.ebViewerLCs.push(lcId2);
+  save();buildNav();
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML=rEBMain(lId,canWrite(lId));
+  toast(lcId2+' に閲覧を許可しました');
+}
+function ebRemoveViewer(lId, lcId2){
+  const lc=D.lcs.find(x=>x.id===lId);if(!lc||!lc.ebViewerLCs)return;
+  lc.ebViewerLCs=lc.ebViewerLCs.filter(x=>x!==lcId2);
+  save();buildNav();
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML=rEBMain(lId,canWrite(lId));
+  toast(lcId2+' の閲覧を取り消しました');
 }
 
 function ebSetView(v, lId, cw){
