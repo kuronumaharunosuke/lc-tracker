@@ -2709,6 +2709,15 @@ function rWeeklyTodo(lId,aId,cw){
         });
       });
     });
+    // 保存済み順序があれば適用
+    const linkedOrder=(area.weekLinkedOrder||{})[wKey];
+    if(linkedOrder&&linkedOrder.length){
+      linkedTodos.sort((a,b)=>{
+        const ai=linkedOrder.indexOf(a.todo.id);
+        const bi=linkedOrder.indexOf(b.todo.id);
+        return (ai<0?9999:ai)-(bi<0?9999:bi);
+      });
+    }
     const isCur=isCurrentWeek(w.mon,w.sun);
     const isPast=w.sun<now;
     const manualDone=wTodos.filter(t=>t.done).length;
@@ -2722,7 +2731,8 @@ function rWeeklyTodo(lId,aId,cw){
           <span>↓ タスク連携 ToDo</span><span style="color:var(--faint);font-weight:400">${linkedDone}/${linkedTodos.length}</span>
         </div>
         ${linkedTodos.map(({todo,task,kpiId})=>`
-        <div class="wt-item${todo.done?' done-item':''}" id="wt-item-linked-${todo.id}">
+        <div class="wt-item${todo.done?' done-item':''}" id="wt-item-linked-${todo.id}"${cw?` draggable="true" ondragstart="onLTDragStart(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondragend="onLTDragEnd(event)" ondragover="onLTDragOver(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondrop="onLTDrop(event,'${lId}','${aId}','${wKey}','${todo.id}')"`:''}>
+          ${cw?`<span style="cursor:grab;color:var(--dim);padding:0 4px 0 0;font-size:12px;flex-shrink:0" title="ドラッグで並び替え">⠿</span>`:''}
           <div class="wt-check${todo.done?' checked':''}" onclick="togLinkedTodoDone('${lId}','${aId}','${kpiId}','${task.id}','${todo.id}')">
             ${todo.done?checkSvg:''}
           </div>
@@ -4208,6 +4218,50 @@ let _dragTask = null;
 let _dragKpi = null;
 
 // --- タスク行ドラッグ ---
+// ── タスク連携ToDo ドラッグ並び替え ──
+let _dragLT = null;
+function onLTDragStart(e, lId, aId, wKey, todoId){
+  if(e.target.tagName==='BUTTON'){e.preventDefault();return;}
+  _dragLT={lId,aId,wKey,todoId};
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',todoId);
+  setTimeout(()=>e.currentTarget.style.opacity='0.4',0);
+}
+function onLTDragEnd(e){
+  e.currentTarget.style.opacity='';
+  document.querySelectorAll('.wt-dg-over').forEach(el=>el.classList.remove('wt-dg-over'));
+  _dragLT=null;
+}
+function onLTDragOver(e, lId, aId, wKey, todoId){
+  e.preventDefault();
+  if(!_dragLT||_dragLT.todoId===todoId||_dragLT.wKey!==wKey)return;
+  document.querySelectorAll('.wt-dg-over').forEach(el=>el.classList.remove('wt-dg-over'));
+  e.currentTarget.classList.add('wt-dg-over');
+}
+function onLTDrop(e, lId, aId, wKey, todoId){
+  e.preventDefault();
+  if(!_dragLT||_dragLT.todoId===todoId||_dragLT.wKey!==wKey)return;
+  const area=getLCArea(lId,aId);if(!area)return;
+  // 現在の順序を取得
+  const linkedTodos=[];
+  area.kpis.forEach(k=>{
+    k.tasks.forEach(t=>{
+      (t.todos||[]).filter(td=>td.week===wKey).forEach(td=>linkedTodos.push(td.id));
+    });
+  });
+  const existOrder=(area.weekLinkedOrder||{})[wKey]||linkedTodos;
+  // 並び替え
+  const fromIdx=existOrder.indexOf(_dragLT.todoId);
+  const toIdx=existOrder.indexOf(todoId);
+  if(fromIdx<0||toIdx<0)return;
+  const newOrder=[...existOrder];
+  const [item]=newOrder.splice(fromIdx,1);
+  newOrder.splice(toIdx,0,item);
+  if(!area.weekLinkedOrder)area.weekLinkedOrder={};
+  area.weekLinkedOrder[wKey]=newOrder;
+  save();rArea(lId,aId);
+}
+
 // ── 週次 Todo ドラッグ並び替え ──
 let _dragWT = null;
 function onWTDragStart(e, lId, aId, wKey, tId){
