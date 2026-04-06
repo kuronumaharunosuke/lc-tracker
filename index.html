@@ -189,6 +189,9 @@
   window._mcDb = db; // share same Firestore instance
   
   window._mcCurrentUser = null; // set by auth callback
+  window._ptOnSignIn = (email) => {
+    if(window._ptSubscribe) window._ptSubscribe(email, ()=>{ if(view==='personal-todo') rPersonalTodo(); });
+  };
   
   window._mcSave = async (data) => {
     try {
@@ -246,6 +249,26 @@
     try {
       await setDoc(doc(db, 'lc-eb', lcId), data);
     } catch(e) { console.error('EB save error:', e); throw e; }
+  };
+
+  // ── 個人ToDo Firestore ──
+  window._ptCache = null;
+  window._ptEmail = null;
+  window._ptUnsub = null;
+
+  window._ptSubscribe = (email, cb) => {
+    if(window._ptUnsub){ window._ptUnsub(); window._ptUnsub=null; }
+    window._ptEmail = email;
+    const ref = doc(db, 'personal-todos', email);
+    window._ptUnsub = onSnapshot(ref, snap => {
+      window._ptCache = snap.exists() ? snap.data() : { todos: [] };
+      if(typeof cb === 'function') cb();
+    });
+  };
+
+  window._ptSave = async (data) => {
+    if(!window._ptEmail) return;
+    await setDoc(doc(db, 'personal-todos', window._ptEmail), data);
   };
 </script>
 <style>
@@ -1154,6 +1177,10 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
       <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
       ランキング
     </div>
+    <div class="nav-item" data-view="personal-todo" onclick="swPersonalTodo(this)">
+      <svg width="8" height="8" viewBox="0 0 8 8"><rect width="8" height="8" rx="1.5" fill="white" opacity="0.5"/></svg>
+      個人ToDo
+    </div>
     <div class="nav-label" style="margin-top:8px">エリア横断</div>
     <div id="nav-cross"></div>
     <div class="nav-label" style="margin-top:8px">East</div>
@@ -1540,6 +1567,7 @@ function canViewEB(lId){
 window._fsOnSignIn = function(userData) {
   _currentUser = userData;
   window._currentUserEmail = userData.email||'unknown';
+  if(userData.email && window._ptOnSignIn) window._ptOnSignIn(userData.email);
   document.getElementById('login-overlay').style.display='none';
   if(!userData.lcId && userData.role !== 'mc'){
     showLcSelect();
@@ -1865,6 +1893,147 @@ function sw(v,el,skipHistory){
     rRanking();closeSidebar();
   }
 }
+
+function swPersonalTodo(el){
+  if(typeof mcReturnToLC === 'function') mcReturnToLC();
+  if(window._mktTLUnsubscribe) window._mktTLUnsubscribe();
+  view='personal-todo'; lcId=null; areaId=null; fil='ALL';
+  document.getElementById('addbtn').style.display='none';
+  document.getElementById('addkpibtn').style.display='none';
+  document.getElementById('ptitle').textContent='個人 ToDo';
+  document.getElementById('psub').textContent='自分だけのToDoメモ';
+  buildNav();
+  const u = getUser();
+  if(!u.email){ document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">ログイン後に使用できます</div>'; return; }
+  if(!window._ptCache){
+    document.getElementById('ct').innerHTML='<div style="padding:40px;text-align:center;color:var(--dim)">読み込み中...</div>';
+    if(window._ptSubscribe) window._ptSubscribe(u.email, ()=>rPersonalTodo());
+  } else {
+    rPersonalTodo();
+  }
+  closeSidebar();
+}
+
+function rPersonalTodo(){
+  const data = window._ptCache || {todos:[]};
+  const todos = data.todos || [];
+  const PRIO_COLORS = {'高':'#F85A40','中':'#F48924','低':'#037EF3','':''};
+  const PRIO_BG    = {'高':'#FFF0EE','中':'#FFF4ED','低':'#EEF6FF','':'var(--bg)'};
+
+  const doneTodos = todos.filter(t=>t.done);
+  const activeTodos = todos.filter(t=>!t.done);
+
+  function todoRow(t){
+    const pColor = PRIO_COLORS[t.priority||'']||'var(--dim)';
+    const over = t.deadline && new Date(t.deadline)<new Date() && !t.done;
+    return `<div class="pt-row${t.done?' pt-done':''}" id="pt-row-${t.id}" style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:${t.done?'var(--bg2)':PRIO_BG[t.priority||'']};transition:background 0.1s" oncontextmenu="ptDeleteRow('${t.id}',event)">
+      <div class="wt-check${t.done?' checked':''}" style="margin-top:2px;flex-shrink:0" onclick="ptToggle('${t.id}')">
+        ${t.done?`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:${t.done?'var(--dim)':'var(--dark)'};${t.done?'text-decoration:line-through':''}white-space:pre-wrap;word-break:break-all">${h(t.name)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap">
+          ${t.priority?`<span style="font-size:9px;font-weight:700;color:${pColor};background:${pColor}18;border:1px solid ${pColor}44;border-radius:3px;padding:1px 6px">${t.priority}</span>`:''}
+          ${t.deadline?`<span style="font-size:10px;color:${over?'#F85A40':'var(--dim)'}${over?';font-weight:700':''}">${over?'⚠ ':''}${t.deadline}</span>`:''}
+          ${t.progress!=null&&t.progress>0?`<div style="display:flex;align-items:center;gap:4px"><div style="width:60px;height:3px;background:var(--bg2);border-radius:2px"><div style="width:${t.progress}%;height:100%;background:var(--aiesec);border-radius:2px"></div></div><span style="font-size:9px;color:var(--dim)">${t.progress}%</span></div>`:''}
+        </div>
+      </div>
+      <button onclick="ptOpenEdit('${t.id}')" class="ib" style="font-size:9px;padding:2px 6px;flex-shrink:0;opacity:0.6">編集</button>
+      <button onclick="ptDeleteRow('${t.id}',null)" class="ib del" style="font-size:9px;padding:2px 6px;flex-shrink:0;opacity:0.6">✕</button>
+    </div>`;
+  }
+
+  const html = `<div style="max-width:700px;margin:0 auto;padding:24px 0">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px">
+      <div style="padding:14px 16px;background:var(--dark);display:flex;align-items:center;gap:10px">
+        <span style="font-size:13px;font-weight:800;color:#fff">個人 ToDo</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.4)">${todos.length}件 · ${doneTodos.length}件完了</span>
+      </div>
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border)">
+        <textarea id="pt-inp" placeholder="ToDoを入力（Enterで改行、Shift+Enterで追加）" rows="2"
+          style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:'Lato',sans-serif;resize:vertical;box-sizing:border-box;color:var(--dark)"
+          onkeydown="if(event.key==='Enter'&&event.shiftKey){event.preventDefault();ptAdd();}"></textarea>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <select id="pt-prio" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);height:30px">
+            <option value="">優先度</option>
+            <option value="高">🔴 高</option>
+            <option value="中">🟠 中</option>
+            <option value="低">🔵 低</option>
+          </select>
+          <input id="pt-deadline" type="date" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;height:30px">
+          <button onclick="ptAdd()" style="padding:5px 18px;background:var(--dark);color:#fff;border:none;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;height:30px">追加</button>
+          <span style="font-size:10px;color:var(--faint)">右クリックで削除</span>
+        </div>
+      </div>
+      ${activeTodos.length===0&&doneTodos.length===0?`<div style="padding:32px;text-align:center;color:var(--faint);font-size:13px">ToDoを追加してください</div>`:''}
+      ${activeTodos.map(todoRow).join('')}
+      ${doneTodos.length>0?`
+        <div style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);background:var(--bg2);border-top:1px solid var(--border)">完了済み（${doneTodos.length}）</div>
+        ${doneTodos.map(todoRow).join('')}
+      `:''}
+    </div>
+  </div>`;
+
+  document.getElementById('ct').innerHTML = html;
+}
+
+function ptAdd(){
+  const name = (document.getElementById('pt-inp')?.value||'').trim();
+  if(!name){document.getElementById('pt-inp')?.focus();return;}
+  const priority = document.getElementById('pt-prio')?.value||'';
+  const deadline = document.getElementById('pt-deadline')?.value||null;
+  const data = window._ptCache || {todos:[]};
+  if(!data.todos) data.todos=[];
+  data.todos.unshift({id:'pt'+Date.now(),name,priority,deadline,progress:0,done:false,createdAt:new Date().toISOString()});
+  window._ptCache = data;
+  if(window._ptSave) window._ptSave(data).catch(e=>toast('保存エラー: '+e.message,'err'));
+  rPersonalTodo();
+  setTimeout(()=>document.getElementById('pt-inp')?.focus(),50);
+}
+
+function ptToggle(id){
+  const data = window._ptCache;if(!data)return;
+  const t = data.todos.find(x=>x.id===id);if(!t)return;
+  t.done = !t.done;
+  if(window._ptSave) window._ptSave(data).catch(e=>toast('保存エラー','err'));
+  rPersonalTodo();
+}
+
+function ptDeleteRow(id, e){
+  if(e){e.preventDefault();}
+  if(!confirm('削除しますか？'))return;
+  const data = window._ptCache;if(!data)return;
+  data.todos = data.todos.filter(x=>x.id!==id);
+  if(window._ptSave) window._ptSave(data).catch(e=>toast('保存エラー','err'));
+  rPersonalTodo();
+}
+
+let _ptEditId = null;
+function ptOpenEdit(id){
+  const data = window._ptCache;if(!data)return;
+  const t = data.todos.find(x=>x.id===id);if(!t)return;
+  _ptEditId = id;
+  document.getElementById('pt-edit-name').value = t.name||'';
+  document.getElementById('pt-edit-prio').value = t.priority||'';
+  document.getElementById('pt-edit-deadline').value = t.deadline||'';
+  document.getElementById('pt-edit-progress').value = t.progress||0;
+  document.getElementById('pt-edit-progress-val').textContent = (t.progress||0)+'%';
+  document.getElementById('ov-pt-edit').classList.add('open');
+  setTimeout(()=>document.getElementById('pt-edit-name')?.focus(),80);
+}
+function ptSaveEdit(){
+  const data = window._ptCache;if(!data||!_ptEditId)return;
+  const t = data.todos.find(x=>x.id===_ptEditId);if(!t)return;
+  t.name = document.getElementById('pt-edit-name').value;
+  t.priority = document.getElementById('pt-edit-prio').value||'';
+  t.deadline = document.getElementById('pt-edit-deadline').value||null;
+  t.progress = parseInt(document.getElementById('pt-edit-progress').value)||0;
+  if(window._ptSave) window._ptSave(data).catch(e=>toast('保存エラー','err'));
+  document.getElementById('ov-pt-edit').classList.remove('open');
+  rPersonalTodo();
+  toast('更新しました');
+}
+
 
 function swCross(aId, skipHistory){
   if(typeof mcReturnToLC === 'function') mcReturnToLC();
@@ -4698,7 +4867,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');document.getElementById('ov-mt-task')?.classList.remove('open');document.getElementById('ov-edit-todo')?.classList.remove('open');}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');document.getElementById('ov-mt-task')?.classList.remove('open');document.getElementById('ov-edit-todo')?.classList.remove('open');document.getElementById('ov-pt-edit')?.classList.remove('open');}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
@@ -8497,6 +8666,44 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
     <div class="mf">
       <button class="btn" onclick="document.getElementById('ov-eb-member').classList.remove('open')">キャンセル</button>
       <button class="btn btn-fill" style="background:#1B2C5E;border-color:#1B2C5E" onclick="ebAddMember()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 個人ToDo編集モーダル -->
+<div class="overlay" id="ov-pt-edit" onclick="if(event.target===this)document.getElementById('ov-pt-edit').classList.remove('open')">
+  <div class="modal" style="width:400px">
+    <div class="mh" style="background:var(--dark)">ToDo 編集</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2">ToDo内容</label>
+        <textarea class="fi" id="pt-edit-name" rows="3" style="resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div class="fg" style="flex:1">
+          <label class="fl2">優先度</label>
+          <select class="fi" id="pt-edit-prio" style="height:36px">
+            <option value="">なし</option>
+            <option value="高">🔴 高</option>
+            <option value="中">🟠 中</option>
+            <option value="低">🔵 低</option>
+          </select>
+        </div>
+        <div class="fg" style="flex:1">
+          <label class="fl2">締め切り</label>
+          <input class="fi" id="pt-edit-deadline" type="date">
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label class="fl2">進捗 <span id="pt-edit-progress-val" style="color:var(--aiesec);font-weight:700">0%</span></label>
+        <input type="range" id="pt-edit-progress" min="0" max="100" step="5" value="0"
+          oninput="document.getElementById('pt-edit-progress-val').textContent=this.value+'%'"
+          style="width:100%;margin-top:4px">
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="document.getElementById('ov-pt-edit').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-fill" style="background:var(--dark);border-color:var(--dark)" onclick="ptSaveEdit()">保存</button>
     </div>
   </div>
 </div>
