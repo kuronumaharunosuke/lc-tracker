@@ -614,6 +614,7 @@ html{font-size:13px;}
 .wt-meta{font-size:10px;color:var(--dim);margin-top:2px;}
 .wt-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.1s;flex-shrink:0;}
 .wt-item:hover .wt-item-actions{opacity:1;}
+.wt-dg-over{outline:2px solid var(--aiesec);outline-offset:-2px;}
 .wt-add-row{padding:8px 14px;}
 /* ── RANKING ── */
 .rank-pg{padding:24px;}
@@ -1350,7 +1351,7 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
     <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0 8px">
       <div><label class="fl2">タスク名 *</label><input id="wt-name" class="inp" placeholder="タスク名"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div><label class="fl2">担当者</label><input id="wt-res" class="inp" placeholder="担当者"></div>
+        <div><label class="fl2">担当者</label><select id="wt-res" class="inp" style="height:34px"></select></div>
         <div><label class="fl2">sup</label><input id="wt-sup" class="inp" placeholder="サポート"></div>
       </div>
       <div><label class="fl2">メモ</label><textarea id="wt-memo" class="inp" rows="2" placeholder="メモ" style="resize:vertical"></textarea></div>
@@ -2745,7 +2746,8 @@ function rWeeklyTodo(lId,aId,cw){
       <div class="wt-week-body${open?' open':''}" id="wt-body-${wi}">
         ${wTodos.length===0&&linkedTodos.length===0?`<div style="padding:10px 14px;font-size:11px;color:var(--dim)">タスクなし</div>`:''}
         ${wTodos.map(t=>`
-        <div class="wt-item${t.done?' done-item':''}" id="wt-item-${t.id}">
+        <div class="wt-item${t.done?' done-item':''}" id="wt-item-${t.id}"${cw?` draggable="true" ondragstart="onWTDragStart(event,'${lId}','${aId}','${wKey}','${t.id}')" ondragend="onWTDragEnd(event)" ondragover="onWTDragOver(event,'${lId}','${aId}','${wKey}','${t.id}')" ondrop="onWTDrop(event,'${lId}','${aId}','${wKey}','${t.id}')"`:''}>
+          ${cw?`<span style="cursor:grab;color:var(--dim);padding:0 4px 0 0;font-size:12px;flex-shrink:0" title="ドラッグで並び替え">⠿</span>`:''}
           <div class="wt-check${t.done?' checked':''}" onclick="togWTDone('${lId}','${aId}','${t.id}')">
             ${t.done?`<svg width="10" height="10" viewBox="0 0 10 10"><polyline points="1.5,5 4,7.5 8.5,2.5" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`:''}
           </div>
@@ -2778,7 +2780,16 @@ function openWT(lId,aId,week,tId){
   const t=tId?(area.weekTodos||[]).find(x=>x.id===tId):null;
   document.getElementById('wt-title').textContent=t?'週次 Todo 編集':'週次 Todo 追加';
   document.getElementById('wt-name').value=t?t.name:'';
-  document.getElementById('wt-res').value=t?t.res||'':'';
+  // 担当者セレクトをメンバーリストで埋める
+  const resSel=document.getElementById('wt-res');
+  if(resSel){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const members=(lc&&lc.members)||[];
+    const cur=t?t.res||'':'';
+    resSel.innerHTML='<option value="">（なし）</option>'+
+      members.map(m=>`<option value="${h(m)}" ${m===cur?'selected':''}>${h(m)}</option>`).join('');
+    if(cur&&!members.includes(cur)) resSel.innerHTML+=`<option value="${h(cur)}" selected>${h(cur)}</option>`;
+  }
   document.getElementById('wt-sup').value=t?t.sup||'':'';
   document.getElementById('wt-memo').value=t?t.memo||'':'';
   document.getElementById('ov-wt').style.display='flex';
@@ -4197,6 +4208,39 @@ let _dragTask = null;
 let _dragKpi = null;
 
 // --- タスク行ドラッグ ---
+// ── 週次 Todo ドラッグ並び替え ──
+let _dragWT = null;
+function onWTDragStart(e, lId, aId, wKey, tId){
+  if(e.target.tagName==='BUTTON'){e.preventDefault();return;}
+  _dragWT={lId,aId,wKey,tId};
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',tId);
+  setTimeout(()=>e.currentTarget.style.opacity='0.4',0);
+}
+function onWTDragEnd(e){
+  e.currentTarget.style.opacity='';
+  document.querySelectorAll('.wt-dg-over').forEach(el=>el.classList.remove('wt-dg-over'));
+  _dragWT=null;
+}
+function onWTDragOver(e, lId, aId, wKey, tId){
+  e.preventDefault();
+  if(!_dragWT||_dragWT.tId===tId||_dragWT.wKey!==wKey)return;
+  document.querySelectorAll('.wt-dg-over').forEach(el=>el.classList.remove('wt-dg-over'));
+  e.currentTarget.classList.add('wt-dg-over');
+}
+function onWTDrop(e, lId, aId, wKey, tId){
+  e.preventDefault();
+  if(!_dragWT||_dragWT.tId===tId||_dragWT.wKey!==wKey)return;
+  const area=getLCArea(lId,aId);if(!area)return;
+  const todos=area.weekTodos||[];
+  const fromIdx=todos.findIndex(x=>x.id===_dragWT.tId);
+  const toIdx=todos.findIndex(x=>x.id===tId);
+  if(fromIdx<0||toIdx<0)return;
+  const [item]=todos.splice(fromIdx,1);
+  todos.splice(toIdx,0,item);
+  save();rArea(lId,aId);
+}
+
 function onTaskDragStart(e, lId, aId, kId, tId){
   if(e.target.tagName==='BUTTON') { e.preventDefault(); return; }
   _dragTask = {lId, aId, kId, tId};
