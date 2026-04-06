@@ -6096,10 +6096,10 @@ function mc_rArea(id){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
-      const collapsed=grp&&span>1&&MC__collapsedGroups[grpKey];
+      const collapsed=grp&&MC__collapsedGroups[grpKey]; // span>1制限を除去：1件グループも折りたたみ可能に
       const renderSpan=collapsed?1:span;
       const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
-        <span class="group-cell-label" style="border-left:3px solid ${c}" onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'展開':'折りたたみ'}">${collapsed?'› ':'▾ '}${h(grp)}${collapsed?` (${span})`:''}</span>
+        <span class="group-cell-label" style="border-left:3px solid ${c};background:${collapsed?c+'18':'var(--bg2)'}" onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'クリックで展開':'クリックで折りたたみ'}">${collapsed?'▶ ':'▼ '}${h(grp)}${collapsed?` (${span}件)`:''}</span>
         <div style="margin-top:4px">
           <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
         </div>`:''}</td>`;
@@ -6128,9 +6128,9 @@ function mc_rArea(id){
         <div class="kpi-info"><div class="kpi-lbl">KPI ${i+1} / ${area.kpis.length}</div><div class="kpi-ttl">${h(k.name)}</div>${k.memo?`<div class="kpi-target">${h(k.memo)}</div>`:''}</div>
         ${kpiRBlock(k.target,k.actual,c,pct,dn,tot2)}
         <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0"><button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();mc_openEditKpi('${area.id}','${k.id}')">編集</button></div>
-        <div class="kpi-chev open" id="cv-${k.id}">›</div>
+        <div class="kpi-chev ${_collapsedKpis['mc_'+k.id]?'':'open'}" id="cv-${k.id}">›</div>
       </div>
-      <div class="kpi-body open" id="kb-${k.id}">
+      <div class="kpi-body ${_collapsedKpis['mc_'+k.id]?'':'open'}" id="kb-${k.id}">
         <table class="tt">
           <thead><tr><th style="width:100px">大タスク</th><th>タスク名</th><th>担当者</th><th>sup</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:140px">備考</th><th style="width:80px">コメント</th><th>記入者</th><th></th></tr></thead>
           <tbody id="tb-${k.id}">${rows}</tbody>
@@ -6139,7 +6139,14 @@ function mc_rArea(id){
       </div>
     </div>`;
   }).join('');
-  document.getElementById('mc-ct').innerHTML=tabBar+fbar+kpis+`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="mc_openAddKpi('${area.id}')">+ KPI を追加...</button></div>`+mc_renderAreaProjects(area.id,c);
+  // 折りたたみ操作ボタン
+  const mcCollapseBar=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <button onclick="mc_collapseAllKpis('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">━ KPI全折りたたむ</button>
+    <button onclick="mc_expandAllKpis('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">▼ KPI全展開</button>
+    <button onclick="mc_collapseAllGroups('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">━ 大タスク全折りたたむ</button>
+    <button onclick="mc_expandAllGroups('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">▼ 大タスク全展開</button>
+  </div>`;
+  document.getElementById('mc-ct').innerHTML=tabBar+fbar+mcCollapseBar+kpis+`<div style="margin-top:4px"><button class="add-btn" style="font-size:12px;padding:10px 0" onclick="mc_openAddKpi('${area.id}')">+ KPI を追加...</button></div>`+mc_renderAreaProjects(area.id,c);
   const allTids=[];
   area.kpis.forEach(k=>k.tasks.forEach(t=>{allTids.push(t.id);(t.children||[]).forEach(c=>allTids.push(c.id));}));
   if(allTids.length)loadCommentCounts(allTids).then(()=>{
@@ -6207,9 +6214,9 @@ function mc_renderAreaProjects(areaId,areaColor){
         <div style="display:flex;align-items:center;border-left:1px solid var(--border);flex-shrink:0">
           <button class="ib" style="margin:0 6px;font-size:10px" onclick="event.stopPropagation();mc_openEditProject('${p.id}')">編集</button>
         </div>
-        <div class="kpi-chev open" id="cv-ap-${p.id}">›</div>
+        <div class="kpi-chev ${_collapsedKpis['mc_ap-'+p.id]?'':'open'}" id="cv-ap-${p.id}">›</div>
       </div>
-      <div class="kpi-body open" id="kb-ap-${p.id}">
+      <div class="kpi-body ${_collapsedKpis['mc_ap-'+p.id]?'':'open'}" id="kb-ap-${p.id}">
         <table class="tt">
           <thead><tr><th style="width:100px">グループ</th><th>タスク名</th><th>担当者</th><th>sup</th><th>開始日</th><th>締め切り</th><th>ステータス</th><th style="width:150px">備考</th><th>記入者</th><th></th></tr></thead>
           <tbody>${rows}${emptyRow}</tbody>
@@ -6232,6 +6239,8 @@ function mc_renderAreaProjects(areaId,areaColor){
 
 // ── mc_togK (1回のみ定義) ──
 function mc_togK(id){
+  const stateKey='mc_'+id;
+  _collapsedKpis[stateKey] = !_collapsedKpis[stateKey]; // 状態を記録
   const kbId=id.startsWith('ap-')?'kb-ap-'+id.replace('ap-',''):'kb-'+id;
   const cvId=id.startsWith('ap-')?'cv-ap-'+id.replace('ap-',''):'cv-'+id;
   document.getElementById(kbId)?.classList.toggle('open');
@@ -6346,6 +6355,48 @@ function mc_cycFT(pId,tId,e){
   if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(mc_si(t.status)?mc_si(t.status)+' ':'')+sl(t.status);}
   logAction('status',`[${proj.name}] 「${t.name}」→ ${sl(t.status)}`);
   toast(sl(t.status)+'に変更');
+}
+
+
+/* ── MC TRACKER 折りたたみ操作 ── */
+function mc_collapseAllKpis(aId){
+  const area=MC_D.areas.find(x=>x.id===aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    _collapsedKpis['mc_'+k.id]=true;
+    document.getElementById('kb-'+k.id)?.classList.remove('open');
+    document.getElementById('cv-'+k.id)?.classList.remove('open');
+  });
+}
+
+function mc_expandAllKpis(aId){
+  const area=MC_D.areas.find(x=>x.id===aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    _collapsedKpis['mc_'+k.id]=false;
+    document.getElementById('kb-'+k.id)?.classList.add('open');
+    document.getElementById('cv-'+k.id)?.classList.add('open');
+  });
+}
+
+function mc_collapseAllGroups(aId){
+  const area=MC_D.areas.find(x=>x.id===aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+    groups.forEach(grp=>{
+      MC__collapsedGroups[`${aId}__${k.id}__${encodeURIComponent(grp)}`]=true;
+    });
+  });
+  mc_rArea(aId);
+}
+
+function mc_expandAllGroups(aId){
+  const area=MC_D.areas.find(x=>x.id===aId);if(!area)return;
+  area.kpis.forEach(k=>{
+    const groups=[...new Set(k.tasks.map(t=>t.group||'').filter(Boolean))];
+    groups.forEach(grp=>{
+      MC__collapsedGroups[`${aId}__${k.id}__${encodeURIComponent(grp)}`]=false;
+    });
+  });
+  mc_rArea(aId);
 }
 
 function mc_setF(s){mc_fil=s;if(mc_aid)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);}
