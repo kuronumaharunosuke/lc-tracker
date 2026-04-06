@@ -6177,9 +6177,12 @@ function mc_renderAreaProjects(areaId,areaColor){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const over=isOver(t.deadline)&&t.status!=='DONE';
+      const fpGrpKey2=grp?`fp__${p.id}__${encodeURIComponent(grp)}`:null;
+      const fpCollapsed2=grp&&MC__collapsedGroups[fpGrpKey2];
+      const renderSpan2=fpCollapsed2?1:span;
       const apGrpCell=grp
-        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
-        :`<td class="group-cell empty" rowspan="${span}"></td>`;
+        ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
+        :`<td class="group-cell empty" rowspan="${renderSpan2}"></td>`;
       rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
         ${apGrpCell}
         <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
