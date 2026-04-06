@@ -887,7 +887,8 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .add-btn{font-size:11px;font-weight:700;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:color .08s;background:none;border:none;}
 #mc-panel .add-btn:hover{color:var(--text);}
 #mc-panel .group-cell{font-size:11px;font-weight:700;color:var(--dark);background:var(--bg);border-right:1px solid var(--border);padding:10px 12px;vertical-align:middle;max-width:120px;}
-#mc-panel .group-cell-label{background:var(--bg2);border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;}
+#mc-panel .group-cell-label{background:var(--bg2);border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;color:var(--text);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;cursor:pointer;user-select:none;transition:background 0.1s;}
+#mc-panel .group-cell-label:hover{background:var(--border);}
 #mc-panel .group-cell.empty{background:transparent;}
 #mc-panel .tby{font-family:'Lato',sans-serif;font-size:9px;color:var(--faint);white-space:nowrap;}
 #mc-panel .tsup{font-size:11px;color:var(--dim);}
@@ -2139,8 +2140,10 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       ${cw?`<td class="drag-handle-td" title="ドラッグで並び替え">⠿</td>`:''}
       <td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}"`:''}>
         ${grp?`<div style="display:flex;flex-direction:column;gap:4px;align-items:stretch">
-          <span class="group-cell-label" style="border-left:3px solid ${c};background:${lcCollapsed?c+'18':'var(--bg2)'}" onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'クリックで展開':'クリックで折りたたみ'}">${lcCollapsed?'▶ ':'▼ '}${h(grp)}${lcCollapsed?` (${span}件)`:''}
-          </span>
+          <div onclick="lcTogGrp('${lcGrpKey}','${lId}','${aId}','${kId}')" title="${lcCollapsed?'クリックで展開':'クリックで折りたたみ'}" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:2px">
+            <span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${c};font-weight:900">${lcCollapsed?'▶':'▼'}</span>
+            <span class="group-cell-label" style="border-left:3px solid ${c};background:${lcCollapsed?c+'18':'var(--bg2)'};flex:1">${h(grp)}${lcCollapsed?` (${span}件)`:''}</span>
+          </div>
           ${grpNote?`<span style="font-size:10px;color:var(--dim);line-height:1.4;word-break:break-all">${h(grpNote).replace(/\n/g,'<br>')}</span>`:''}
           ${cw?`<div class="gc-actions" style="display:flex;flex-direction:column;gap:2px">
             <button class="ib" style="font-size:9px;padding:2px 6px" onclick="openGroupNote('${lId}','${aId}','${kId}',this.closest('[data-grp]').dataset.grp)">${grpNote?'編集':'＋備考'}</button>
@@ -6099,8 +6102,11 @@ function mc_rArea(id){
       const collapsed=grp&&MC__collapsedGroups[grpKey]; // span>1制限を除去：1件グループも折りたたみ可能に
       const renderSpan=collapsed?1:span;
       const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
-        <span class="group-cell-label" style="border-left:3px solid ${c};background:${collapsed?c+'18':'var(--bg2)'}" onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'クリックで展開':'クリックで折りたたみ'}">${collapsed?'▶ ':'▼ '}${h(grp)}${collapsed?` (${span}件)`:''}</span>
-        <div style="margin-top:4px">
+        <div onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'クリックで展開':'クリックで折りたたみ'}" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px">
+          <span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${c};font-weight:900">${collapsed?'▶':'▼'}</span>
+          <span class="group-cell-label" style="border-left:3px solid ${c};background:${collapsed?c+'18':'var(--bg2)'};flex:1">${h(grp)}${collapsed?` (${span}件)`:''}</span>
+        </div>
+        <div>
           <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
         </div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,renderSpan,c,
@@ -6140,7 +6146,7 @@ function mc_rArea(id){
     </div>`;
   }).join('');
   // 折りたたみ操作ボタン
-  const mcCollapseBar=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+  const mcCollapseBar=`<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;position:sticky;top:0;z-index:10;background:var(--white);padding:8px 0;border-bottom:1px solid var(--border)">
     <button onclick="mc_collapseAllKpis('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">━ KPI全折りたたむ</button>
     <button onclick="mc_expandAllKpis('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">▼ KPI全展開</button>
     <button onclick="mc_collapseAllGroups('${area.id}')" style="font-size:9px;font-weight:700;padding:3px 9px;border:1px solid var(--border);border-radius:4px;background:var(--white);cursor:pointer;font-family:'Lato',sans-serif;color:var(--dim)">━ 大タスク全折りたたむ</button>
