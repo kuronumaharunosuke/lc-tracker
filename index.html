@@ -1430,6 +1430,29 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
   </div>
 </div>
 
+<!-- TaskTodo 編集モーダル -->
+<div class="overlay" id="ov-edit-todo" onclick="if(event.target===this)document.getElementById('ov-edit-todo').classList.remove('open')">
+  <div class="modal" style="width:360px">
+    <div class="mh" style="background:#7552CC">ToDo 編集</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2">ToDo名 *</label>
+        <input class="fi" id="edit-todo-name" placeholder="ToDoの内容" onkeydown="if(event.key==='Enter'&&!event.isComposing)saveEditTaskTodo()">
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label class="fl2">担当者</label>
+        <select class="fi" id="edit-todo-res" style="height:36px">
+          <option value="">（なし）</option>
+        </select>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="document.getElementById('ov-edit-todo').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-fill" style="background:#7552CC;border-color:#7552CC" onclick="saveEditTaskTodo()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- AREA MGMT MODAL -->
 <div class="overlay" id="ov-area">
   <div class="modal modal-wide">
@@ -3072,12 +3095,16 @@ function renderTaskTodosModal(){
           ${wTodos.length>0?`<span style="font-size:10px;color:var(--dim);margin-left:auto">${doneCount}/${wTodos.length}</span>`:''}
         </div>
         ${wTodos.map(td=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2)">
-            <div class="wt-check${td.done?' checked':''}" onclick="togTaskTodoDone('${lId}','${aId}','${kId}','${tId}','${td.id}')">
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bg2)">
+            <div class="wt-check${td.done?' checked':''}" style="margin-top:2px" onclick="togTaskTodoDone('${lId}','${aId}','${kId}','${tId}','${td.id}')">
               ${td.done?checkSvg:''}
             </div>
-            <span style="flex:1;font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</span>
-            <button class="ib del" style="font-size:9px;padding:2px 6px" onclick="delTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">削除</button>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</div>
+              ${td.res?`<div style="font-size:10px;color:var(--dim);margin-top:2px">担当: ${h(td.res)}</div>`:''}
+            </div>
+            <button class="ib" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="openEditTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">編集</button>
+            <button class="ib del" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="delTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">削除</button>
           </div>`).join('')}
         <div style="display:flex;gap:6px;margin-top:7px">
           <input class="fi" id="tt-inp-${wKey}" placeholder="この週のToDoを追加..."
@@ -3141,6 +3168,48 @@ function togLinkedTodoDone(lId,aId,kpiId,tId,todoId){
   save();
   if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
   else if(view==='lc'&&lcId)rLC(lcId);
+}
+
+// TaskTodo編集
+let _editTodoCtx = null;
+function openEditTaskTodo(lId, aId, kId, tId, todoId){
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  const td=(t.todos||[]).find(x=>x.id===todoId);
+  if(!td)return;
+  _editTodoCtx={lId,aId,kId,tId,todoId};
+  document.getElementById('edit-todo-name').value=td.name||'';
+  // 担当者セレクトをメンバーリストで埋める
+  const resSel=document.getElementById('edit-todo-res');
+  if(resSel){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const members=(lc&&lc.members)||[];
+    const cur=td.res||'';
+    resSel.innerHTML='<option value="">（なし）</option>'+
+      members.map(m=>`<option value="${h(m)}" ${m===cur?'selected':''}>${h(m)}</option>`).join('');
+    if(cur&&!members.includes(cur)) resSel.innerHTML+=`<option value="${h(cur)}" selected>${h(cur)}</option>`;
+  }
+  document.getElementById('ov-edit-todo').classList.add('open');
+  setTimeout(()=>document.getElementById('edit-todo-name')?.focus(),80);
+}
+function saveEditTaskTodo(){
+  if(!_editTodoCtx)return;
+  const{lId,aId,kId,tId,todoId}=_editTodoCtx;
+  const name=document.getElementById('edit-todo-name').value.trim();
+  if(!name){toast('名前を入力してください','err');return;}
+  const res=document.getElementById('edit-todo-res').value;
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kId);
+  const t=k.tasks.find(x=>x.id===tId);
+  const td=(t.todos||[]).find(x=>x.id===todoId);
+  if(!td)return;
+  td.name=name;
+  td.res=res||null;
+  save();
+  document.getElementById('ov-edit-todo').classList.remove('open');
+  renderTaskTodosModal();
+  toast('更新しました');
 }
 
 function closeTaskTodos(){
@@ -4530,7 +4599,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');document.getElementById('ov-mt-task')?.classList.remove('open');}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');document.getElementById('ov-mt-task')?.classList.remove('open');document.getElementById('ov-edit-todo')?.classList.remove('open');}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
