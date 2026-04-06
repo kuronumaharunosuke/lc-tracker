@@ -5881,10 +5881,19 @@ function mc_rFreeProject(id){
   while(i2<tasks.length){
     const t=tasks[i2];const grp=t.group||'';
     let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
+    const fpGrpKey=grp?`fp__${proj.id}__${encodeURIComponent(grp)}`:null;
+    const fpCollapsed=grp&&MC__collapsedGroups[fpGrpKey];
+    const renderSpan=fpCollapsed?1:span;
     const over=isOver(t.deadline)&&t.status!=='DONE';
     const grpCell=grp
-      ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
-      :`<td class="group-cell empty" rowspan="${span}"></td>`;
+      ?`<td class="group-cell" rowspan="${renderSpan}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)">
+        <div onclick="mc_togFPGrp('${fpGrpKey}','${proj.id}')" style="cursor:pointer;display:flex;align-items:center;gap:3px;margin-bottom:3px">
+          <span style="font-size:11px;font-weight:900;color:${c};flex-shrink:0">${fpCollapsed?'›':'▾'}</span>
+          <span class="group-cell-label" style="border-left:3px solid ${c};min-width:0;flex:1">${h(grp)}${fpCollapsed?` (${span})`:''}</span>
+        </div>
+        <div style="margin-top:2px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div>
+      </td>`
+      :`<td class="group-cell empty" rowspan="${renderSpan}"></td>`;
     rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
       ${grpCell}
       <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
@@ -5895,17 +5904,19 @@ function mc_rFreeProject(id){
       <td class="tby">${h(t._by||'')}</td>
       <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${proj.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${proj.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${proj.id}','${t.id}')">削除</button></div></td>
     </tr>`;
-    for(let j=1;j<span;j++){
-      const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
-      rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
-        <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
-        <td class="tdt">${fd(tj.start)}</td>
-        <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
-        <td><span class="chip ${sc(tj.status)}" onclick="mc_cycFT('${proj.id}','${tj.id}',event)">${mc_si(tj.status)?mc_si(tj.status)+' ':''}${sl(tj.status)}</span></td>
-        <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${proj.id}','${tj.id}')">+ メモ</span>`}</td>
-        <td class="tby">${h(tj._by||'')}</td>
-        <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${proj.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${proj.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${proj.id}','${tj.id}')">削除</button></div></td>
-      </tr>`;
+    if(!fpCollapsed){
+      for(let j=1;j<span;j++){
+        const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
+        rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
+          <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
+          <td class="tdt">${fd(tj.start)}</td>
+          <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
+          <td><span class="chip ${sc(tj.status)}" onclick="mc_cycFT('${proj.id}','${tj.id}',event)">${mc_si(tj.status)?mc_si(tj.status)+' ':''}${sl(tj.status)}</span></td>
+          <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${proj.id}','${tj.id}')">+ メモ</span>`}</td>
+          <td class="tby">${h(tj._by||'')}</td>
+          <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${proj.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${proj.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${proj.id}','${tj.id}')">削除</button></div></td>
+        </tr>`;
+      }
     }
     i2+=span;
   }
@@ -6688,6 +6699,10 @@ function mc_dupTask(aId,kId,tId,e){
 function lcTogGrp(grpKey, lId, aId, kId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
   rArea(lId, aId);
+}
+function mc_togFPGrp(grpKey, projId){
+  MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
+  mc_rFreeProject(projId);
 }
 function mc_togGrp(grpKey, aId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
