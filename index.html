@@ -4627,7 +4627,7 @@ function rAreaMemberTasks(lId, aId, cw){
   const data = ebGetData(lId);
   const membersRaw = data.members||[];
   // このエリアに所属するメンバー + エリア未設定のメンバーも表示
-  const areaMembers = membersRaw.filter(m=>!ebMemberArea(m)||ebMemberArea(m)===aId);
+  const areaMembers = membersRaw.filter(m=>ebMemberArea(m)===aId||(typeof m==='object'&&m.role==='member'&&ebMemberArea(m)===aId));
   const memberNames = areaMembers.map(ebMemberName);
   const tasks = data.tasks||{};
   const sel = _mtSelectedMember;
@@ -4774,8 +4774,10 @@ function mtDelTask(lId, member, tId, aId, cw){
 
 // メンバータスク追加・編集モーダル
 let _mtModal=null;
+let _mtAddContext = null; // {lId, aId} エリア追加の場合のコンテキスト
 function mtOpenAddMember(lId, aId){
-  _ebAddMemberLC=lId;
+  _mtAddContext = {lId, aId}; // エリアから追加フラグ
+  _ebAddMemberLC = lId;
   const inp=document.getElementById('eb-member-inp');
   if(inp)inp.value='';
   const areaSel=document.getElementById('eb-member-area');
@@ -4786,7 +4788,12 @@ function mtOpenAddMember(lId, aId){
     const allAreas2=[...areaIds2,...extraAreas2.map(e=>e.id).filter(id=>!areaIds2.includes(id))];
     areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
       allAreas2.map(id=>`<option value="${id}" ${id===aId?'selected':''}>${id}</option>`).join('');
+    // エリアセレクトを非表示にする（エリアは固定）
+    areaSel.closest('.fg').style.display='none';
   }
+  // モーダルタイトルをエリアメンバー追加に変更
+  const mh=document.querySelector('#ov-eb-member .mh');
+  if(mh) mh.textContent='メンバーを追加（エリアのみ）';
   const ov=document.getElementById('ov-eb-member');
   if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
 }
@@ -4845,7 +4852,7 @@ function mtSaveTask(){
 
 function rEBMain(lId, cw){
   const data = ebGetData(lId);
-  const membersRaw = data.members||[];
+  const membersRaw = (data.members||[]).filter(m=>!ebMemberArea(m)||typeof m==='string'||m.role==='eb'||m.role===undefined);
   const members = membersRaw.map(ebMemberName);
   const tasks = data.tasks||{};
   const capData = (_ebCapData[lId])||{};
@@ -5028,7 +5035,7 @@ function ebSetCap(lId, member, cap, cw){
 
 function rEBSheet(lId, cw){
   const data = ebGetData(lId);
-  const membersRaw = data.members||[];
+  const membersRaw = (data.members||[]).filter(m=>!ebMemberArea(m)||typeof m==='string'||m.role==='eb'||m.role===undefined);
   const members = membersRaw.map(ebMemberName);
   const tasks = data.tasks||{};
   const sel = _ebSelectedMember;
@@ -5239,6 +5246,12 @@ function ebOpenAddMember(lId){
     areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
       allAreas.map(id=>`<option value="${id}">${id}</option>`).join('');
   }
+  // エリアセレクトを表示（EBから追加の場合）
+  const areaSel2=document.getElementById('eb-member-area');
+  if(areaSel2) areaSel2.closest('.fg').style.display='';
+  const mh2=document.querySelector('#ov-eb-member .mh');
+  if(mh2) mh2.textContent='メンバーを追加';
+  _mtAddContext = null; // EBからの追加フラグをリセット
   const ov=document.getElementById('ov-eb-member');
   if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
 }
@@ -5252,10 +5265,21 @@ function ebAddMember(){
   const members=data.members||[];
   const exists=members.some(m=>typeof m==='string'?m===name:m.name===name);
   if(exists){toast('既に存在します','err');return;}
-  const newMember={id:'m'+Date.now(),name,area};
+  const role = _mtAddContext ? 'member' : 'eb';
+  const finalArea = _mtAddContext ? _mtAddContext.aId : area;
+  const newMember={id:'m'+Date.now(),name,area:finalArea,role};
   const newMembers=[...members,newMember];
   ebSaveData(lId,{...data,members:newMembers});
   document.getElementById('ov-eb-member').classList.remove('open');
+  if(_mtAddContext){
+    // エリアのメンバータスクに追加した場合
+    _mtSelectedMember=name;
+    const _mtCtx=_mtAddContext; _mtAddContext=null;
+    const _mtBody=document.getElementById('area-tab-body');
+    if(_mtBody) _mtBody.innerHTML=rAreaMemberTasks(_mtCtx.lId,_mtCtx.aId,canWrite(_mtCtx.lId));
+    toast(name+' をエリアメンバーに追加しました');
+    return;
+  }
   _ebSelectedMember=name;
   _ebView = 'members';
   const _ebBody=document.getElementById('area-tab-body');
