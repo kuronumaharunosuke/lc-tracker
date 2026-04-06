@@ -1532,10 +1532,8 @@ function canWrite(lId){ const u=getUser(); return u.role==='mc' || u.lcId===lId;
 function canViewEB(lId){
   const u=getUser();
   if(u.role==='mc') return true;
-  if(u.lcId===lId) return true;
-  const lc=D&&D.lcs&&D.lcs.find(x=>x.id===lId);
-  const viewers=(lc&&lc.ebViewerLCs)||[];
-  return viewers.includes(u.lcId);
+  if(u.lcId===lId && u.role==='eb') return true;
+  return false;
 }
 
 /* ── AUTH CALLBACKS ── */
@@ -1569,7 +1567,7 @@ function doLogout(){
 
 function applyUserUI(){
   const u=getUser();
-  document.getElementById('sb-role').textContent=u.role==='mc'?'MC':'メンバー';
+  document.getElementById('sb-role').textContent=u.role==='mc'?'MC':u.role==='eb'?'EB':'メンバー';
   document.getElementById('sb-id').textContent=u.displayName||u.email||'---';
   document.getElementById('area-mgmt-btn').style.display=u.role==='mc'?'':'none';
   document.getElementById('user-mgmt-btn').style.display=u.role==='mc'?'':'none';
@@ -3793,14 +3791,16 @@ async function renderUserList(){
 function userRow(u){
   const lcOptions = LC_META.map(lc=>`<option value="${lc.id}" ${u.lcId===lc.id?'selected':''}>${lc.id} — ${lc.name}</option>`).join('');
   const isMCUser = u.role==='mc';
+  const isEBUser = u.role==='eb';
   const eid = u.email.replace(/[^a-zA-Z0-9]/g,'_');
   return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:7px;margin-bottom:6px;flex-wrap:wrap">
     <div style="flex:1;min-width:180px">
       <div style="font-size:12px;font-weight:700;color:var(--text)">${h(u.displayName||u.email)}</div>
       <div style="font-size:10px;color:var(--dim)">${h(u.email)}</div>
     </div>
-    <select id="role-sel-${eid}" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer">
-      <option value="lc" ${!isMCUser?'selected':''}>LCメンバー</option>
+    <select id="role-sel-${eid}" onchange="userRoleSelChange('${eid}')" style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer">
+      <option value="lc" ${u.role==='lc'?'selected':''}>LC一般</option>
+      <option value="eb" ${u.role==='eb'?'selected':''}>LC EB</option>
       <option value="mc" ${isMCUser?'selected':''}>MC</option>
     </select>
     <select id="lc-sel-${eid}" ${isMCUser?'disabled':''} style="font-size:11px;padding:4px 8px;border:1.5px solid var(--border);border-radius:5px;background:var(--white);cursor:pointer;${isMCUser?'opacity:0.4':''}">
@@ -3816,7 +3816,7 @@ async function updateUserRole(email, eid){
   if(!window._fsSaveRole) return;
   const role = document.getElementById('role-sel-'+eid).value;
   const lcId = document.getElementById('lc-sel-'+eid).value;
-  const data = role==='mc' ? {role:'mc'} : {role:'lc', lcId: lcId||null};
+  const data = role==='mc' ? {role:'mc'} : {role: role, lcId: lcId||null};
   await window._fsSaveRole(email, data);
   toast('更新しました');
   await renderUserList();
@@ -3827,6 +3827,15 @@ async function removeUser(email){
   if(window._fsDeleteUser) await window._fsDeleteUser(email);
   toast('削除しました');
   await renderUserList();
+}
+
+function userRoleSelChange(eid){
+  const role=document.getElementById('role-sel-'+eid)?.value;
+  const lcSel=document.getElementById('lc-sel-'+eid);
+  if(lcSel){
+    lcSel.disabled=(role==='mc');
+    lcSel.style.opacity=(role==='mc')?'0.4':'1';
+  }
 }
 
 /* ── AREA MANAGEMENT (MC only) ── */
@@ -5023,32 +5032,7 @@ function rEBMain(lId, cw){
   else if(_ebView==='calendar') bodyHtml = rEBCalendar(lId, tasks, members);
   else if(_ebView==='capacity') bodyHtml = rEBCapacity(lId, members, capData, cw);
 
-  // MC専用：閲覧許可LC管理
-  let ebAccessHtml = '';
-  if(isMC()){
-    const lc=D.lcs.find(x=>x.id===lId);
-    const viewers=(lc&&lc.ebViewerLCs)||[];
-    const allLCs=D.lcs.map(x=>x.id).filter(id=>id!==lId);
-    ebAccessHtml=`<div style="margin-top:20px;padding:14px 16px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px">EBタブ閲覧許可 LC（MC設定）</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-        ${viewers.length===0?'<span style="font-size:11px;color:var(--faint)">追加済みLCなし</span>':''}
-        ${viewers.map(lcId2=>`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:3px 8px;font-size:11px;font-weight:700;color:var(--dark)">
-          ${lcId2}
-          <span onclick="ebRemoveViewer('${lId}','${lcId2}')" style="cursor:pointer;color:var(--faint);font-size:12px;font-weight:400;line-height:1">×</span>
-        </span>`).join('')}
-      </div>
-      <div style="display:flex;gap:6px">
-        <select id="eb-viewer-sel-${lId}" class="fi" style="height:32px;font-size:11px;flex:1">
-          <option value="">LCを選択...</option>
-          ${allLCs.filter(id=>!viewers.includes(id)).map(id=>`<option value="${id}">${id}</option>`).join('')}
-        </select>
-        <button onclick="ebAddViewer('${lId}')" style="padding:4px 14px;border-radius:5px;font-size:11px;font-weight:700;background:#1B2C5E;color:#fff;border:none;cursor:pointer;font-family:'Lato',sans-serif;white-space:nowrap">追加</button>
-      </div>
-    </div>`;
-  }
-
-  return `<div>${navHtml}${bodyHtml}${ebAccessHtml}</div>`;
+  return `<div>${navHtml}${bodyHtml}</div>`;
 }
 
 function ebAddViewer(lId){
