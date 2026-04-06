@@ -6194,6 +6194,7 @@ function mc_renderAreaProjects(areaId,areaColor){
         <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button></div></td>
       </tr>`;
       for(let j=1;j<span;j++){
+        if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
           <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
@@ -6302,6 +6303,7 @@ function mc_rFreeProject(id){
     </tr>`;
     if(!fpCollapsed){
       for(let j=1;j<span;j++){
+        if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
           <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
