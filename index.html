@@ -7139,7 +7139,7 @@ function lcTogGrp(grpKey, lId, aId, kId){
 }
 function mc_togFPGrp(grpKey, projId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
-  mc_rFreeProject(projId);
+  const p=MC_D.freeProjects.find(x=>x.id===projId);if(p&&p.areaId)mc_rArea(p.areaId);else mc_rFreeProject(projId);
 }
 function mc_togGrp(grpKey, aId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
