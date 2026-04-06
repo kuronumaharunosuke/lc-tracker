@@ -4737,9 +4737,11 @@ function mtOpenAddMember(lId, aId){
   const areaSel=document.getElementById('eb-member-area');
   if(areaSel){
     const lc=D.lcs.find(x=>x.id===lId);
-    const areas=(lc&&lc.areas)||[];
+    const areaIds2=Object.keys((lc&&lc.areas)||{});
+    const extraAreas2=(lc&&lc.extraAreas)||[];
+    const allAreas2=[...areaIds2,...extraAreas2.map(e=>e.id).filter(id=>!areaIds2.includes(id))];
     areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
-      areas.map(a=>`<option value="${h(a.id)}" ${a.id===aId?'selected':''}>${h(a.name||a.id)}</option>`).join('');
+      allAreas2.map(id=>`<option value="${id}" ${id===aId?'selected':''}>${id}</option>`).join('');
   }
   const ov=document.getElementById('ov-eb-member');
   if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
@@ -5187,9 +5189,11 @@ function ebOpenAddMember(lId){
   const areaSel=document.getElementById('eb-member-area');
   if(areaSel){
     const lc=D.lcs.find(x=>x.id===lId);
-    const areas=(lc&&lc.areas)||[];
+    const areaIds=Object.keys((lc&&lc.areas)||{});
+    const extraAreas=(lc&&lc.extraAreas)||[];
+    const allAreas=[...areaIds,...extraAreas.map(e=>e.id).filter(id=>!areaIds.includes(id))];
     areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
-      areas.map(a=>`<option value="${h(a.id)}">${h(a.name||a.id)}</option>`).join('');
+      allAreas.map(id=>`<option value="${id}">${id}</option>`).join('');
   }
   const ov=document.getElementById('ov-eb-member');
   if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
