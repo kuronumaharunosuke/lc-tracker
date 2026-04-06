@@ -2619,19 +2619,20 @@ function rArea(lId,aId){
     </div>
     ${readonlyNotice}
     <div class="area-tabs">
-      ${aId!=='EB'?`<div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl'&&_areaTab!=='eb')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>`:''}
+      ${aId!=='EB'?`<div class="area-tab ${(_areaTab!=='wt'&&_areaTab!=='mktl'&&_areaTab!=='eb'&&_areaTab!=='mt')?'active':''}" onclick="setAreaTab('wbs','${lId}','${aId}')">WBS / KPI</div>`:''}
       <div class="area-tab ${(_areaTab==='wt')?'active':''}" onclick="setAreaTab('wt','${lId}','${aId}')">週次 Todo</div>
+      ${aId!=='EB'?`<div class="area-tab" style="color:${_areaTab==='mt'?'var(--aiesec)':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mt'?'var(--aiesec)':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mt','${lId}','${aId}')">メンバータスク</div>`:''}
       ${aId==='Mkt'?`<div class="area-tab" style="color:${_areaTab==='mktl'?'#F48924':'var(--dim)'};border-bottom:2px solid ${_areaTab==='mktl'?'#F48924':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('mktl','${lId}','${aId}')">Mkt TL</div>`:''}
       ${aId==='EB'?`<div class="area-tab" style="color:${_areaTab!=='wt'?'#1B2C5E':'var(--dim)'};border-bottom:2px solid ${_areaTab!=='wt'?'#1B2C5E':'transparent'};margin-bottom:-2px;padding:8px 18px;cursor:pointer;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase" onclick="setAreaTab('eb','${lId}','${aId}')">EB タスク管理</div>`:''}
     </div>
     <div id="area-tab-body">
-      ${aId==='EB'&&_areaTab!=='wt' ? rEBMain(lId,cw) : _areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
+      ${aId==='EB'&&_areaTab!=='wt' ? rEBMain(lId,cw) : _areaTab==='wt' ? rWeeklyTodo(lId,aId,cw) : _areaTab==='mt' ? rAreaMemberTasks(lId,aId,cw) : _areaTab==='mktl'&&aId==='Mkt' ? rMktTL(lId,cw) : stats+fbar+kpisHtml+addKpiBtn}
     </div>`;
   applyNoteColW(getNoteColW());
 }
 
 // ── AREA TAB STATE ──
-let _areaTab = 'wbs'; // 'wbs' | 'wt' | 'mktl' | 'eb'
+let _areaTab = 'wbs'; // 'wbs' | 'wt' | 'mktl' | 'eb' | 'mt'
 let _ebCurrentLC = null;
 let _ebSelectedMember = null; // 選択中のEBメンバー
 let _ebView = 'members'; // 'members' | 'calendar' | 'capacity'
@@ -2646,7 +2647,7 @@ function setAreaTab(tab, lId, aId){
       window._mktTLSubscribe(lId, ()=>{ mtlRerender(lId, canWrite(lId)); });
     }
   }
-  if(tab==='eb' && window._ebSubscribe){
+  if((tab==='eb'||tab==='mt') && window._ebSubscribe){
     if(_ebCurrentLC !== lId){
       _ebCurrentLC = lId;
       _ebSelectedMember = null;
@@ -2655,6 +2656,7 @@ function setAreaTab(tab, lId, aId){
       window._ebSubscribe(lId, ()=>{
         const body=document.getElementById('area-tab-body');
         if(body && _areaTab==='eb') body.innerHTML = rEBMain(lId, canWrite(lId));
+        if(body && _areaTab==='mt') body.innerHTML = rAreaMemberTasks(lId, aId, canWrite(lId));
       });
     }
   }
@@ -4430,7 +4432,7 @@ function toast(msg,t=''){
 
 /* ── KEYBOARD ── */
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');}
+  if(e.key==='Escape'){closeM();closeMKpi();closeMArea();closeGoalModal();closeGroupNoteModal();closeWT();closeBackupModal();closeTaskTodos();mtlCloseAdd();mtlCloseMembers();closeMemberMgr();document.getElementById('ov-eb-member')?.classList.remove('open');document.getElementById('ov-eb-task')?.classList.remove('open');document.getElementById('ov-mt-task')?.classList.remove('open');}
   if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();document.getElementById('si').focus();}
   if(e.key==='Enter'&&document.getElementById('pinModal').style.display==='flex') submitPin();
   if(e.key==='Enter'&&document.getElementById('login-overlay').style.display!=='none') checkLogin();
@@ -4547,6 +4549,10 @@ const EB_STATUS_COLORS = {
 };
 const EB_PRI_COLORS = {'緊急':'#F85A40','重要':'#F48924','通常':'#037EF3','低':'#8A8E96'};
 
+function ebMemberName(m){ return typeof m==='string'?m:m.name; }
+function ebMemberArea(m){ return typeof m==='string'?'':m.area||''; }
+function ebMemberList(data){ return (data.members||[]).map(ebMemberName); }
+
 function ebGetData(lcId){
   return (window._ebCache && window._ebCache[lcId])
     ? window._ebCache[lcId]
@@ -4569,9 +4575,232 @@ function ebTodayStr(){ return new Date().toISOString().slice(0,10); }
 function ebDaysUntil(d){ return Math.ceil((new Date(d)-new Date(ebTodayStr()))/86400000); }
 
 // EB メインルーター（ビュータブを含む）
+// ── エリア メンバータスク ──
+let _mtSelectedMember = null;
+let _mtStFilter = 'all';
+
+function rAreaMemberTasks(lId, aId, cw){
+  const data = ebGetData(lId);
+  const membersRaw = data.members||[];
+  // このエリアに所属するメンバー + エリア未設定のメンバーも表示
+  const areaMembers = membersRaw.filter(m=>!ebMemberArea(m)||ebMemberArea(m)===aId);
+  const memberNames = areaMembers.map(ebMemberName);
+  const tasks = data.tasks||{};
+  const sel = _mtSelectedMember;
+
+  const addBtn = cw?`<button onclick="mtOpenAddMember('${lId}','${aId}')"
+    style="padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;
+      background:transparent;color:var(--aiesec);border:1.5px dashed var(--aiesec)88">+ メンバー追加</button>`:'';
+
+  const memberTabs = `<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--border)">
+    ${memberNames.map(m=>`<button onclick="mtSelectMember('${lId}','${aId}','${m.replace(/'/g,"\\'")}',${cw})"
+      style="padding:6px 14px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;transition:all 0.1s;
+        background:${sel===m?'var(--aiesec)':'var(--white)'};color:${sel===m?'#fff':'var(--dim)'};
+        border:1.5px solid ${sel===m?'var(--aiesec)':'var(--border)'}">${h(m)}</button>`).join('')}
+    ${addBtn}
+  </div>`;
+
+  if(memberNames.length===0){
+    return `<div style="padding:32px;text-align:center;color:var(--faint);font-size:13px">
+      このエリアのメンバーが登録されていません<br>
+      ${cw?`<button onclick="mtOpenAddMember('${lId}','${aId}')" style="margin-top:12px;padding:8px 20px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;background:var(--aiesec);color:#fff;border:none;font-family:'Lato',sans-serif">+ メンバー追加</button>`:''}
+    </div>`;
+  }
+
+  if(!sel||!memberNames.includes(sel)){
+    // 全員の概要
+    const rows = memberNames.map(m=>{
+      const mt=(tasks[m]||[]);
+      const done=mt.filter(t=>t.status==='完了').length;
+      const wip=mt.filter(t=>t.status==='処理中').length;
+      const ns=mt.filter(t=>t.status==='開始前').length;
+      const tot=mt.length;
+      const pct=tot?Math.round(done/tot*100):0;
+      return `<tr style="cursor:pointer" onclick="mtSelectMember('${lId}','${aId}','${m.replace(/'/g,"\\'")}',${cw})">
+        <td style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--dark)">${h(m)}</td>
+        <td style="padding:12px 16px;text-align:center;font-size:12px;color:var(--dim)">${tot}</td>
+        <td style="padding:12px 16px;text-align:center"><span style="background:#D6F5E5;color:#005830;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px">${done}</span></td>
+        <td style="padding:12px 16px;text-align:center"><span style="background:#FEF3E8;color:#7A4000;font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px">${wip}</span></td>
+        <td style="padding:12px 16px;text-align:center;color:var(--faint);font-size:12px">${ns}</td>
+        <td style="padding:12px 16px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:4px;background:var(--bg2);border-radius:2px"><div style="width:${pct}%;height:100%;background:var(--aiesec);border-radius:2px"></div></div>
+            <span style="font-size:11px;font-weight:700;color:var(--aiesec);min-width:32px">${pct}%</span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    return `${memberTabs}
+      <table style="width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:10px 16px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;border-bottom:1px solid var(--border)">メンバー</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center;border-bottom:1px solid var(--border)">タスク数</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#00C16E;text-align:center;border-bottom:1px solid var(--border)">完了</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#F48924;text-align:center;border-bottom:1px solid var(--border)">処理中</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);text-align:center;border-bottom:1px solid var(--border)">開始前</th>
+          <th style="padding:10px 16px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)">進捗</th>
+        </tr></thead>
+        <tbody>${rows||`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--faint);font-size:12px">タスクなし</td></tr>`}</tbody>
+      </table>`;
+  }
+
+  // 個人タスクシート
+  const mt = (tasks[sel]||[]);
+  const filtered = _mtStFilter==='all'?mt:mt.filter(t=>t.status===_mtStFilter);
+
+  const filterBtns = ['all','開始前','処理中','完了'].map(s=>{
+    const cnt=s==='all'?mt.length:mt.filter(t=>t.status===s).length;
+    const active=_mtStFilter===s;
+    const colors={'all':'var(--dim)','開始前':'var(--faint)','処理中':'#F48924','完了':'#00C16E'};
+    return `<button onclick="_mtStFilter='${s}';mtRerender('${lId}','${aId}',${cw})"
+      style="padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Lato',sans-serif;
+        background:${active?'var(--dark)':'var(--white)'};color:${active?'#fff':colors[s]};
+        border:1.5px solid ${active?'var(--dark)':'var(--border)'}">
+      ${s==='all'?'全て':s} (${cnt})</button>`;
+  }).join('');
+
+  const taskRows = filtered.map(t=>{
+    const over=t.deadline&&new Date(t.deadline)<new Date()&&t.status!=='完了';
+    const stColors={'完了':'#00C16E','処理中':'#F48924','開始前':'#CACCD1'};
+    return `<tr>
+      <td style="padding:10px 14px;font-size:12px;color:var(--dark)">${h(t.name)}</td>
+      <td style="padding:10px 14px;text-align:center">
+        <select onchange="mtCycStatus('${lId}','${sel.replace(/'/g,"\\'")}','${t.id}',this.value,'${aId}',${cw})"
+          style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;border:1.5px solid ${stColors[t.status]||'#ccc'};
+            color:${stColors[t.status]||'#ccc'};background:var(--white);cursor:pointer;font-family:'Lato',sans-serif">
+          ${['開始前','処理中','完了'].map(s=>`<option value="${s}" ${t.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td style="padding:10px 14px;font-size:11px;color:var(--dim)">${t.start||'—'}</td>
+      <td style="padding:10px 14px;font-size:11px;color:${over?'#F85A40':'var(--dim)'};font-weight:${over?700:400}">${t.deadline||'—'}${over?' ！':''}</td>
+      <td style="padding:10px 14px;font-size:11px;color:var(--dim)">${t.note?h(t.note):''}</td>
+      ${cw?`<td style="padding:10px 14px"><div style="display:flex;gap:4px">
+        <button class="ib" onclick="mtOpenEditTask('${lId}','${sel.replace(/'/g,"\\'")}','${t.id}','${aId}',${cw})">編集</button>
+        <button class="ib del" onclick="mtDelTask('${lId}','${sel.replace(/'/g,"\\'")}','${t.id}','${aId}',${cw})">削除</button>
+      </div></td>`:'<td></td>'}
+    </tr>`;
+  }).join('');
+
+  const addTaskBtn = cw?`<button onclick="mtOpenAddTask('${lId}','${sel.replace(/'/g,"\\'")}','${aId}',${cw})"
+    style="margin-top:12px;padding:7px 16px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;
+      background:var(--aiesec);color:#fff;border:none;font-family:'Lato',sans-serif">+ タスク追加</button>`:'';
+
+  return `${memberTabs}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${filterBtns}</div>
+      ${addTaskBtn}
+    </div>
+    <table style="width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <thead><tr style="background:var(--bg)">
+        <th style="padding:10px 14px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:left;border-bottom:1px solid var(--border)">タスク名</th>
+        <th style="padding:10px 14px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);text-align:center;border-bottom:1px solid var(--border)">ステータス</th>
+        <th style="padding:10px 14px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)">開始</th>
+        <th style="padding:10px 14px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)">締め切り</th>
+        <th style="padding:10px 14px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--border)">メモ</th>
+        <th style="padding:10px 14px;border-bottom:1px solid var(--border)"></th>
+      </tr></thead>
+      <tbody>${taskRows||`<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--faint);font-size:12px">タスクなし。追加してください。</td></tr>`}</tbody>
+    </table>`;
+}
+
+function mtSelectMember(lId, aId, name, cw){
+  _mtSelectedMember = _mtSelectedMember===name?null:name;
+  _mtStFilter='all';
+  mtRerender(lId,aId,cw);
+}
+function mtRerender(lId, aId, cw){
+  const body=document.getElementById('area-tab-body');
+  if(body) body.innerHTML=rAreaMemberTasks(lId,aId,cw);
+}
+function mtCycStatus(lId, member, tId, newStatus, aId, cw){
+  const data=ebGetData(lId);
+  const mt=((data.tasks||{})[member]||[]);
+  const t=mt.find(x=>x.id===tId);if(!t)return;
+  t.status=newStatus;
+  ebSaveData(lId,{...data,tasks:{...data.tasks,[member]:mt}});
+  mtRerender(lId,aId,cw);
+}
+function mtDelTask(lId, member, tId, aId, cw){
+  if(!confirm('このタスクを削除しますか？'))return;
+  const data=ebGetData(lId);
+  const mt=((data.tasks||{})[member]||[]).filter(x=>x.id!==tId);
+  ebSaveData(lId,{...data,tasks:{...data.tasks,[member]:mt}});
+  mtRerender(lId,aId,cw);
+}
+
+// メンバータスク追加・編集モーダル
+let _mtModal=null;
+function mtOpenAddMember(lId, aId){
+  _ebAddMemberLC=lId;
+  const inp=document.getElementById('eb-member-inp');
+  if(inp)inp.value='';
+  const areaSel=document.getElementById('eb-member-area');
+  if(areaSel){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const areas=(lc&&lc.areas)||[];
+    areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
+      areas.map(a=>`<option value="${h(a.id)}" ${a.id===aId?'selected':''}>${h(a.name||a.id)}</option>`).join('');
+  }
+  const ov=document.getElementById('ov-eb-member');
+  if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
+}
+function mtOpenAddTask(lId, member, aId, cw){
+  _mtModal={lId,member,tId:null,aId,cw};
+  document.getElementById('mt-task-name').value='';
+  document.getElementById('mt-task-start').value='';
+  document.getElementById('mt-task-deadline').value='';
+  document.getElementById('mt-task-note').value='';
+  document.getElementById('mt-task-status').value='開始前';
+  document.getElementById('ov-mt-task').classList.add('open');
+  setTimeout(()=>document.getElementById('mt-task-name')?.focus(),80);
+}
+function mtOpenEditTask(lId, member, tId, aId, cw){
+  const data=ebGetData(lId);
+  const t=((data.tasks||{})[member]||[]).find(x=>x.id===tId);
+  if(!t)return;
+  _mtModal={lId,member,tId,aId,cw};
+  document.getElementById('mt-task-name').value=t.name||'';
+  document.getElementById('mt-task-start').value=t.start||'';
+  document.getElementById('mt-task-deadline').value=t.deadline||'';
+  document.getElementById('mt-task-note').value=t.note||'';
+  document.getElementById('mt-task-status').value=t.status||'開始前';
+  document.getElementById('ov-mt-task').classList.add('open');
+  setTimeout(()=>document.getElementById('mt-task-name')?.focus(),80);
+}
+function mtSaveTask(){
+  if(!_mtModal)return;
+  const {lId,member,tId,aId,cw}=_mtModal;
+  const name=document.getElementById('mt-task-name').value.trim();
+  if(!name){toast('タスク名を入力してください','err');return;}
+  const data=ebGetData(lId);
+  const mt=[...((data.tasks||{})[member]||[])];
+  if(tId){
+    const i=mt.findIndex(x=>x.id===tId);
+    if(i>=0) mt[i]={...mt[i],
+      name,
+      start:document.getElementById('mt-task-start').value||null,
+      deadline:document.getElementById('mt-task-deadline').value||null,
+      note:document.getElementById('mt-task-note').value||null,
+      status:document.getElementById('mt-task-status').value
+    };
+  } else {
+    mt.push({id:'t'+Date.now(),name,
+      start:document.getElementById('mt-task-start').value||null,
+      deadline:document.getElementById('mt-task-deadline').value||null,
+      note:document.getElementById('mt-task-note').value||null,
+      status:'開始前'
+    });
+  }
+  ebSaveData(lId,{...data,tasks:{...data.tasks,[member]:mt}});
+  document.getElementById('ov-mt-task').classList.remove('open');
+  mtRerender(lId,aId,cw);
+  toast(tId?'更新しました':'タスクを追加しました');
+}
+
 function rEBMain(lId, cw){
   const data = ebGetData(lId);
-  const members = data.members||[];
+  const membersRaw = data.members||[];
+  const members = membersRaw.map(ebMemberName);
   const tasks = data.tasks||{};
   const capData = (_ebCapData[lId])||{};
   const views = [['members','≡ タスク管理'],['calendar','◉ カレンダー'],['capacity','↑ キャパ']];
@@ -4753,7 +4982,8 @@ function ebSetCap(lId, member, cap, cw){
 
 function rEBSheet(lId, cw){
   const data = ebGetData(lId);
-  const members = data.members||[];
+  const membersRaw = data.members||[];
+  const members = membersRaw.map(ebMemberName);
   const tasks = data.tasks||{};
   const sel = _ebSelectedMember;
 
@@ -4942,7 +5172,7 @@ function ebDelMember(lId, member){
   if(!confirm(`「${member}」を削除しますか？タスクも全て削除されます。`))return;
   const data=ebGetData(lId);
   const newTasks={...data.tasks};delete newTasks[member];
-  const newMembers=(data.members||[]).filter(m=>m!==member);
+  const newMembers=(data.members||[]).filter(m=>ebMemberName(m)!==member);
   ebSaveData(lId,{members:newMembers,tasks:newTasks});
   toast(`「${member}」を削除しました`);
 }
@@ -4953,6 +5183,14 @@ function ebOpenAddMember(lId){
   _ebAddMemberLC=lId;
   const inp=document.getElementById('eb-member-inp');
   if(inp)inp.value='';
+  // エリアドロップダウンをそのLCのエリアで埋める
+  const areaSel=document.getElementById('eb-member-area');
+  if(areaSel){
+    const lc=D.lcs.find(x=>x.id===lId);
+    const areas=(lc&&lc.areas)||[];
+    areaSel.innerHTML='<option value="">-- エリアを選択 --</option>'+
+      areas.map(a=>`<option value="${h(a.id)}">${h(a.name||a.id)}</option>`).join('');
+  }
   const ov=document.getElementById('ov-eb-member');
   if(ov){ov.classList.add('open');setTimeout(()=>document.getElementById('eb-member-inp')?.focus(),80);}
 }
@@ -4960,9 +5198,14 @@ function ebAddMember(){
   const lId=_ebAddMemberLC;if(!lId)return;
   const name=(document.getElementById('eb-member-inp')?.value||'').trim();
   if(!name){toast('名前を入力してください','err');return;}
+  const area=(document.getElementById('eb-member-area')?.value||'');
   const data=ebGetData(lId);
-  if((data.members||[]).includes(name)){toast('既に存在します','err');return;}
-  const newMembers=[...(data.members||[]),name];
+  // 後方互換：membersは文字列配列または{id,name,area}配列
+  const members=data.members||[];
+  const exists=members.some(m=>typeof m==='string'?m===name:m.name===name);
+  if(exists){toast('既に存在します','err');return;}
+  const newMember={id:'m'+Date.now(),name,area};
+  const newMembers=[...members,newMember];
   ebSaveData(lId,{...data,members:newMembers});
   document.getElementById('ov-eb-member').classList.remove('open');
   _ebSelectedMember=name;
@@ -5748,8 +5991,7 @@ function mc_migrate(){
 // ── SYNC ──
 const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
 let MC__saving=false,MC__saveTimer=null,MC__dragging=false;
-const MC__collapsedGroups={};
-let mc__saveTimer=null; // key: `${aId}__${kId}__${grp}` → true/false
+const MC__collapsedGroups={}; // key: `${aId}__${kId}__${grp}` → true/false
 
 function mc_setSyncDot(state){
   const d=document.getElementById('mc-sync-dot');
@@ -6177,12 +6419,9 @@ function mc_renderAreaProjects(areaId,areaColor){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const over=isOver(t.deadline)&&t.status!=='DONE';
-      const fpGrpKey2=grp?`fp__${p.id}__${encodeURIComponent(grp)}`:null;
-      const fpCollapsed2=grp&&MC__collapsedGroups[fpGrpKey2];
-      const renderSpan2=fpCollapsed2?1:span;
       const apGrpCell=grp
-        ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
-        :`<td class="group-cell empty" rowspan="${renderSpan2}"></td>`;
+        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
+        :`<td class="group-cell empty" rowspan="${span}"></td>`;
       rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
         ${apGrpCell}
         <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
@@ -6194,7 +6433,6 @@ function mc_renderAreaProjects(areaId,areaColor){
         <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button></div></td>
       </tr>`;
       for(let j=1;j<span;j++){
-        if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
           <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
@@ -6303,7 +6541,6 @@ function mc_rFreeProject(id){
     </tr>`;
     if(!fpCollapsed){
       for(let j=1;j<span;j++){
-        if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
           <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
@@ -7144,7 +7381,7 @@ function lcTogGrp(grpKey, lId, aId, kId){
 }
 function mc_togFPGrp(grpKey, projId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
-  const p=MC_D.freeProjects.find(x=>x.id===projId);if(p&&p.areaId)mc_rArea(p.areaId);else mc_rFreeProject(projId);
+  mc_rFreeProject(projId);
 }
 function mc_togGrp(grpKey, aId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
@@ -7887,17 +8124,62 @@ document.querySelector('.nav-item[data-view="dashboard"]').classList.add('active
 <!-- EB メンバー追加モーダル -->
 <div class="overlay" id="ov-eb-member" onclick="if(event.target===this)document.getElementById('ov-eb-member').classList.remove('open')">
   <div class="modal" style="width:380px">
-    <div class="mh" style="background:#1B2C5E">EBメンバーを追加</div>
+    <div class="mh" style="background:#1B2C5E">メンバーを追加</div>
     <div class="mb">
       <div class="fg">
         <label class="fl2">メンバー名</label>
         <input class="fi" id="eb-member-inp" placeholder="例: 黒沼春之介"
           onkeydown="if(event.key==='Enter'&&!event.isComposing)ebAddMember()">
       </div>
+      <div class="fg" style="margin-top:10px">
+        <label class="fl2">エリア</label>
+        <select class="fi" id="eb-member-area" style="height:36px">
+          <option value="">-- エリアを選択 --</option>
+        </select>
+      </div>
     </div>
     <div class="mf">
       <button class="btn" onclick="document.getElementById('ov-eb-member').classList.remove('open')">キャンセル</button>
       <button class="btn btn-fill" style="background:#1B2C5E;border-color:#1B2C5E" onclick="ebAddMember()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- メンバータスク編集モーダル -->
+<div class="overlay" id="ov-mt-task" onclick="if(event.target===this)document.getElementById('ov-mt-task').classList.remove('open')">
+  <div class="modal" style="width:420px">
+    <div class="mh" style="background:var(--aiesec)">タスク編集</div>
+    <div class="mb">
+      <div class="fg">
+        <label class="fl2">タスク名 *</label>
+        <input class="fi" id="mt-task-name" placeholder="例: 資料作成" onkeydown="if(event.key==='Enter'&&!event.isComposing)mtSaveTask()">
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label class="fl2">ステータス</label>
+        <select class="fi" id="mt-task-status" style="height:36px">
+          <option value="開始前">開始前</option>
+          <option value="処理中">処理中</option>
+          <option value="完了">完了</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div class="fg" style="flex:1">
+          <label class="fl2">開始日</label>
+          <input class="fi" id="mt-task-start" type="date">
+        </div>
+        <div class="fg" style="flex:1">
+          <label class="fl2">締め切り</label>
+          <input class="fi" id="mt-task-deadline" type="date">
+        </div>
+      </div>
+      <div class="fg" style="margin-top:10px">
+        <label class="fl2">メモ</label>
+        <textarea class="fi" id="mt-task-note" rows="2" placeholder="メモ（任意）" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="document.getElementById('ov-mt-task').classList.remove('open')">キャンセル</button>
+      <button class="btn btn-fill" style="background:var(--aiesec);border-color:var(--aiesec)" onclick="mtSaveTask()">保存</button>
     </div>
   </div>
 </div>
