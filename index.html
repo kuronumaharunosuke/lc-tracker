@@ -4296,39 +4296,50 @@ async function exportToSheets(){
     const aARGB=toARGB(at.color);
     const ws=wb.addWorksheet(at.id);
     ws.views=[{state:'frozen',ySplit:2}];
-    ws.columns=[{width:26},{width:14},{width:28},{width:10},{width:10},{width:10},{width:10},{width:42}];
+    ws.columns=[{width:26},{width:10},{width:10},{width:10},{width:14},{width:28},{width:10},{width:10},{width:10},{width:10},{width:42}];
 
-    const aR1=ws.addRow([at.name+' — '+lc.id,'','','','','','','']);
+    const aR1=ws.addRow([at.name+' — '+lc.id,'','','','','','','','','','']);
     aR1.height=18;
-    ws.mergeCells(`A1:H1`);
+    ws.mergeCells(`A1:K1`);
     aR1.getCell(1).fill=fill(aARGB);aR1.getCell(1).font=font(C_WHITE,true,11);aR1.getCell(1).alignment=aln('left');
 
-    const aHdr=ws.addRow(['KPI名','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考']);
+    const aHdr=ws.addRow(['KPI名','Target','Actual','達成率','大タスク','タスク名','担当者','開始日','締め切り','ステータス','備考']);
     aHdr.height=15;
     aHdr.eachCell(cell=>{
       cell.fill=fill('FFF0F2F7');cell.font=font(C_DARK,true,9);
       cell.alignment=aln('center');cell.border={bottom:border('medium',aARGB)};
     });
-    ws.autoFilter={from:'A2',to:'H2'};
+    ws.autoFilter={from:'A2',to:'K2'};
 
     area.kpis.forEach(k=>{
+      const kTarget=k.target||null;
+      const kActual=k.actual||0;
+      const kAchPct=kTarget?Math.round(kActual/kTarget*100)+'%':'';
       if(k.tasks.length===0){
-        const r=ws.addRow([k.name,'(タスクなし)','','','','','','']);
+        const r=ws.addRow([k.name,kTarget||'',kTarget?kActual:'',kAchPct,'(タスクなし)','','','','','','']);
         r.getCell(1).font=font(aARGB,true,9);r.getCell(1).fill=fill('FFF8F9FA');return;
       }
       let first=true;
       k.tasks.forEach(t=>{
         const stLabel=t.status==='DONE'?'Done':t.status==='WIP'?'WIP':'未着手';
-        const r=ws.addRow([first?k.name:'',t.group||'',t.name,t.res||'',t.start||'',t.deadline||'',stLabel,t.note||'']);
+        const r=ws.addRow([first?k.name:'',first&&kTarget?kTarget:'',first&&kTarget?kActual:'',first&&kAchPct?kAchPct:'',t.group||'',t.name,t.res||'',t.start||'',t.deadline||'',stLabel,t.note||'']);
         r.height=15;
-        if(first){r.getCell(1).font=font(aARGB,true,9);r.getCell(1).fill=fill('FFF8FAFF');}
-        const stC=r.getCell(7);
+        if(first){
+          r.getCell(1).font=font(aARGB,true,9);r.getCell(1).fill=fill('FFF8FAFF');
+          if(kTarget){
+            r.getCell(2).font=font(C_DIM,false,9);r.getCell(2).alignment=aln('center');
+            r.getCell(3).font=font(aARGB,true,9);r.getCell(3).alignment=aln('center');
+            const achNum=kTarget?Math.round(kActual/kTarget*100):0;
+            r.getCell(4).font=font(achNum>=100?C_DONE_FG:achNum>=50?C_WIP_FG:C_DIM,true,9);r.getCell(4).alignment=aln('center');
+          }
+        }
+        const stC=r.getCell(10);
         if(t.status==='DONE'){stC.fill=fill(C_DONE_BG);stC.font=font(C_DONE_FG,true,9);}
         else if(t.status==='WIP'){stC.fill=fill(C_WIP_BG);stC.font=font(C_WIP_FG,true,9);}
         stC.alignment=aln('center');
         (t.todos||[]).forEach(td=>{
-          const tr=ws.addRow(['','','  [Todo] '+td.name,'','','',td.done?'Done':'未着手','']);
-          tr.getCell(3).font=font(C_DIM,false,8);tr.getCell(3).fill=fill('FFFAFBFC');
+          const tr=ws.addRow(['','','','','','  [Todo] '+td.name,'','','',td.done?'Done':'未着手','']);
+          tr.getCell(6).font=font(C_DIM,false,8);tr.getCell(6).fill=fill('FFFAFBFC');
           tr.height=13;
         });
         first=false;
