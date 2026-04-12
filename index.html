@@ -6523,7 +6523,8 @@ function mc_migrate(){
 // ── SYNC ──
 const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
 let MC__saving=false,MC__saveTimer=null,MC__dragging=false;
-const MC__collapsedGroups={}; // key: `${aId}__${kId}__${grp}` → true/false
+const MC__collapsedGroups={};
+let mc__saveTimer=null; // key: `${aId}__${kId}__${grp}` → true/false
 
 function mc_setSyncDot(state){
   const d=document.getElementById('mc-sync-dot');
