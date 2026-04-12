@@ -6951,10 +6951,13 @@ function mc_renderAreaProjects(areaId,areaColor){
     while(i2<tasks.length){
       const t=tasks[i2];const grp=t.group||'';
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
+      const fpGrpKey2=grp?`fp__${p.id}__${encodeURIComponent(grp)}`:null;
+      const fpCollapsed2=grp&&MC__collapsedGroups[fpGrpKey2];
+      const renderSpan2=fpCollapsed2?1:span;
       const over=isOver(t.deadline)&&t.status!=='DONE';
       const apGrpCell=grp
-        ?`<td class="group-cell" rowspan="${span}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><span class="group-cell-label" style="border-left:3px solid ${p.color||c}"><span class="drag-handle">⠿</span>${h(grp)}</span><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
-        :`<td class="group-cell empty" rowspan="${span}"></td>`;
+        ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
+        :`<td class="group-cell empty" rowspan="${renderSpan2}"></td>`;
       rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
         ${apGrpCell}
         <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
@@ -6966,6 +6969,7 @@ function mc_renderAreaProjects(areaId,areaColor){
         <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button></div></td>
       </tr>`;
       for(let j=1;j<span;j++){
+        if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
           <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
@@ -7914,7 +7918,7 @@ function lcTogGrp(grpKey, lId, aId, kId){
 }
 function mc_togFPGrp(grpKey, projId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
-  mc_rFreeProject(projId);
+  const p=MC_D.freeProjects.find(x=>x.id===projId);if(p&&p.areaId)mc_rArea(p.areaId);else mc_rFreeProject(projId);
 }
 function mc_togGrp(grpKey, aId){
   MC__collapsedGroups[grpKey] = !MC__collapsedGroups[grpKey];
