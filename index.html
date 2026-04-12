@@ -7193,7 +7193,7 @@ function mc_openAdd(aId,kId){
   mc_editing=null;
   document.getElementById('mc-mttl').textContent='タスク追加';
   document.getElementById('task-del-btn').style.display='none';
-  ['mc-fn','mc-fr','fsup','mc-fs2','mc_fd','mc-fnote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['mc-fn','mc-fr','fsup','mc-fs2','mc-fd','mc-fnote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('mc-fg-input').value='';
   document.getElementById('mc-fst').value='NOT_STARTED';
   document.getElementById('fpri').value='';
@@ -7215,7 +7215,7 @@ function mc_openEdit(aId,kId,tId){
   document.getElementById('mc-fr').value=t.res||'';
   document.getElementById('fsup').value=t.sup||'';
   document.getElementById('mc-fs2').value=t.start||'';
-  document.getElementById('mc_fd').value=t.deadline||'';
+  document.getElementById('mc-fd').value=t.deadline||'';
   document.getElementById('mc-fst').value=t.status;
   document.getElementById('fpri').value=t.priority||'';
   mc_fillA(aId,kId);
@@ -7244,7 +7244,7 @@ function mc_saveT(){
     name,group:(document.getElementById('mc-fg-input')?.value||'').trim(),
     res:document.getElementById('mc-fr').value.trim(),
     sup:document.getElementById('fsup').value.trim(),
-    start:document.getElementById('mc-fs2').value,deadline:document.getElementById('mc_fd').value,
+    start:document.getElementById('mc-fs2').value,deadline:document.getElementById('mc-fd').value,
     status:document.getElementById('mc-fst').value,note:(document.getElementById('mc-fnote')?.value||'').trim(),
     priority:document.getElementById('fpri').value||'',
     _by:window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||'',
