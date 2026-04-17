@@ -86,15 +86,14 @@ async function main() {
 
   if (taskAlerts.length > 0) {
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `[警告] HI 締切3日以内タスク (${fmt(today)})` } },
-      { type: 'context', elements: [{ type: 'mrkdwn', text: `全${taskAlerts.length}件` }] },
+      { type: 'section', text: { type: 'mrkdwn', text: `:warning: *HI 締切3日以内タスク (${fmt(today)})*  —  全${taskAlerts.length}件` } },
       { type: 'divider' }
     ];
     const byArea = {};
     taskAlerts.forEach(a => { if (!byArea[a.areaId]) byArea[a.areaId] = []; byArea[a.areaId].push(a); });
     Object.entries(byArea).forEach(([areaId, tasks]) => {
       const lines = tasks.map(t => {
-        const urgency = t.daysLeft === 0 ? '[!!!]' : t.daysLeft === 1 ? '[!!]' : '[!]';
+        const urgency = t.daysLeft === 0 ? ':red_circle:' : t.daysLeft === 1 ? ':large_yellow_circle:' : ':large_blue_circle:';
         const dayLabel = t.daysLeft === 0 ? '今日' : t.daysLeft === 1 ? '明日' : `${t.daysLeft}日後`;
         const status = t.status === 'WIP' ? 'WIP' : '未着手';
         return `${urgency} *${t.taskName}* — ${dayLabel} (${t.deadline})  \`${status}\`${t.res ? `  担当: ${t.res}` : ''}`;
@@ -111,7 +110,7 @@ async function main() {
     const totalCount = linkedCount + data.manual.length;
 
     const parentBlocks = [
-      { type: 'header', text: { type: 'plain_text', text: `HI ${areaId} — 今週のToDo` } },
+      { type: 'section', text: { type: 'mrkdwn', text: `:warning: *HI ${areaId} — 今週のToDo*` } },
       { type: 'context', elements: [{ type: 'mrkdwn', text: `${weekLabel}  未完了${totalCount}件  （詳細はスレッド）` }] }
     ];
     const parentTs = await postMessage(parentBlocks);
@@ -119,12 +118,12 @@ async function main() {
     const chunks = [];
     Object.entries(data.linkedByTask).forEach(([taskName, info]) => {
       const resLabel = info.res ? ` — ${info.res}` : '';
-      chunks.push(`【タスク】 *${taskName}*${resLabel}`);
+      chunks.push(`*${taskName}*${resLabel}`);
       info.todos.forEach(td => chunks.push(`   ・ ${td}`));
       chunks.push('');
     });
     if (data.manual.length > 0) {
-      chunks.push(`【手動追加】`);
+      chunks.push(`*手動追加*`);
       data.manual.forEach(m => {
         chunks.push(`   ・ ${m.name}${m.res ? `  担当: ${m.res}` : ''}`);
       });
