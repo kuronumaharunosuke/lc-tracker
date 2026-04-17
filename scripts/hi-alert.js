@@ -7,18 +7,24 @@ const serviceAccount = JSON.parse(
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 const db = admin.firestore();
 
-async function sendToSlack(blocks) {
-  const res = await fetch(process.env.SLACK_WEBHOOK_URL, {
+async function postMessage(blocks, thread_ts) {
+  const body = { channel: process.env.SLACK_CHANNEL_ID, blocks };
+  if (thread_ts) body.thread_ts = thread_ts;
+  const res = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ blocks })
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Authorization': `Bearer ${process.env.SLACK_BOT_TOKEN}`,
+    },
+    body: JSON.stringify(body),
   });
-  if (!res.ok) {
-    console.error('❌ 送信失敗:', await res.text());
+  const data = await res.json();
+  if (!data.ok) {
+    console.error('❌ Slack API error:', data.error, data);
     process.exit(1);
   }
-  // Slackのレート制限対策に少し待つ
-  await new Promise(r => setTimeout(r, 500));
+  await new Promise(r => setTimeout(r, 600));
+  return data.ts;
 }
 
 async function main() {
@@ -85,37 +91,35 @@ async function main() {
       { type: 'context', elements: [{ type: 'mrkdwn', text: `全${taskAlerts.length}件` }] },
       { type: 'divider' }
     ];
-
     const byArea = {};
     taskAlerts.forEach(a => { if (!byArea[a.areaId]) byArea[a.areaId] = []; byArea[a.areaId].push(a); });
     Object.entries(byArea).forEach(([areaId, tasks]) => {
       const lines = tasks.map(t => {
-        const urgency = t.daysLeft === 0 ? '🔴' : t.daysLeft === 1 ? '🟠' : '🟡';
+        const urgency = t.daysLeft === 0 ? '��' : t.daysLeft === 1 ? '🟠' : '🟡';
         const dayLabel = t.daysLeft === 0 ? '今日' : t.daysLeft === 1 ? '明日' : `${t.daysLeft}日後`;
         const status = t.status === 'WIP' ? 'WIP' : '未着手';
         return `${urgency} *${t.taskName}* — ${dayLabel} (${t.deadline})  \`${status}\`${t.res ? `  担当: ${t.res}` : ''}`;
       }).join('\n');
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*${areaId}* (${tasks.length}件)\n${lines}` } });
     });
-
     blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `🔗 ${trackerLink}` }] });
-    await sendToSlack(blocks);
-    console.log(`✅ 投稿1: タスク${taskAlerts.length}件`);
+    await postMessage(blocks);
+    console.log(`✅ 締切タスク投稿: ${taskAlerts.length}件`);
   }
 
-  // ===== 投稿2〜: エリアごとの週次ToDo =====
-  const areaIds = Object.keys(todoByArea);
-  for (const areaId of areaIds) {
-    const data = todoByArea[areaId];
+  // ===== 投稿2〜: エリアごとに親投稿+スレッド =====
+  for (const [areaId, data] of Object.entries(todoByArea)) {
     const linkedCount = Object.values(data.linkedByTask).reduce((s, t) => s + t.todos.length, 0);
     const totalCount = linkedCount + data.manual.length;
 
-    const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `📋 HI ${areaId} 今週のToDo`, emoji: true } },
-      { type: 'context', elements: [{ type: 'mrkdwn', text: `${weekLabel}  未完了${totalCount}件` }] },
-      { type: 'divider' }
+    // 親: エリア名 + 件数のみ
+    const parentBlocks = [
+      { type: 'header', text: { type: 'plain_text', text: `📋 HI ${areaId} — 今週のToDo`, emoji: true } },
+      { type: 'context', elements: [{ type: 'mrkdwn', text: `${weekLabel}  未完了${totalCount}件  （詳細はスレッド 🧵）` }] }
     ];
+    const parentTs = await postMessage(parentBlocks);
 
+    // スレッド: ToDo詳細
     const chunks = [];
     Object.entries(data.linkedByTask).forEach(([taskName, info]) => {
       const resLabel = info.res ? ` — ${info.res}` : '';
@@ -130,23 +134,25 @@ async function main() {
       });
     }
 
-    // 2900字制限で分割
+    // 2900字制限で分割 → 複数スレッド返信
     let buf = '';
+    const sections = [];
     for (const line of chunks) {
       if ((buf + line + '\n').length > 2900) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: buf } });
+        sections.push(buf);
         buf = '';
       }
       buf += line + '\n';
     }
-    if (buf.trim()) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: buf } });
+    if (buf.trim()) sections.push(buf);
 
-    blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `🔗 ${trackerLink}` }] });
-    await sendToSlack(blocks);
-    console.log(`✅ 投稿: ${areaId} ToDo${totalCount}件`);
+    for (const sec of sections) {
+      await postMessage([{ type: 'section', text: { type: 'mrkdwn', text: sec } }], parentTs);
+    }
+    console.log(`✅ ${areaId}: ${totalCount}件 (${sections.length}スレ返信)`);
   }
 
-  if (taskAlerts.length === 0 && areaIds.length === 0) {
+  if (taskAlerts.length === 0 && Object.keys(todoByArea).length === 0) {
     console.log('アラート対象なし');
   }
 }
