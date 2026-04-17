@@ -20,7 +20,7 @@ async function postMessage(blocks, thread_ts) {
   });
   const data = await res.json();
   if (!data.ok) {
-    console.error('❌ Slack API error:', data.error, data);
+    console.error('Slack API error:', data.error, data);
     process.exit(1);
   }
   await new Promise(r => setTimeout(r, 600));
@@ -42,7 +42,7 @@ async function main() {
   const thisWeekKey = `${monday.getFullYear()}-${String(monday.getMonth()+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`;
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const weekLabel = `${fmt(monday)}〜${fmt(sunday)}`;
+  const weekLabel = `${fmt(monday)} - ${fmt(sunday)}`;
 
   const snap = await db.collection('lc-tracker-2627').doc('main').get();
   if (!snap.exists) { console.log('データなし'); return; }
@@ -84,10 +84,9 @@ async function main() {
 
   const trackerLink = '<https://kuronumaharunosuke.github.io/lc-tracker/#lc-HI|Action Tracker - HI>';
 
-  // ===== 投稿1: 締切3日以内タスク =====
   if (taskAlerts.length > 0) {
     const blocks = [
-      { type: 'header', text: { type: 'plain_text', text: `⚠️ HI 締切3日以内タスク (${fmt(today)})`, emoji: true } },
+      { type: 'header', text: { type: 'plain_text', text: `[警告] HI 締切3日以内タスク (${fmt(today)})` } },
       { type: 'context', elements: [{ type: 'mrkdwn', text: `全${taskAlerts.length}件` }] },
       { type: 'divider' }
     ];
@@ -95,46 +94,42 @@ async function main() {
     taskAlerts.forEach(a => { if (!byArea[a.areaId]) byArea[a.areaId] = []; byArea[a.areaId].push(a); });
     Object.entries(byArea).forEach(([areaId, tasks]) => {
       const lines = tasks.map(t => {
-        const urgency = t.daysLeft === 0 ? '��' : t.daysLeft === 1 ? '🟠' : '🟡';
+        const urgency = t.daysLeft === 0 ? '[!!!]' : t.daysLeft === 1 ? '[!!]' : '[!]';
         const dayLabel = t.daysLeft === 0 ? '今日' : t.daysLeft === 1 ? '明日' : `${t.daysLeft}日後`;
         const status = t.status === 'WIP' ? 'WIP' : '未着手';
         return `${urgency} *${t.taskName}* — ${dayLabel} (${t.deadline})  \`${status}\`${t.res ? `  担当: ${t.res}` : ''}`;
       }).join('\n');
       blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*${areaId}* (${tasks.length}件)\n${lines}` } });
     });
-    blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: `🔗 ${trackerLink}` }] });
+    blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: trackerLink }] });
     await postMessage(blocks);
-    console.log(`✅ 締切タスク投稿: ${taskAlerts.length}件`);
+    console.log(`締切タスク投稿: ${taskAlerts.length}件`);
   }
 
-  // ===== 投稿2〜: エリアごとに親投稿+スレッド =====
   for (const [areaId, data] of Object.entries(todoByArea)) {
     const linkedCount = Object.values(data.linkedByTask).reduce((s, t) => s + t.todos.length, 0);
     const totalCount = linkedCount + data.manual.length;
 
-    // 親: エリア名 + 件数のみ
     const parentBlocks = [
-      { type: 'header', text: { type: 'plain_text', text: `📋 HI ${areaId} — 今週のToDo`, emoji: true } },
-      { type: 'context', elements: [{ type: 'mrkdwn', text: `${weekLabel}  未完了${totalCount}件  （詳細はスレッド 🧵）` }] }
+      { type: 'header', text: { type: 'plain_text', text: `HI ${areaId} — 今週のToDo` } },
+      { type: 'context', elements: [{ type: 'mrkdwn', text: `${weekLabel}  未完了${totalCount}件  （詳細はスレッド）` }] }
     ];
     const parentTs = await postMessage(parentBlocks);
 
-    // スレッド: ToDo詳細
     const chunks = [];
     Object.entries(data.linkedByTask).forEach(([taskName, info]) => {
       const resLabel = info.res ? ` — ${info.res}` : '';
-      chunks.push(`📂 *${taskName}*${resLabel}`);
-      info.todos.forEach(td => chunks.push(`   • ${td}`));
+      chunks.push(`【タスク】 *${taskName}*${resLabel}`);
+      info.todos.forEach(td => chunks.push(`   ・ ${td}`));
       chunks.push('');
     });
     if (data.manual.length > 0) {
-      chunks.push(`✏️ *手動追加*`);
+      chunks.push(`【手動追加】`);
       data.manual.forEach(m => {
-        chunks.push(`   • ${m.name}${m.res ? `  担当: ${m.res}` : ''}`);
+        chunks.push(`   ・ ${m.name}${m.res ? `  担当: ${m.res}` : ''}`);
       });
     }
 
-    // 2900字制限で分割 → 複数スレッド返信
     let buf = '';
     const sections = [];
     for (const line of chunks) {
@@ -149,7 +144,7 @@ async function main() {
     for (const sec of sections) {
       await postMessage([{ type: 'section', text: { type: 'mrkdwn', text: sec } }], parentTs);
     }
-    console.log(`✅ ${areaId}: ${totalCount}件 (${sections.length}スレ返信)`);
+    console.log(`${areaId}: ${totalCount}件 (${sections.length}スレ返信)`);
   }
 
   if (taskAlerts.length === 0 && Object.keys(todoByArea).length === 0) {
