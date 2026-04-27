@@ -3197,10 +3197,11 @@ function dupGroup(lId,aId,kId,grp){
   if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
   const area=getLCArea(lId,aId);if(!area)return;
   const k=area.kpis.find(x=>x.id===kId);if(!k)return;
-  // グループに属する全タスクをコピー
   const origTasks=k.tasks.filter(x=>x.group===grp);
   if(origTasks.length===0)return;
-  const newGrpName=grp+' (コピー)';
+  const inputName=prompt('複製先の大タスク名を入力',grp+' (コピー)');
+  if(inputName===null)return;
+  const newGrpName=inputName.trim()||grp+' (コピー)';
   const copies=origTasks.map(t=>{
     const copy=JSON.parse(JSON.stringify(t));
     copy.id='t'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
@@ -3208,12 +3209,11 @@ function dupGroup(lId,aId,kId,grp){
     copy.status='NOT_STARTED';
     return copy;
   });
-  // KPIの一番下に追加
   k.tasks.push(...copies);
   save();
   if(view==='area'&&lcId&&areaId)rArea(lId,aId);
   else if(view==='lc'&&lcId)rLC(lId);
-  toast(`「${grp}」を${copies.length}件まとめて複製しました`);
+  toast(`「${newGrpName}」として${copies.length}件複製しました`);
 }
 
 // ── TASK TODO (タスク連携週次ToDo) ──
