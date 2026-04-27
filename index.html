@@ -1033,9 +1033,9 @@ body{background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;min-he
 #mc-panel .sub-row td{background:#FAFBFC;padding:7px 16px;}
 #mc-panel .sub-row:hover td{background:var(--bg);}
 #mc-panel .sub-indent{padding-left:32px !important;display:flex;align-items:center;gap:6px;}
-#mc-panel .sub-toggle{background:none;border:none;cursor:pointer;color:var(--faint);font-size:12px;padding:0 2px;transition:transform .12s,color .1s;line-height:1;}
-#mc-panel .sub-toggle:hover{color:var(--text);}
-#mc-panel .sub-toggle.open{transform:rotate(90deg);}
+#mc-panel .sub-toggle{background:#7552CC15;border:1px solid #7552CC44;border-radius:4px;cursor:pointer;color:#7552CC;font-size:13px;font-weight:900;padding:1px 6px;transition:transform .12s,background .1s;line-height:1;display:inline-flex;align-items:center;justify-content:center;min-width:18px;}
+#mc-panel .sub-toggle:hover{background:#7552CC30;}
+#mc-panel .sub-toggle.open{transform:rotate(90deg);background:#7552CC30;}
 
 /* ── COMMENTS PANEL ── */
 #mc-panel .cp{position:fixed;top:0;right:-400px;width:380px;bottom:0;background:var(--white);border-left:1px solid var(--border);z-index:500;display:flex;flex-direction:column;transition:right .22s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(46,49,56,.1);}
@@ -6794,7 +6794,7 @@ async function mc_rDash(){
 function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
   const over=isOver(t.deadline)&&t.status!=='DONE';
   const hasSub=(t.children||[]).length>0;
-  const subToggle=hasSub?`<button class="sub-toggle" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)">›</button>`:'<span style="display:inline-block;width:14px"></span>';
+  const subToggle=hasSub?`<button class="sub-toggle" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)" title="サブタスクを展開/折りたたみ">▶</button>`:'<span style="display:inline-block;width:24px"></span>';
   const todoCount=(t.todos||[]).length;
   const todoDone=(t.todos||[]).filter(x=>x.done).length;
   const todoBadge=todoCount>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:2px;white-space:nowrap" onclick="mc_openTaskTodos('${aId}','${kId}','${t.id}')">Todo ${todoDone}/${todoCount}</span>`:'';
