@@ -6896,7 +6896,8 @@ function mc_rArea(id){
           <span class="group-cell-label" style="border-left:3px solid ${c};background:${collapsed?c+'18':'var(--bg2)'};flex:1">${h(grp)}${collapsed?` (${span}件)`:''}</span>
         </div>
         <div>
-          <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button>
+          <button class="ib" style="font-size:9px;padding:2px 6px" onclick="event.stopPropagation();mc_renameKpiGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp)">名前変更</button>
+          <button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupGroup('${area.id}','${k.id}',this.closest('[data-grp]').dataset.grp,event)">複製</button>
         </div>`:''}</td>`;
       rows+=mc_taskRow(t,area.id,k.id,grpHtml,renderSpan,c,
         `mc_cycTask('${area.id}','${k.id}','${t.id}',event)`,
@@ -6969,7 +6970,7 @@ function mc_renderAreaProjects(areaId,areaColor){
       const renderSpan2=fpCollapsed2?1:span;
       const over=isOver(t.deadline)&&t.status!=='DONE';
       const apGrpCell=grp
-        ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
+        ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="event.stopPropagation();mc_renameFPGroup('${p.id}',this.closest('[data-grp]').dataset.grp)">名前変更</button><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">複製</button></div></td>`
         :`<td class="group-cell empty" rowspan="${renderSpan2}"></td>`;
       const apHasSub=(t.children||[]).length>0;
       const apSubTog=apHasSub?`<button class="sub-toggle${MC__expandedSubs[t.id]?' open':''}" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)" title="サブタスク">▶</button>`:'<span style="display:inline-block;width:24px"></span>';
@@ -7128,7 +7129,7 @@ function mc_rFreeProject(id){
     const grpCell=grp
       ?`<td class="group-cell" rowspan="${renderSpan}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)">
         <span class="group-cell-label" style="border-left:3px solid ${c}" onclick="mc_togFPGrp('${fpGrpKey}','${proj.id}')" title="${fpCollapsed?'展開':'折りたたみ'}">${fpCollapsed?'› ':'▾ '}${h(grp)}${fpCollapsed?` (${span})`:''}</span>
-        <div style="margin-top:4px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div>
+        <div style="margin-top:4px;display:flex;gap:3px;flex-wrap:wrap"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="event.stopPropagation();mc_renameFPGroup('${proj.id}',this.closest('[data-grp]').dataset.grp)">名前変更</button><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${proj.id}',this.closest('[data-grp]').dataset.grp,event)">複製</button></div>
       </td>`
       :`<td class="group-cell empty" rowspan="${renderSpan}"></td>`;
     rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${proj.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
@@ -7427,6 +7428,43 @@ function mc_cycSubFP(projId,parentId,chId,e){
   if(window.mc_aid)mc_rArea(mc_aid);
   else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
   toast(sl(ch.status)+'に変更');
+}
+
+
+function mc_renameKpiGroup(aId,kId,oldGrp){
+  const newName=prompt('新しい大タスク名を入力',oldGrp);
+  if(newName===null)return;
+  const trimmed=newName.trim();
+  if(!trimmed){toast('名前を入力してください','err');return;}
+  if(trimmed===oldGrp)return;
+  const a=MC_D.areas.find(x=>x.id===aId);if(!a)return;
+  const k=a.kpis.find(x=>x.id===kId);if(!k)return;
+  let cnt=0;
+  k.tasks.forEach(t=>{if((t.group||'')===oldGrp){t.group=trimmed;cnt++;}});
+  if(cnt===0){toast('対象タスクなし','err');return;}
+  // collapsedGroupsキーも引き継ぐ
+  const oldKey=`${aId}__${kId}__${encodeURIComponent(oldGrp)}`;
+  const newKey=`${aId}__${kId}__${encodeURIComponent(trimmed)}`;
+  if(MC__collapsedGroups[oldKey]!==undefined){MC__collapsedGroups[newKey]=MC__collapsedGroups[oldKey];delete MC__collapsedGroups[oldKey];}
+  mc_save();logAction('edit',`大タスク「${oldGrp}」→「${trimmed}」`);toast('変更しました');
+  if(window.mc_aid)mc_rArea(mc_aid);
+}
+function mc_renameFPGroup(projId,oldGrp){
+  const newName=prompt('新しい大タスク名を入力',oldGrp);
+  if(newName===null)return;
+  const trimmed=newName.trim();
+  if(!trimmed){toast('名前を入力してください','err');return;}
+  if(trimmed===oldGrp)return;
+  const p=MC_D.freeProjects.find(x=>x.id===projId);if(!p)return;
+  let cnt=0;
+  p.tasks.forEach(t=>{if((t.group||'')===oldGrp){t.group=trimmed;cnt++;}});
+  if(cnt===0){toast('対象タスクなし','err');return;}
+  const oldKey=`fp__${projId}__${encodeURIComponent(oldGrp)}`;
+  const newKey=`fp__${projId}__${encodeURIComponent(trimmed)}`;
+  if(MC__collapsedGroups[oldKey]!==undefined){MC__collapsedGroups[newKey]=MC__collapsedGroups[oldKey];delete MC__collapsedGroups[oldKey];}
+  mc_save();toast('変更しました');
+  if(window.mc_aid)mc_rArea(mc_aid);
+  else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
 }
 
 function mc_addSubTask(aId,kId,tId,e){
