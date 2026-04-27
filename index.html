@@ -6876,7 +6876,15 @@ function mc_rArea(id){
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
       const collapsed=grp&&MC__collapsedGroups[grpKey]; // span>1制限を除去：1件グループも折りたたみ可能に
-      const renderSpan=collapsed?1:span;
+      // サブタスクのコンテナ行(<tr id="sub-container">)分を加算
+      let extraRows=0;
+      if(!collapsed){
+        for(let si=0;si<span;si++){
+          const st=tasks[i2+si];
+          if(st && (st.children||[]).length>0) extraRows++;
+        }
+      }
+      const renderSpan=(collapsed?1:span)+extraRows;
       const grpHtml=`<td class="group-cell${grp?'':' empty'}" rowspan="${renderSpan}"${grp?` data-grp="${h(grp)}" draggable="true" data-dtype="kpi" data-scope="${area.id}" data-kid="${k.id}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"`:''}>${grp?`
         <div onclick="mc_togGrp('${grpKey}','${area.id}')" title="${collapsed?'クリックで展開':'クリックで折りたたみ'}" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px">
           <span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${c};font-weight:900">${collapsed?'▶':'▼'}</span>
