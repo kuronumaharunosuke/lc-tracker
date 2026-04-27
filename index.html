@@ -6524,6 +6524,7 @@ function mc_migrate(){
 const MC_DB_DOC='mc-tracker-2627/main'; // MC data path in action-tracker-d0337
 let MC__saving=false,MC__saveTimer=null,MC__dragging=false;
 const MC__collapsedGroups={};
+const MC__expandedSubs={};
 let mc__saveTimer=null; // key: `${aId}__${kId}__${grp}` → true/false
 
 function mc_setSyncDot(state){
@@ -6818,12 +6819,13 @@ function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
 
 function mc_subRows(t,aId,kId,c){
   if(!(t.children||[]).length)return'';
-  let html=`<tr id="sub-container-${t.id}" style="display:none"><td colspan="10" style="padding:0">`;
-  html+=`<table style="width:100%;border-collapse:collapse">`;
-  t.children.forEach(ch=>{
+  // 親テーブル構造に直接挿入（ネストtableを避ける）
+  // 親行は11列（grpHtml + 10列）。サブ行は最初に空td（grp列ぶん）を入れて11列にする
+  let html='';
+  t.children.forEach((ch,idx)=>{
     const over=isOver(ch.deadline)&&ch.status!=='DONE';
-    html+=`<tr class="tr sub-row" id="row-${ch.id}">
-      <td class="tn sub-indent">${mc_priHtml(ch.priority)}<span>${h(ch.name)}</span></td>
+    html+=`<tr class="tr sub-row sub-of-${t.id}" id="row-${ch.id}" style="display:${MC__expandedSubs[t.id]?'':'none'}">
+      <td class="tn sub-indent">${mc_priHtml(ch.priority)}<span style="color:#7552CC;font-size:10px;margin-right:4px">└</span><span>${h(ch.name)}</span></td>
       <td class="tres">${h(ch.res||'—')}</td>
       <td class="tsup">${h(ch.sup||'')}</td>
       <td class="tdt">${fd(ch.start)}</td>
@@ -6835,7 +6837,6 @@ function mc_subRows(t,aId,kId,c){
       <td><div class="ta"><button class="ib" onclick="mc_openEditSub('${aId}','${kId}','${t.id}','${ch.id}')">編集</button><button class="ib del" onclick="mc_delSub('${aId}','${kId}','${t.id}','${ch.id}')">削除</button></div></td>
     </tr>`;
   });
-  html+=`</table></td></tr>`;
   return html;
 }
 
@@ -6876,12 +6877,15 @@ function mc_rArea(id){
       let span=1;if(grp){while(i2+span<tasks.length&&tasks[i2+span].group===grp)span++;}
       const grpKey=grp?`${area.id}__${k.id}__${encodeURIComponent(grp)}`:null;
       const collapsed=grp&&MC__collapsedGroups[grpKey]; // span>1制限を除去：1件グループも折りたたみ可能に
-      // サブタスクのコンテナ行(<tr id="sub-container">)分を加算
+      // サブタスク行(直接trとして挿入)分を加算
+      // 展開状態なら children.length 分だけ行が増える
       let extraRows=0;
       if(!collapsed){
         for(let si=0;si<span;si++){
           const st=tasks[i2+si];
-          if(st && (st.children||[]).length>0) extraRows++;
+          if(st && (st.children||[]).length>0 && MC__expandedSubs[st.id]){
+            extraRows+=st.children.length;
+          }
         }
       }
       const renderSpan=(collapsed?1:span)+extraRows;
@@ -7299,12 +7303,8 @@ function mc_delT(aId,kId,tId,skipConfirm){
 // ── SUBTASK ──
 function mc_togSub(tId,e){
   if(e)e.stopPropagation();
-  const container=document.getElementById('sub-container-'+tId);
-  const tog=document.getElementById('stog-'+tId);
-  if(!container)return;
-  const open=container.style.display==='none'||container.style.display==='';
-  container.style.display=open?'':'none';
-  if(tog)tog.classList.toggle('open',open);
+  MC__expandedSubs[tId]=!MC__expandedSubs[tId];
+  if(window.mc_aid)mc_rArea(mc_aid);
 }
 function mc_cycSub(aId,kId,tId,chId,e){
   if(e)e.stopPropagation();
