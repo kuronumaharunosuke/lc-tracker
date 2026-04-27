@@ -6970,28 +6970,47 @@ function mc_renderAreaProjects(areaId,areaColor){
       const apGrpCell=grp
         ?`<td class="group-cell" rowspan="${renderSpan2}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-grp="${h(grp)}" ondragstart="mc_dgGrpStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgGrpDrop(event)" ondragend="mc_dgEnd(event)"><div onclick="mc_togFPGrp('${fpGrpKey2}','${p.id}')" style="display:flex;align-items:flex-start;gap:3px;cursor:pointer;margin-bottom:4px"><span style="font-size:12px;flex-shrink:0;line-height:1.4;color:${p.color||c};font-weight:900">${fpCollapsed2?'▶':'▼'}</span><span class="group-cell-label" style="border-left:3px solid ${p.color||c};flex:1">${h(grp)}${fpCollapsed2?' ('+span+'件)':''}</span></div><div style="margin-top:4px;display:flex;gap:3px"><button class="ib" style="font-size:9px;padding:2px 6px" onclick="mc_dupFTGroup('${p.id}',this.closest('[data-grp]').dataset.grp,event)">大タスク複製</button></div></td>`
         :`<td class="group-cell empty" rowspan="${renderSpan2}"></td>`;
+      const apHasSub=(t.children||[]).length>0;
+      const apSubTog=apHasSub?`<button class="sub-toggle${MC__expandedSubs[t.id]?' open':''}" id="stog-${t.id}" onclick="mc_togSub('${t.id}',event)" title="サブタスク">▶</button>`:'<span style="display:inline-block;width:24px"></span>';
+      const apSubRowsOf=(parent)=>(parent.children||[]).map(ch=>{
+        const ovc=isOver(ch.deadline)&&ch.status!=='DONE';
+        return `<tr class="tr sub-row sub-of-${parent.id}" id="frow-${ch.id}" style="display:${MC__expandedSubs[parent.id]?'':'none'}">
+          <td class="tn sub-indent">${mc_priHtml(ch.priority)}<span style="color:#7552CC;font-size:10px;margin-right:4px">└</span><span>${h(ch.name)}</span></td>
+          <td class="tres">${h(ch.res||'—')}</td><td class="tsup">${h(ch.sup||'')}</td>
+          <td class="tdt">${fd(ch.start)}</td>
+          <td class="tdt${ovc?' ov':''}">${fd(ch.deadline)}${ovc?' ！':''}</td>
+          <td><span class="chip ${sc(ch.status)}" onclick="mc_cycSubFP('${p.id}','${parent.id}','${ch.id}',event)">${mc_si(ch.status)?mc_si(ch.status)+' ':''}${sl(ch.status)}</span></td>
+          <td class="tnote">${ch.note?h(ch.note).replace(/\n/g,'<br>'):''}</td>
+          <td class="tby">${h(ch._by||'')}</td>
+          <td><div class="ta"><button class="ib" onclick="mc_openEditSubFP('${p.id}','${parent.id}','${ch.id}')">編集</button><button class="ib del" onclick="mc_delSubFP('${p.id}','${parent.id}','${ch.id}')">削除</button></div></td>
+        </tr>`;
+      }).join('');
       rows+=`<tr class="tr" id="frow-${t.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${t.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
         ${apGrpCell}
-        <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
+        <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${apSubTog}${h(t.name)}</div></td><td class="tres">${h(t.res||'—')}</td><td class="tsup">${h(t.sup||'')}</td>
         <td class="tdt">${fd(t.start)}</td>
         <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
         <td><span class="chip ${sc(t.status)}" onclick="mc_cycFT('${p.id}','${t.id}',event)">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span></td>
         <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${p.id}','${t.id}')">+ メモ</span>`}</td>
         <td class="tby">${h(t._by||'')}</td>
-        <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button></div></td>
+        <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${t.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${t.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${t.id}')">削除</button>${apHasSub?'':`<button class="ib" onclick="mc_addSubFP('${p.id}','${t.id}',event)">+ サブ</button>`}</div></td>
       </tr>`;
+      rows+=apSubRowsOf(t);
       for(let j=1;j<span;j++){
         if(fpCollapsed2) break;
         const tj=tasks[i2+j];const overj=isOver(tj.deadline)&&tj.status!=='DONE';
+        const apHasSubJ=(tj.children||[]).length>0;
+        const apSubTogJ=apHasSubJ?`<button class="sub-toggle${MC__expandedSubs[tj.id]?' open':''}" id="stog-${tj.id}" onclick="mc_togSub('${tj.id}',event)" title="サブタスク">▶</button>`:'<span style="display:inline-block;width:24px"></span>';
         rows+=`<tr class="tr" id="frow-${tj.id}" draggable="true" data-dtype="ft" data-scope="${p.id}" data-tid="${tj.id}" ondragstart="mc_dgRowStart(event)" ondragover="mc_dgOver(event)" ondragleave="mc_dgLeave(event)" ondrop="mc_dgRowDrop(event)" ondragend="mc_dgEnd(event)">
-          <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
+          <td class="tn"><div style="display:flex;align-items:center;gap:4px"><span class="drag-handle">⠿</span>${apSubTogJ}${h(tj.name)}</div></td><td class="tres">${h(tj.res||'—')}</td><td class="tsup">${h(tj.sup||'')}</td>
           <td class="tdt">${fd(tj.start)}</td>
           <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' ！':''}</td>
           <td><span class="chip ${sc(tj.status)}" onclick="mc_cycFT('${p.id}','${tj.id}',event)">${mc_si(tj.status)?mc_si(tj.status)+' ':''}${sl(tj.status)}</span></td>
           <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="mc_openEditFT('${p.id}','${tj.id}')">+ メモ</span>`}</td>
           <td class="tby">${h(tj._by||'')}</td>
-          <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${tj.id}')">削除</button></div></td>
+          <td><div class="ta"><button class="ib" onclick="mc_openEditFT('${p.id}','${tj.id}')">編集</button><button class="ib" onclick="mc_dupFT('${p.id}','${tj.id}',event)">複製</button><button class="ib del" onclick="mc_delFT('${p.id}','${tj.id}')">削除</button>${apHasSubJ?'':`<button class="ib" onclick="mc_addSubFP('${p.id}','${tj.id}',event)">+ サブ</button>`}</div></td>
         </tr>`;
+        rows+=apSubRowsOf(tj);
       }
       i2+=span;
     }
@@ -7359,38 +7378,42 @@ function mc_cycSub(aId,kId,tId,chId,e){
 let MC__subModal=null;
 
 // ── プロジェクト(FreeProject)用 サブタスク操作 ──
-let mc_subFpEditing=null;
 function mc_addSubFP(projId,parentId,e){
   if(e)e.stopPropagation();
-  mc_subFpEditing={projId,parentId,chId:null};
+  // 既存のmc-ov-subモーダルを使う。MC__subModalにprojIdフラグを持たせる
+  MC__subModal={projId,parentId,chId:null,isFP:true};
   document.getElementById('mc-sub-mttl').textContent='サブタスク追加';
-  ['sub-fn','sub-fr','sub-fsup','sub-fs2','sub-fd','sub-fnote'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  if(document.getElementById('sub-fst'))document.getElementById('sub-fst').value='NOT_STARTED';
-  if(document.getElementById('sub-fpri'))document.getElementById('sub-fpri').value='';
-  document.getElementById('mc-sub-modal').style.display='flex';
+  ['sub-fn','sub-res','sub-sup','sub-start','sub-deadline'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('sub-status').value='NOT_STARTED';
+  document.getElementById('sub-pri').value='';
+  document.getElementById('sub-del-btn').style.display='none';
+  document.getElementById('mc-ov-sub').classList.add('open');
 }
 function mc_openEditSubFP(projId,parentId,chId){
   const p=MC_D.freeProjects.find(x=>x.id===projId);if(!p)return;
   const t=p.tasks.find(x=>x.id===parentId);if(!t)return;
   const ch=(t.children||[]).find(x=>x.id===chId);if(!ch)return;
-  mc_subFpEditing={projId,parentId,chId};
+  MC__subModal={projId,parentId,chId,isFP:true};
   document.getElementById('mc-sub-mttl').textContent='サブタスク編集';
   document.getElementById('sub-fn').value=ch.name||'';
-  if(document.getElementById('sub-fr'))document.getElementById('sub-fr').value=ch.res||'';
-  if(document.getElementById('sub-fsup'))document.getElementById('sub-fsup').value=ch.sup||'';
-  if(document.getElementById('sub-fs2'))document.getElementById('sub-fs2').value=ch.start||'';
-  if(document.getElementById('sub-fd'))document.getElementById('sub-fd').value=ch.deadline||'';
-  if(document.getElementById('sub-fst'))document.getElementById('sub-fst').value=ch.status||'NOT_STARTED';
-  if(document.getElementById('sub-fpri'))document.getElementById('sub-fpri').value=ch.priority||'';
-  if(document.getElementById('sub-fnote'))document.getElementById('sub-fnote').value=ch.note||'';
-  document.getElementById('mc-sub-modal').style.display='flex';
+  document.getElementById('sub-res').value=ch.res||'';
+  document.getElementById('sub-sup').value=ch.sup||'';
+  document.getElementById('sub-start').value=ch.start||'';
+  document.getElementById('sub-deadline').value=ch.deadline||'';
+  document.getElementById('sub-status').value=ch.status||'NOT_STARTED';
+  document.getElementById('sub-pri').value=ch.priority||'';
+  document.getElementById('sub-del-btn').style.display='inline-block';
+  document.getElementById('mc-ov-sub').classList.add('open');
 }
 function mc_delSubFP(projId,parentId,chId){
   if(!confirm('このサブタスクを削除しますか？'))return;
   const p=MC_D.freeProjects.find(x=>x.id===projId);if(!p)return;
   const t=p.tasks.find(x=>x.id===parentId);if(!t)return;
   t.children=(t.children||[]).filter(x=>x.id!==chId);
-  mc_save();mc_rFreeProject(projId);toast('削除しました');
+  mc_save();
+  if(window.mc_aid)mc_rArea(mc_aid);
+  else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
+  toast('削除しました');
 }
 function mc_cycSubFP(projId,parentId,chId,e){
   if(e)e.stopPropagation();
@@ -7399,7 +7422,10 @@ function mc_cycSubFP(projId,parentId,chId,e){
   const ch=(t.children||[]).find(x=>x.id===chId);if(!ch)return;
   const order=['NOT_STARTED','WIP','DONE'];
   ch.status=order[(order.indexOf(ch.status||'NOT_STARTED')+1)%3];
-  mc_save();mc_rFreeProject(projId);toast(sl(ch.status)+'に変更');
+  mc_save();
+  if(window.mc_aid)mc_rArea(mc_aid);
+  else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
+  toast(sl(ch.status)+'に変更');
 }
 
 function mc_addSubTask(aId,kId,tId,e){
@@ -7436,24 +7462,24 @@ function mc_saveSub(){
   const name=document.getElementById('sub-fn').value.trim();
   if(!name){toast('タスク名を入力してください','err');return;}
   const obj={name,res:document.getElementById('sub-res').value.trim(),sup:document.getElementById('sub-sup').value.trim(),start:document.getElementById('sub-start').value,deadline:document.getElementById('sub-deadline').value,priority:document.getElementById('sub-pri').value||'',status:document.getElementById('sub-status').value,_by:window._mcCurrentUser?.displayName||window._mcCurrentUser?.email||''};
+  // FreeProject分岐
+  if(MC__subModal.isFP){
+    const{projId,parentId,chId}=MC__subModal;
+    const p=MC_D.freeProjects.find(x=>x.id===projId);
+    const t=p&&p.tasks.find(x=>x.id===parentId);
+    if(!t){toast('保存先が見つかりません','err');return;}
+    if(!t.children)t.children=[];
+    if(chId){const i=t.children.findIndex(x=>x.id===chId);if(i>=0)t.children[i]={...t.children[i],...obj};toast('更新しました');}
+    else{t.children.push({id:gid(),...obj});toast('追加しました');}
+    mc_save();mc_closeMSub();
+    if(window.mc_aid)mc_rArea(mc_aid);
+    else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
+    return;
+  }
+  // エリアKPI(従来)
   const{aId,kId,tId,chId}=MC__subModal;
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
   if(!t.children)t.children=[];
-  // FreeProject側のサブ保存はmc_subFpEditing経由
-  if(window.mc_subFpEditing){
-    const{projId,parentId,chId:fpChId}=mc_subFpEditing;
-    const p=MC_D.freeProjects.find(x=>x.id===projId);
-    const pt=p&&p.tasks.find(x=>x.id===parentId);
-    if(pt){
-      if(!pt.children)pt.children=[];
-      if(fpChId){const i=pt.children.findIndex(x=>x.id===fpChId);if(i>=0)pt.children[i]={...pt.children[i],...obj};}
-      else{pt.children.push({id:gid(),...obj});}
-      mc_save();mc_rFreeProject(projId);toast(fpChId?'更新しました':'追加しました');
-      mc_subFpEditing=null;
-      document.getElementById('mc-sub-modal').style.display='none';
-      return;
-    }
-  }
   if(chId){const i=t.children.findIndex(x=>x.id===chId);t.children[i]={...t.children[i],...obj};logAction('edit',`サブ「${name}」を更新`);toast('更新しました');}
   else{t.children.push({id:gid(),...obj});logAction('add',`サブ「${name}」を追加`);toast('追加しました');}
   mc_save();mc_buildNav();mc_closeMSub();if(mc_aid)mc_rArea(mc_aid);else mc_rDash();
