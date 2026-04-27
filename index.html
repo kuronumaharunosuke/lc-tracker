@@ -8099,7 +8099,8 @@ function mc_dupGroup(aId,kId,grp,e){
   if(e)e.stopPropagation();
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId);
   const members=k.tasks.filter(t=>t.group===grp);if(!members.length)return;
-  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),name:t.name+'(コピー)',status:'NOT_STARTED',children:[]}));
+  const newGrp=grp+'(コピー)';
+  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),group:newGrp,status:'NOT_STARTED',children:[]}));
   k.tasks.push(...copies);
   mc_save();mc_buildNav();mc_rArea(aId);
   logAction('dup',`大タスク「${grp}」を複製`);toast(`「${grp}」を大タスクごと複製しました`);
@@ -8119,7 +8120,8 @@ function mc_dupFTGroup(pId,grp,e){
   if(e)e.stopPropagation();
   const proj=MC_D.freeProjects.find(x=>x.id===pId);if(!proj)return;
   const members=proj.tasks.filter(t=>t.group===grp);if(!members.length)return;
-  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),name:t.name+'(コピー)',status:'NOT_STARTED'}));
+  const newGrp=grp+'(コピー)';
+  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),group:newGrp,status:'NOT_STARTED'}));
   proj.tasks.push(...copies);
   mc_save();mc_buildNav();
   if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
