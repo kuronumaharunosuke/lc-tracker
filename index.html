@@ -8101,8 +8101,17 @@ function mc_dupGroup(aId,kId,grp,e){
   const members=k.tasks.filter(t=>t.group===grp);if(!members.length)return;
   const inputName=prompt('複製先の大タスク名を入力',grp+'(コピー)');
   if(inputName===null)return;
-  const newGrp=inputName.trim()||grp+'(コピー)';
-  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),group:newGrp,status:'NOT_STARTED',children:[]}));
+  const newGrp=(inputName.trim())||(grp+'(コピー)');
+  // 先に完全にディープコピーしてから加工（参照漏れ防止）
+  const copies=[];
+  for(const orig of members){
+    const cloned=JSON.parse(JSON.stringify(orig));
+    cloned.id=gid();
+    cloned.group=newGrp;
+    cloned.status='NOT_STARTED';
+    cloned.children=[];
+    copies.push(cloned);
+  }
   k.tasks.push(...copies);
   mc_save();mc_buildNav();mc_rArea(aId);
   logAction('dup',`大タスク「${grp}」を「${newGrp}」として複製`);toast(`「${newGrp}」として複製しました`);
@@ -8124,8 +8133,16 @@ function mc_dupFTGroup(pId,grp,e){
   const members=proj.tasks.filter(t=>t.group===grp);if(!members.length)return;
   const inputName=prompt('複製先の大タスク名を入力',grp+'(コピー)');
   if(inputName===null)return;
-  const newGrp=inputName.trim()||grp+'(コピー)';
-  const copies=members.map(t=>({...JSON.parse(JSON.stringify(t)),id:gid(),group:newGrp,status:'NOT_STARTED'}));
+  const newGrp=(inputName.trim())||(grp+'(コピー)');
+  const copies=[];
+  for(const orig of members){
+    const cloned=JSON.parse(JSON.stringify(orig));
+    cloned.id=gid();
+    cloned.group=newGrp;
+    cloned.status='NOT_STARTED';
+    if(cloned.children)cloned.children=[];
+    copies.push(cloned);
+  }
   proj.tasks.push(...copies);
   mc_save();mc_buildNav();
   if(proj.areaId&&mc_aid===proj.areaId)mc_rArea(mc_aid);else if(mc_fpid)mc_rFreeProject(mc_fpid);
