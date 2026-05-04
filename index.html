@@ -8618,7 +8618,8 @@ async function mc_loadComments(tid){
       return '<div class="cp-item"><div class="cp-meta">'+h(c.name||c.uid)+' · '+(dt.getMonth()+1)+'/'+dt.getDate()+'</div><div class="cp-text">'+h(c.text)+'</div></div>';
     }).join('');
   } catch(e) {
-    list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px">読み込みに失敗しました</div>';
+    console.error('mc_loadComments error:', e);
+    list.innerHTML = '<div style="padding:12px;color:var(--dim);font-size:11px">読み込みに失敗しました: '+(e&&e.message||e)+'</div>';
   }
 }
 
