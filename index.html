@@ -1764,6 +1764,12 @@ function kpiRBlock(target, actual, c, pct, done, total){
 }
 function h(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fd(s){if(!s)return'—';const d=new Date(s);if(isNaN(d))return s;return(d.getMonth()+1)+'/'+(d.getDate());}
+// 最終更新日時フォーマット（M/D HH:MM、当日は「今日 HH:MM」）
+function fdt(s){if(!s)return'';const d=new Date(s);if(isNaN(d))return'';const hm=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');const now=new Date();return d.toDateString()===now.toDateString()?('今日 '+hm):((d.getMonth()+1)+'/'+d.getDate()+' '+hm);}
+// 相対表示（◯分前 / ◯時間前 / ◯日前 / M/D）
+function ago(s){if(!s)return'';const d=new Date(s);if(isNaN(d))return'';const mi=Math.floor((Date.now()-d.getTime())/60000);if(mi<1)return'たった今';if(mi<60)return mi+'分前';const hr=Math.floor(mi/60);if(hr<24)return hr+'時間前';const dy=Math.floor(hr/24);if(dy<7)return dy+'日前';return(d.getMonth()+1)+'/'+d.getDate();}
+// ステータス更新時刻を記録（statusAt）
+function stampStatus(x){if(x)x.statusAt=new Date().toISOString();}
 function isOver(dl){if(!dl)return false;const d=new Date(dl);return !isNaN(d)&&d<new Date();}
 function sl(s){return s==='DONE'?'Done':s==='WIP'?'WIP':'Not Started';}
 function sc(s){return s==='DONE'?'done':s==='WIP'?'wip':'ns';}
@@ -2357,7 +2363,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
       <td class="tres">${h(t.res||'—')}</td>
       <td class="tdt">${fd(t.start)}</td>
       <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' !':''}</td>
-      <td><span class="${chipClass}" ${chipOnClick}>${sl(t.status)}</span></td>
+      <td><span class="${chipClass}" ${chipOnClick}>${sl(t.status)}</span>${t.statusAt?`<div style="font-size:9px;color:var(--faint);margin-top:3px;white-space:nowrap">更新 ${fdt(t.statusAt)}</div>`:''}</td>
       <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">+ note</span>`:'—'}</td>
       <td>${(t.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${t.id}')">Todo ${(t.todos||[]).filter(x=>x.done).length}/${(t.todos||[]).length}</span>`:''}${cw?`<div class="ta">
         <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${t.id}')">編集</button>
@@ -2380,7 +2386,7 @@ function buildTaskRowsInner(tasks, lId, aId, kId, c, cw){
         <td class="tres">${h(tj.res||'—')}</td>
         <td class="tdt">${fd(tj.start)}</td>
         <td class="tdt${overj?' ov':''}">${fd(tj.deadline)}${overj?' !':''}</td>
-        <td><span class="${chipClassJ}" ${chipOnClickJ}>${sl(tj.status)}</span></td>
+        <td><span class="${chipClassJ}" ${chipOnClickJ}>${sl(tj.status)}</span>${tj.statusAt?`<div style="font-size:9px;color:var(--faint);margin-top:3px;white-space:nowrap">更新 ${fdt(tj.statusAt)}</div>`:''}</td>
         <td class="tnote">${tj.note?h(tj.note).replace(/\n/g,'<br>'):cw?`<span class="tnote-empty" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">+ note</span>`:'—'}</td>
         <td>${(tj.todos||[]).length>0?`<span style="font-size:9px;font-weight:700;color:#7552CC;background:#F3EEFF;border:1px solid #7552CC44;border-radius:10px;padding:1px 7px;cursor:pointer;display:inline-block;margin-bottom:3px;white-space:nowrap" onclick="openTaskTodos('${lId}','${aId}','${kId}','${tj.id}')">Todo ${(tj.todos||[]).filter(x=>x.done).length}/${(tj.todos||[]).length}</span>`:''}${cw?`<div class="ta">
           <button class="ib" onclick="openEdit('${lId}','${aId}','${kId}','${tj.id}')">編集</button>
@@ -3165,6 +3171,7 @@ function cycTask(lId,aId,kId,tId,e){
   if(!t)return;
   const ord=['NOT_STARTED','WIP','DONE'];
   t.status=ord[(ord.indexOf(t.status)+1)%3];
+  stampStatus(t);
   save();buildNav();
   const row=document.getElementById('row-'+tId);
   if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)} clickable`;chip.textContent=sl(t.status);}
@@ -3258,6 +3265,7 @@ function renderTaskTodosModal(){
     <span style="color:var(--dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(k.name)}</span>
     ${t.res?`<span style="color:var(--dim)">担当: ${h(t.res)}</span>`:''}
     ${t.start&&t.deadline?`<span style="color:var(--dim);white-space:nowrap">${fd(t.start)} → ${fd(t.deadline)}</span>`:''}
+    ${t.statusAt?`<span style="color:var(--dim);white-space:nowrap">ステータス更新: ${fdt(t.statusAt)}</span>`:''}
     <span style="color:${c};font-weight:700">${t.todos.filter(x=>x.done).length}/${t.todos.length} done</span>
   </div>`;
 
@@ -3283,6 +3291,7 @@ function renderTaskTodosModal(){
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</div>
               ${td.res?`<div style="font-size:10px;color:var(--dim);margin-top:2px">担当: ${h(td.res)}</div>`:''}
+              ${(()=>{const ts=td.done?(td.doneAt||td.updatedAt):(td.updatedAt||td.createdAt);if(!ts)return'';return `<div style="font-size:9px;color:var(--faint);margin-top:2px">${td.done?'✓ 完了':'更新'} ${fdt(ts)}</div>`;})()}
             </div>
             <button class="ib" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="openEditTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">編集</button>
             <button class="ib del" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="delTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">削除</button>
@@ -3310,7 +3319,7 @@ function addTaskTodo(lId,aId,kId,tId,wKey){
   const t=k.tasks.find(x=>x.id===tId);
   if(!t)return;
   if(!t.todos)t.todos=[];
-  t.todos.push({id:gid(),week:wKey,name,done:false});
+  t.todos.push({id:gid(),week:wKey,name,done:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
   save();
   renderTaskTodosModal();
   setTimeout(()=>{const i2=document.getElementById('tt-inp-'+wKey);if(i2)i2.focus();},50);
@@ -3324,6 +3333,8 @@ function togTaskTodoDone(lId,aId,kId,tId,todoId){
   if(!t||!t.todos)return;
   const td=t.todos.find(x=>x.id===todoId);if(!td)return;
   td.done=!td.done;
+  td.updatedAt=new Date().toISOString();
+  td.doneAt=td.done?td.updatedAt:null;
   save();
   renderTaskTodosModal();
 }
@@ -3387,6 +3398,7 @@ function saveEditTaskTodo(){
   if(!td)return;
   td.name=name;
   td.res=res||null;
+  td.updatedAt=new Date().toISOString();
   save();
   document.getElementById('ov-edit-todo').classList.remove('open');
   renderTaskTodosModal();
@@ -3581,6 +3593,7 @@ function ganttCycTask(lId,aId,kId,tId,e){
   // Not Started → WIP → Done → Not Started
   const ord=['NOT_STARTED','WIP','DONE'];
   t.status=ord[(ord.indexOf(t.status)+1)%3];
+  stampStatus(t);
   save();buildNav();
   toast('Status: '+sl(t.status));
   // ガントを再描画（バー色も更新）
@@ -6810,7 +6823,7 @@ function mc_taskRow(t,aId,kId,grpHtml,rowspan,c,onCyc,onEdit,onDel){
     <td class="tsup">${h(t.sup||'')}</td>
     <td class="tdt">${fd(t.start)}</td>
     <td class="tdt${over?' ov':''}">${fd(t.deadline)}${over?' ！':''}</td>
-    <td><span class="chip ${sc(t.status)}" onclick="${onCyc}">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span></td>
+    <td><span class="chip ${sc(t.status)}" onclick="${onCyc}">${mc_si(t.status)?mc_si(t.status)+' ':''}${sl(t.status)}</span>${t.statusAt?`<div style="font-size:9px;color:var(--faint);margin-top:3px;white-space:nowrap">更新 ${fdt(t.statusAt)}</div>`:''}</td>
     <td class="tnote">${t.note?h(t.note).replace(/\n/g,'<br>'):`<span class="tnote-empty" onclick="${onEdit}">+ メモ</span>`}</td>
     <td>${mc_ccBadge(t.id)}</td>
     <td class="tby">${h(t._by||'')}</td>
@@ -7193,6 +7206,7 @@ function mc_cycTask(aId,kId,tId,e){
   if(!t)return;
   const ord=['NOT_STARTED','WIP','DONE'];
   t.status=ord[(ord.indexOf(t.status)+1)%3];
+  stampStatus(t);
   mc_save();mc_buildNav();
   const row=document.getElementById('row-'+tId);
   if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(mc_si(t.status)?mc_si(t.status)+' ':'')+sl(t.status);}
@@ -7206,6 +7220,7 @@ function mc_cycFT(pId,tId,e){
   const t=proj.tasks.find(x=>x.id===tId);if(!t)return;
   const ord=['NOT_STARTED','WIP','DONE'];
   t.status=ord[(ord.indexOf(t.status)+1)%3];
+  stampStatus(t);
   mc_save();mc_buildNav();
   const row=document.getElementById('frow-'+tId);
   if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(t.status)}`;chip.textContent=(mc_si(t.status)?mc_si(t.status)+' ':'')+sl(t.status);}
@@ -7372,6 +7387,7 @@ function mc_cycSub(aId,kId,tId,chId,e){
   const ch=(t.children||[]).find(x=>x.id===chId);if(!ch)return;
   const ord=['NOT_STARTED','WIP','DONE'];
   ch.status=ord[(ord.indexOf(ch.status)+1)%3];
+  stampStatus(ch);
   mc_save();mc_buildNav();
   const row=document.getElementById('row-'+chId);
   if(row){const chip=row.querySelector('.chip');chip.className=`chip ${sc(ch.status)}`;chip.textContent=(mc_si(ch.status)?mc_si(ch.status)+' ':'')+sl(ch.status);}
@@ -7424,6 +7440,7 @@ function mc_cycSubFP(projId,parentId,chId,e){
   const ch=(t.children||[]).find(x=>x.id===chId);if(!ch)return;
   const order=['NOT_STARTED','WIP','DONE'];
   ch.status=order[(order.indexOf(ch.status||'NOT_STARTED')+1)%3];
+  stampStatus(ch);
   mc_save();
   if(window.mc_aid)mc_rArea(mc_aid);
   else if(window.mc_fpid)mc_rFreeProject(mc_fpid);
@@ -7999,6 +8016,7 @@ function mc_renderTaskTodosModal(){
     <span style="color:var(--dim);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(k.name)}</span>
     ${t.res?`<span style="color:var(--dim)">担当: ${h(t.res)}</span>`:''}
     ${t.start&&t.deadline?`<span style="color:var(--dim);white-space:nowrap">${fd(t.start)} → ${fd(t.deadline)}</span>`:''}
+    ${t.statusAt?`<span style="color:var(--dim);white-space:nowrap">ステータス更新: ${fdt(t.statusAt)}</span>`:''}
     <span style="color:${c};font-weight:700">${t.todos.filter(x=>x.done).length}/${t.todos.length} done</span>
   </div>`;
   if(relevantWeeks.length===0){
@@ -8015,10 +8033,13 @@ function mc_renderTaskTodosModal(){
           ${wTodos.length?`<span style="font-size:10px;color:var(--dim);margin-left:auto">${wTodos.filter(x=>x.done).length}/${wTodos.length}</span>`:''}
         </div>
         ${wTodos.map(td=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2)">
-            <div class="wt-cb${td.done?' done':''}" onclick="mc_togTaskTodoDone('${aId}','${kId}','${tId}','${td.id}')">${td.done?checkSvg:''}</div>
-            <span style="flex:1;font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</span>
-            <button class="ib del" style="font-size:9px;padding:2px 6px" onclick="mc_delTaskTodo('${aId}','${kId}','${tId}','${td.id}')">削除</button>
+          <div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--bg2)">
+            <div class="wt-cb${td.done?' done':''}" style="margin-top:1px" onclick="mc_togTaskTodoDone('${aId}','${kId}','${tId}','${td.id}')">${td.done?checkSvg:''}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;color:${td.done?'var(--dim)':'var(--dark)'};${td.done?'text-decoration:line-through':''}">${h(td.name)}</div>
+              ${(()=>{const ts=td.done?(td.doneAt||td.updatedAt):(td.updatedAt||td.createdAt);if(!ts)return'';return `<div style="font-size:9px;color:var(--faint);margin-top:2px">${td.done?'✓ 完了':'更新'} ${fdt(ts)}</div>`;})()}
+            </div>
+            <button class="ib del" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="mc_delTaskTodo('${aId}','${kId}','${tId}','${td.id}')">削除</button>
           </div>`).join('')}
         <div style="display:flex;gap:6px;margin-top:7px">
           <input class="fi" id="mc-tt-inp-${wKey}" placeholder="この週のToDoを追加..."
@@ -8038,7 +8059,7 @@ function mc_addTaskTodo(aId,kId,tId,wKey){
   const name=inp.value.trim();if(!name){inp.focus();return;}
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
   if(!t)return;if(!t.todos)t.todos=[];
-  t.todos.push({id:gid(),week:wKey,name,done:false});
+  t.todos.push({id:gid(),week:wKey,name,done:false,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});
   mc_save();mc_renderTaskTodosModal();
   setTimeout(()=>{const i2=document.getElementById('mc-tt-inp-'+wKey);if(i2)i2.focus();},50);
 }
@@ -8047,7 +8068,7 @@ function mc_togTaskTodoDone(aId,kId,tId,todoId){
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
   if(!t||!t.todos)return;
   const td=t.todos.find(x=>x.id===todoId);if(!td)return;
-  td.done=!td.done;mc_save();mc_renderTaskTodosModal();
+  td.done=!td.done;td.updatedAt=new Date().toISOString();td.doneAt=td.done?td.updatedAt:null;mc_save();mc_renderTaskTodosModal();
 }
 
 function mc_delTaskTodo(aId,kId,tId,todoId){
