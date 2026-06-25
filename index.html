@@ -2940,18 +2940,22 @@ function rWeeklyTodo(lId,aId,cw){
         <div style="padding:4px 14px 4px;font-size:9px;font-weight:700;color:${c};letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px">
           <span>↓ タスク連携 ToDo</span><span style="color:var(--faint);font-weight:400">${linkedDone}/${linkedTodos.length}</span>
         </div>
-        ${linkedTodos.map(({todo,task,kpiId})=>`
-        <div class="wt-item${todo.done?' done-item':''}" id="wt-item-linked-${todo.id}"${cw?` draggable="true" ondragstart="onLTDragStart(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondragend="onLTDragEnd(event)" ondragover="onLTDragOver(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondrop="onLTDrop(event,'${lId}','${aId}','${wKey}','${todo.id}')"`:''}>
-          ${cw?`<span style="cursor:grab;color:var(--dim);padding:0 4px 0 0;font-size:12px;flex-shrink:0" title="ドラッグで並び替え">⠿</span>`:''}
-          <div class="wt-check${todo.done?' checked':''}" onclick="togLinkedTodoDone('${lId}','${aId}','${kpiId}','${task.id}','${todo.id}')">
-            ${todo.done?checkSvg:''}
-          </div>
+        ${linkedTodos.map(({todo,task,kpiId})=>{
+          const st=todo.status||(todo.done?'DONE':'NOT_STARTED');
+          const stL=st==='DONE'?'済':st==='WIP'?'WIP':'未';
+          const isDone=st==='DONE';
+          const overdue=todo.deadline&&isOver(todo.deadline)&&!isDone;
+          return `
+        <div class="wt-item${isDone?' done-item':''}" id="wt-item-linked-${todo.id}"${cw?` draggable="true" ondragstart="onLTDragStart(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondragend="onLTDragEnd(event)" ondragover="onLTDragOver(event,'${lId}','${aId}','${wKey}','${todo.id}')" ondrop="onLTDrop(event,'${lId}','${aId}','${wKey}','${todo.id}')"`:''}>
+          ${cw?`<span style="cursor:grab;color:var(--dim);padding:0 4px 0 0;font-size:12px;flex-shrink:0;margin-top:2px" title="ドラッグで並び替え">⠿</span>`:''}
+          <span class="chip ${sc(st)}" style="font-size:9px;padding:2px 7px;flex-shrink:0;cursor:pointer;margin-top:1px" onclick="event.stopPropagation();cycLinkedTodoStatus('${lId}','${aId}','${kpiId}','${task.id}','${todo.id}')" title="クリックでステータス変更">${stL}</span>
           <div class="wt-item-main">
             <div style="font-size:9px;font-weight:700;color:${c};background:${c}15;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:2px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(task.name)}</div>
-            <div class="wt-name${todo.done?' ':''}" style="${todo.done?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+            <div class="wt-name" style="${isDone?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+            ${(todo.res||todo.start||todo.deadline)?`<div class="wt-meta">${todo.res?`<span>担当 ${h(todo.res)}</span>`:''}${(todo.start||todo.deadline)?`<span style="color:${overdue?'#E53E51':'var(--dim)'};font-weight:${overdue?'700':'400'};margin-left:${todo.res?'8px':'0'}">${todo.start?fd(todo.start):'—'} → ${todo.deadline?fd(todo.deadline):'—'}${overdue?' 超過':''}</span>`:''}</div>`:''}
           </div>
           ${cw?`<div class="wt-item-actions"><button class="ib" style="font-size:9px;padding:2px 6px;color:#7552CC;border-color:#7552CC44" onclick="openTaskTodos('${lId}','${aId}','${kpiId}','${task.id}')">管理</button></div>`:''}
-        </div>`).join('')}
+        </div>`;}).join('')}
       </div>`:''
     ;
     html+=`<div class="wt-week">
@@ -2984,7 +2988,7 @@ function rWeeklyTodo(lId,aId,cw){
       </div>
     </div>`;
   });
-  return `<div>${html}</div>`;
+  return `<div style="padding-left:28px;padding-right:8px">${html}</div>`;
 }
 
 function togWT(id){
@@ -3482,6 +3486,25 @@ function setTaskTodoDate(lId,aId,kId,tId,todoId,field,val){
   td.updatedAt=new Date().toISOString();
   save();
   renderTaskTodosModal();
+}
+
+// 週次ビュー（LC）でタスク連携ToDoのステータスを循環（未着手→WIP→完了）
+function cycLinkedTodoStatus(lId,aId,kpiId,tId,todoId){
+  if(!canWrite(lId)){toast('閲覧のみ可能','err');return;}
+  const area=getLCArea(lId,aId);
+  const k=area.kpis.find(x=>x.id===kpiId);if(!k)return;
+  const t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  const ord=['NOT_STARTED','WIP','DONE'];
+  const cur=td.status||(td.done?'DONE':'NOT_STARTED');
+  td.status=ord[(ord.indexOf(cur)+1)%3];
+  td.done=td.status==='DONE';
+  td.updatedAt=new Date().toISOString();
+  td.doneAt=td.done?td.updatedAt:null;
+  save();
+  if(view==='area'&&lcId&&areaId)rArea(lcId,areaId);
+  else if(view==='lc'&&lcId)rLC(lcId);
 }
 
 function togLinkedTodoDone(lId,aId,kpiId,tId,todoId){
