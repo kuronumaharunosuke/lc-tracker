@@ -3247,9 +3247,9 @@ function ttMatchDue(td,due){
   if(due==='month')return dl.getFullYear()===now.getFullYear()&&dl.getMonth()===now.getMonth();
   return true;
 }
-// 週が期間フィルターの範囲に入っているか（monDate=月曜, sunDate=日曜）
-function ttWeekInRange(monDate,sunDate){
-  const f=_ttFilter;
+// 週が期間フィルターの範囲に入っているか（monDate=月曜, sunDate=日曜, f=フィルター）
+function ttWeekInRange(monDate,sunDate,f){
+  f=f||_ttFilter;
   if(!f.from&&!f.to)return true;
   const fromD=f.from?new Date(f.from+'T00:00:00'):null;
   const toD=f.to?new Date(f.to+'T23:59:59'):null;
@@ -3274,6 +3274,27 @@ function ttFilterBar(c){
     <span style="font-size:9px;font-weight:700;color:var(--faint);margin-left:8px">締切</span>
     ${btn('overdue','期限切れ')}${btn('week','今週')}${btn('month','今月')}${btn('incomplete','未完了')}
     ${active?`<button onclick="clearTtFilter()" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;margin-left:auto">クリア</button>`:''}
+  </div>`;
+}
+
+// ── 週次TODOビュー用 日付フィルター（モーダルとは別状態） ──
+let _wtFilter={from:null,to:null,due:'ALL'};
+function wtRerender(){if(window.mc_aid)mc_rArea(window.mc_aid);}
+function setWtFilterDue(due){_wtFilter.due=(_wtFilter.due===due?'ALL':due);wtRerender();}
+function setWtFilterRange(){const f=document.getElementById('wt-f-from'),t=document.getElementById('wt-f-to');_wtFilter.from=(f&&f.value)?f.value:null;_wtFilter.to=(t&&t.value)?t.value:null;wtRerender();}
+function clearWtFilter(){_wtFilter={from:null,to:null,due:'ALL'};wtRerender();}
+function wtFilterBar(c){
+  const f=_wtFilter;
+  const btn=(key,label)=>`<button onclick="setWtFilterDue('${key}')" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid ${f.due===key?c:'var(--border)'};background:${f.due===key?c:'transparent'};color:${f.due===key?'#fff':'var(--dim)'};cursor:pointer;font-weight:${f.due===key?'700':'400'}">${label}</button>`;
+  const active=f.from||f.to||f.due!=='ALL';
+  return `<div style="padding:8px 0 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;border-bottom:1px solid var(--border);margin-bottom:12px">
+    <span style="font-size:9px;font-weight:700;color:var(--faint)">期間</span>
+    <input type="date" id="wt-f-from" value="${f.from||''}" onchange="setWtFilterRange()" style="font-size:10px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
+    <span style="color:var(--faint)">〜</span>
+    <input type="date" id="wt-f-to" value="${f.to||''}" onchange="setWtFilterRange()" style="font-size:10px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
+    <span style="font-size:9px;font-weight:700;color:var(--faint);margin-left:8px">締切</span>
+    ${btn('overdue','期限切れ')}${btn('week','今週')}${btn('month','今月')}${btn('incomplete','未完了')}
+    ${active?`<button onclick="clearWtFilter()" style="font-size:10px;padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--dim);cursor:pointer;margin-left:auto">クリア</button>`:''}
   </div>`;
 }
 
@@ -3354,13 +3375,14 @@ function renderTaskTodosModal(){
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;color:${isDone?'var(--dim)':'var(--dark)'};${isDone?'text-decoration:line-through':''}">${h(td.name)}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap">
+                <span style="font-size:9px;color:var(--faint)">担当</span>
+                <input type="text" value="${td.res?h(td.res):''}" placeholder="担当者" onchange="setTaskTodoDate('${lId}','${aId}','${kId}','${tId}','${td.id}','res',this.value)" style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent;width:72px">
                 <span style="font-size:9px;color:var(--faint)">開始</span>
                 <input type="date" value="${td.start||''}" onchange="setTaskTodoDate('${lId}','${aId}','${kId}','${tId}','${td.id}','start',this.value)" style="font-size:10px;padding:1px 4px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
                 <span style="font-size:9px;color:var(--faint)">締切</span>
                 <input type="date" value="${td.deadline||''}" onchange="setTaskTodoDate('${lId}','${aId}','${kId}','${tId}','${td.id}','deadline',this.value)" style="font-size:10px;padding:1px 4px;border:1px solid ${overdue?'#E53E51':'var(--border)'};border-radius:4px;color:${overdue?'#E53E51':'var(--dim)'};background:transparent">
                 ${overdue?`<span style="font-size:9px;color:#E53E51;font-weight:700">期限超過</span>`:''}
               </div>
-              ${td.res?`<div style="font-size:10px;color:var(--dim);margin-top:2px">担当: ${h(td.res)}</div>`:''}
               ${(()=>{const ts=isDone?(td.doneAt||td.updatedAt):(td.updatedAt||td.createdAt);if(!ts)return'';return `<div style="font-size:9px;color:var(--faint);margin-top:2px">${isDone?'✓ 完了':'更新'} ${fdt(ts)}</div>`;})()}
             </div>
             <button class="ib" style="font-size:9px;padding:2px 6px;flex-shrink:0" onclick="openEditTaskTodo('${lId}','${aId}','${kId}','${tId}','${td.id}')">編集</button>
@@ -3370,6 +3392,7 @@ function renderTaskTodosModal(){
           <input class="fi" id="tt-inp-${wKey}" placeholder="この週のToDoを追加..."
             style="flex:1;min-width:120px;font-size:11px;padding:5px 9px"
             onkeydown="if(event.key==='Enter')addTaskTodo('${lId}','${aId}','${kId}','${tId}','${wKey}')">
+          <input type="text" id="tt-res-${wKey}" placeholder="担当者" style="width:80px;font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <input type="date" id="tt-start-${wKey}" title="開始日" style="font-size:10px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <input type="date" id="tt-end-${wKey}" title="締切日" style="font-size:10px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <button class="btn btn-primary" style="font-size:10px;padding:4px 12px;flex-shrink:0"
@@ -3389,15 +3412,17 @@ function addTaskTodo(lId,aId,kId,tId,wKey){
   if(!name){inp.focus();return;}
   const sEl=document.getElementById('tt-start-'+wKey);
   const eEl=document.getElementById('tt-end-'+wKey);
+  const rEl=document.getElementById('tt-res-'+wKey);
   const start=(sEl&&sEl.value)?sEl.value:null;
   const deadline=(eEl&&eEl.value)?eEl.value:null;
+  const res=(rEl&&rEl.value.trim())?rEl.value.trim():null;
   const area=getLCArea(lId,aId);
   const k=area.kpis.find(x=>x.id===kId);
   const t=k.tasks.find(x=>x.id===tId);
   if(!t)return;
   if(!t.todos)t.todos=[];
   const now=new Date().toISOString();
-  t.todos.push({id:gid(),week:wKey,name,status:'NOT_STARTED',done:false,start,deadline,createdAt:now,updatedAt:now});
+  t.todos.push({id:gid(),week:wKey,name,status:'NOT_STARTED',done:false,res,start,deadline,createdAt:now,updatedAt:now});
   save();
   renderTaskTodosModal();
   setTimeout(()=>{const i2=document.getElementById('tt-inp-'+wKey);if(i2)i2.focus();},50);
@@ -7935,16 +7960,16 @@ function mc_wtIsPast(d){
 function mc_rWeekTodo(aId,c){
   const area=MC_D.areas.find(a=>a.id===aId);if(!area)return'';
   if(!area.weekTodos)area.weekTodos=[];
-  const weeks=mc_wtWeeks();
+  const allWeeks=mc_wtWeeks();
+  const weeks=allWeeks.filter(w=>ttWeekInRange(w,new Date(w.getTime()+6*86400000),_wtFilter));
+  const dueActive=_wtFilter.due!=='ALL';
   const checkSvg='<span class="wt-cb-check">✓</span>';
+  let shownCount=0;
   const cards=weeks.map(w=>{
     const key=mc_wtWeekKey(w);
-    const todos=area.weekTodos.filter(t=>t.weekStart===key);
-    const done=todos.filter(t=>t.done).length;
-    const past=mc_wtIsPast(w);
-    const isCurrent=mc_wtIsCurrentWeek(w);
+    let todos=area.weekTodos.filter(t=>t.weekStart===key);
     // タスク連携ToDo収集
-    const linkedTodos=[];
+    let linkedTodos=[];
     area.kpis.forEach(k=>{
       k.tasks.forEach(t=>{
         (t.todos||[]).filter(td=>td.week===key).forEach(td=>{
@@ -7952,10 +7977,19 @@ function mc_rWeekTodo(aId,c){
         });
       });
     });
+    if(dueActive){
+      todos=todos.filter(t=>ttMatchDue(t,_wtFilter.due));
+      linkedTodos=linkedTodos.filter(x=>ttMatchDue(x.todo,_wtFilter.due));
+      if(todos.length===0&&linkedTodos.length===0)return '';
+    }
+    shownCount++;
+    const done=todos.filter(t=>t.done).length;
+    const past=mc_wtIsPast(w);
+    const isCurrent=mc_wtIsCurrentWeek(w);
     const linkedDone=linkedTodos.filter(x=>x.todo.done).length;
     const totalAll=todos.length+linkedTodos.length;
     const doneAll=done+linkedDone;
-    const isOpen=isCurrent||(!past&&totalAll>0&&doneAll<totalAll);
+    const isOpen=dueActive||isCurrent||(!past&&totalAll>0&&doneAll<totalAll);
     const todoItems=todos.map(t=>`
       <div class="mc-wt-item" id="wtrow-${t.id}">
         <div class="wt-cb${t.done?' done':''}" onclick="mc_togWT('${aId}','${t.id}')">${t.done?checkSvg:''}</div>
@@ -7974,19 +8008,28 @@ function mc_rWeekTodo(aId,c){
         <div style="padding:4px 16px 4px;font-size:9px;font-weight:700;color:${c};letter-spacing:0.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px">
           <span>タスク連携 Todo</span><span style="color:var(--faint);font-weight:400">${linkedDone}/${linkedTodos.length}</span>
         </div>
-        ${linkedTodos.map(({todo,task,kpiId})=>`
-        <div class="mc-wt-item" id="wtrow-linked-${todo.id}">
-          <div class="wt-cb${todo.done?' done':''}" onclick="mc_togLinkedTodoDone('${aId}','${kpiId}','${task.id}','${todo.id}')">${todo.done?checkSvg:''}</div>
-          <div class="wt-main">
-            <div style="font-size:9px;font-weight:700;color:${c};background:${c}15;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:2px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(task.name)}</div>
-            <div class="wt-name${todo.done?' done':''}" style="${todo.done?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+        ${linkedTodos.map(({todo,task,kpiId})=>{
+          const st=todo.status||(todo.done?'DONE':'NOT_STARTED');
+          const stL=st==='DONE'?'済':st==='WIP'?'WIP':'未';
+          const isDone=st==='DONE';
+          const overdue=todo.deadline&&isOver(todo.deadline)&&!isDone;
+          return `
+        <div class="mc-wt-item" id="wtrow-linked-${todo.id}" style="align-items:flex-start">
+          <span class="chip ${sc(st)}" style="font-size:9px;padding:2px 7px;flex-shrink:0;cursor:pointer;margin-top:1px" onclick="mc_cycLinkedTodoStatus('${aId}','${kpiId}','${task.id}','${todo.id}')" title="クリックでステータス変更">${stL}</span>
+          <div class="wt-main" style="flex:1;min-width:0">
+            <div style="font-size:9px;font-weight:700;color:${c};background:${c}15;border-radius:3px;padding:1px 6px;display:inline-block;margin-bottom:2px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h(task.name)}</div>
+            <div class="wt-name${isDone?' done':''}" style="${isDone?'text-decoration:line-through;color:var(--dim)':''}">${h(todo.name)}</div>
+            ${(todo.res||todo.start||todo.deadline)?`<div class="wt-meta">
+              ${todo.res?`<span class="wt-res">担当 ${h(todo.res)}</span>`:''}
+              ${(todo.start||todo.deadline)?`<span style="color:${overdue?'#E53E51':'var(--dim)'};font-weight:${overdue?'700':'400'}">${todo.start?fd(todo.start):'—'} → ${todo.deadline?fd(todo.deadline):'—'}${overdue?' 超過':''}</span>`:''}
+            </div>`:''}
           </div>
           <div class="wt-actions"><button class="ib" style="font-size:9px;padding:2px 6px;color:#7552CC;border-color:#7552CC44" onclick="mc_openTaskTodos('${aId}','${kpiId}','${task.id}')">管理</button></div>
-        </div>`).join('')}
+        </div>`;}).join('')}
       </div>`:''
     ;
     const emptyMsg=totalAll===0?`<div class="wt-empty">Todoなし</div>`:'';
-    const weekNum=weeks.indexOf(w)+1;
+    const weekNum=allWeeks.indexOf(w)+1;
     return `<div class="wt-week${isCurrent?' current':''}">
       <div class="wt-week-head" onclick="mc_togWTWeek('${key}')">
         <div>
@@ -8002,11 +8045,13 @@ function mc_rWeekTodo(aId,c){
       </div>
       <div class="mc-wt-body${isOpen?' open':''}" id="wtbody-${key}">
         ${todoItems}${linkedHtml}${emptyMsg}
-        <div class="wt-add"><button class="wt-add-btn" onclick="mc_openAddWT('${aId}','${key}')">+ Todo 追加...</button></div>
+        ${(!dueActive)?`<div class="wt-add"><button class="wt-add-btn" onclick="mc_openAddWT('${aId}','${key}')">+ Todo 追加...</button></div>`:''}
       </div>
     </div>`;
   }).join('');
-  return `<div class="wt-wrap">${cards}</div>`;
+  const filterActive=_wtFilter.due!=='ALL'||_wtFilter.from||_wtFilter.to;
+  const empty=filterActive&&shownCount===0?`<div style="padding:32px;text-align:center;color:var(--faint);font-size:13px">フィルターに該当するToDoがありません</div>`:'';
+  return `<div class="wt-wrap">${wtFilterBar(c)}${empty||cards}</div>`;
 }
 
 function mc_togWTWeek(key){
@@ -8164,6 +8209,8 @@ function mc_renderTaskTodosModal(){
             <div style="flex:1;min-width:0">
               <div style="font-size:12px;color:${isDone?'var(--dim)':'var(--dark)'};${isDone?'text-decoration:line-through':''}">${h(td.name)}</div>
               <div style="display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap">
+                <span style="font-size:9px;color:var(--faint)">担当</span>
+                <input type="text" value="${td.res?h(td.res):''}" placeholder="担当者" onchange="mc_setTaskTodoDate('${aId}','${kId}','${tId}','${td.id}','res',this.value)" style="font-size:10px;padding:1px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent;width:72px">
                 <span style="font-size:9px;color:var(--faint)">開始</span>
                 <input type="date" value="${td.start||''}" onchange="mc_setTaskTodoDate('${aId}','${kId}','${tId}','${td.id}','start',this.value)" style="font-size:10px;padding:1px 4px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
                 <span style="font-size:9px;color:var(--faint)">締切</span>
@@ -8178,6 +8225,7 @@ function mc_renderTaskTodosModal(){
           <input class="fi" id="mc-tt-inp-${wKey}" placeholder="この週のToDoを追加..."
             style="flex:1;min-width:120px;font-size:11px;padding:5px 9px"
             onkeydown="if(event.key==='Enter')mc_addTaskTodo('${aId}','${kId}','${tId}','${wKey}')">
+          <input type="text" id="mc-tt-res-${wKey}" placeholder="担当者" style="width:80px;font-size:11px;padding:5px 8px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <input type="date" id="mc-tt-start-${wKey}" title="開始日" style="font-size:10px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <input type="date" id="mc-tt-end-${wKey}" title="締切日" style="font-size:10px;padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--dim);background:transparent">
           <button class="btn btn-primary" style="font-size:10px;padding:4px 12px;flex-shrink:0"
@@ -8195,12 +8243,14 @@ function mc_addTaskTodo(aId,kId,tId,wKey){
   const name=inp.value.trim();if(!name){inp.focus();return;}
   const sEl=document.getElementById('mc-tt-start-'+wKey);
   const eEl=document.getElementById('mc-tt-end-'+wKey);
+  const rEl=document.getElementById('mc-tt-res-'+wKey);
   const start=(sEl&&sEl.value)?sEl.value:null;
   const deadline=(eEl&&eEl.value)?eEl.value:null;
+  const res=(rEl&&rEl.value.trim())?rEl.value.trim():null;
   const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kId),t=k.tasks.find(x=>x.id===tId);
   if(!t)return;if(!t.todos)t.todos=[];
   const now=new Date().toISOString();
-  t.todos.push({id:gid(),week:wKey,name,status:'NOT_STARTED',done:false,start,deadline,createdAt:now,updatedAt:now});
+  t.todos.push({id:gid(),week:wKey,name,status:'NOT_STARTED',done:false,res,start,deadline,createdAt:now,updatedAt:now});
   mc_save();mc_renderTaskTodosModal();
   setTimeout(()=>{const i2=document.getElementById('mc-tt-inp-'+wKey);if(i2)i2.focus();},50);
 }
@@ -8245,6 +8295,21 @@ function mc_togLinkedTodoDone(aId,kpiId,tId,todoId){
   if(!t||!t.todos)return;
   const td=t.todos.find(x=>x.id===todoId);if(!td)return;
   td.done=!td.done;td.status=td.done?'DONE':'NOT_STARTED';td.updatedAt=new Date().toISOString();td.doneAt=td.done?td.updatedAt:null;mc_save();
+  if(mc_aid)mc_rArea(mc_aid);
+}
+
+// 週次ビューでタスク連携ToDoのステータスを循環（未着手→WIP→完了）
+function mc_cycLinkedTodoStatus(aId,kpiId,tId,todoId){
+  const a=MC_D.areas.find(x=>x.id===aId),k=a.kpis.find(x=>x.id===kpiId),t=k.tasks.find(x=>x.id===tId);
+  if(!t||!t.todos)return;
+  const td=t.todos.find(x=>x.id===todoId);if(!td)return;
+  const ord=['NOT_STARTED','WIP','DONE'];
+  const cur=td.status||(td.done?'DONE':'NOT_STARTED');
+  td.status=ord[(ord.indexOf(cur)+1)%3];
+  td.done=td.status==='DONE';
+  td.updatedAt=new Date().toISOString();
+  td.doneAt=td.done?td.updatedAt:null;
+  mc_save();
   if(mc_aid)mc_rArea(mc_aid);
 }
 
